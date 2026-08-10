@@ -40,7 +40,9 @@ product every agent actually reads.
    and the exact `GRAPH.md` + `state.json` the pipeline emits from it. `examples/README.md`
    walks the loop end to end.
 3. **`scripts/`** — the programs, each runnable and documented in its own header.
-4. **`docs/02-projection-3d.md`, `docs/03-pipeline.md`** — the 3D-representation goal this method feeds.
+4. **`docs/02-projection-3d.md`, `docs/03-pipeline.md`, `docs/04-operator-runbook.md`** — the
+   3D-representation goal this method feeds: the metaphor-first projection, the full
+   pipeline, and the operator LLM's briefing for generating a scene from an adopted client.
 
 ## 60-second quickstart
 
