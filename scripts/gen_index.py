@@ -3,13 +3,22 @@
 
 INDEX.md is DERIVED DATA (kickoff §5a): the issue files are the truth. Never
 hand-edit INDEX.md. Run this after adding/closing an issue.
+
+Two ways to run it:
+
+  # from the gantry repo, pointed at a client checkout:
+  python3 gen_index.py --root ../my-project
+
+  # OR copied into a client as <client>/tools/gen_index.py (the default
+  # positional behavior: the client root is the script's parent.parent):
+  python3 tools/gen_index.py
 """
+import argparse
 import re
 import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-ISSUES = REPO / "issues"
 
 HEADER_RE = re.compile(r"^#\s*#(\d+)\s*[—-]\s*(.+?)\s*$")
 FIELD_RE = re.compile(r"^type:\s*(\S+)\s+status:\s*(\S+)")
@@ -37,8 +46,17 @@ def parse_issue(path: Path):
 
 
 def main():
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--root", default=None,
+                    help="client repo root (default: the script's parent.parent — "
+                         "i.e. run from <client>/tools/ after copying it there)")
+    ap.add_argument("--check", action="store_true",
+                    help="fail with exit 1 if issues/INDEX.md is stale")
+    args = ap.parse_args()
+
+    issues_dir = (Path(args.root) if args.root else REPO) / "issues"
     rows = []
-    for path in sorted(ISSUES.glob("[0-9][0-9][0-9][0-9]-*.md")):
+    for path in sorted(issues_dir.glob("[0-9][0-9][0-9][0-9]-*.md")):
         rows.append(parse_issue(path))
     rows.sort(key=lambda r: r[0])
 
@@ -50,8 +68,8 @@ def main():
     out.append("")
     text = "\n".join(out)
 
-    index = ISSUES / "INDEX.md"
-    if "--check" in sys.argv:
+    index = issues_dir / "INDEX.md"
+    if args.check:
         current = index.read_text() if index.exists() else ""
         if current != text:
             print("INDEX.md is stale — run tools/gen_index.py", file=sys.stderr)

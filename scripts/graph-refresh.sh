@@ -15,8 +15,8 @@
 # Input paths from the adapter must not contain whitespace.
 
 REPO="$1"; ADAPTER="$2"; OUT="$3"; DEPS="$4"
-# bundle-local variant (fullMethodology/scripts): the extractor sits NEXT to this
-# script, not at gantry's ../extract/. Functionally identical to gantry/hooks/graph-refresh.sh.
+# the extractor sits next to this script, in the same gantry repo
+
 HERE="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 EXTRACT="$HERE/gantry_extract.py"
 

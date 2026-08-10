@@ -51,9 +51,9 @@ python3 scripts/gantry_extract.py \
     --out /tmp/state.json --digest examples/GRAPH.md
 # → writes state.json (graph state, hashed), GRAPH.md (the map), bodies.json (issue prose)
 
-# 2. keep a tracker's INDEX.md fresh (run in the client repo):
-python3 scripts/gen_index.py            # writes issues/INDEX.md
-python3 scripts/gen_index.py --check    # CI: fail if stale
+# 2. keep a tracker's INDEX.md fresh (pointed at any client checkout):
+python3 scripts/gen_index.py --root <client-repo>   # writes issues/INDEX.md
+python3 scripts/gen_index.py --root <client-repo> --check   # CI: fail if stale
 
 # 3. check a commit obeys the tracker law:
 python3 scripts/lint_commit.py --message "M1: press stands (#0002)" --files src/press.c
@@ -62,6 +62,35 @@ python3 scripts/lint_commit.py --message "M1: press stands (#0002)" --files src/
 sh scripts/install-graph-hook.sh   <client-repo> <adapter.json> <out-dir> [deps.json]
 sh scripts/install-commit-lint.sh  <client-repo> [--core-prefix src/]
 ```
+
+## Adopting this in your project — the receiving repo's view
+
+This repo is a **toolbox**, not a library you import. Two of the six scripts are copied
+*into* your project and committed there; the rest stay here and only read your repo.
+
+| Tool | Where it lives | Why |
+|---|---|---|
+| `SPEC.md`, `docs/` | this repo | read-only reference; you don't copy the method, you follow it |
+| `scripts/gantry_extract.py` | this repo (observer) | only ever READS your repo via `--root`; never copied in |
+| `scripts/gen_index.py`, `scripts/lint_commit.py` | **your repo's `tools/`, committed** | the tracker ledger + commit law are *your* content; a clean clone must enforce itself with no gantry present |
+| `scripts/install-*.sh`, `graph-refresh.sh` | this repo; they install *wiring* | hooks live in `.git/hooks` (never versioned) and point back here or at your `tools/` copies |
+
+To adopt:
+
+1. `cp examples/adapter.json .gantry-adapter.json` (or wherever you keep it) and fill in
+   your plan/seams/tracker paths + slug maps (SPEC §6).
+2. Run extract once to mint your `GRAPH.md`: `python3 scripts/gantry_extract.py
+   --client .gantry-adapter.json --root . --digest GRAPH.md`. Commit it. Wire a CI check
+   that fails if a fresh run drifts (determinism contract, SPEC §6).
+3. `sh scripts/install-commit-lint.sh .` — copies `gen_index.py` + `lint_commit.py` into
+   your `tools/`, wires the `commit-msg` shim. Commit the copies.
+4. (Optional, per-machine) `sh scripts/install-graph-hook.sh . .gantry-adapter.json <out-dir>`
+   — your `GRAPH.md` refreshes in the same commit that changes the tracker. Never blocks.
+5. Point your session-start ritual at `GRAPH.md` — that's the map every agent reads
+   instead of opening every issue (SPEC §6).
+
+`examples/` is the same loop on a toy project — read `examples/README.md` to see every
+artifact the pipeline emits, and to feel the invariants by breaking them on purpose.
 
 ## The one idea, if you read nothing else
 

@@ -19,7 +19,7 @@ output of the bundled scripts, not hand-drawn.
 ## Regenerate (deterministic — same inputs, same bytes)
 
 ```sh
-# from fullMethodology/
+# from the gantry repo root:
 python3 scripts/gantry_extract.py \
     --client examples/adapter.json --root examples \
     --out examples/state.json --digest examples/GRAPH.md \

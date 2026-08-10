@@ -1,5 +1,5 @@
 #!/bin/sh
-# gantry — bootstrap the commit lint into a NEW client repo (contract §6).
+# gantry — bootstrap the client-side tools into a NEW client repo (SPEC §7).
 #
 # Usage: install-commit-lint.sh <client-repo> [--tracker-dir issues] [--core-prefix simcore/]...
 #
@@ -13,32 +13,38 @@
 #      gantry"). Remove the hook file to uninstall the wiring; the lint
 #      itself stays, because it is client content.
 #
+# Also copies tools/gen_index.py (the derived ledger) alongside the lint —
+# same ownership: client content, committed by the client. Refuses to
+# overwrite an existing copy.
+#
 # --core-prefix is repeatable; each adds a path needing an issue ref to touch.
 
 set -e
 
 [ -n "$1" ] || { echo "usage: install-commit-lint.sh <client-repo> [--tracker-dir D] [--core-prefix P]..." >&2; exit 1; }
 REPO=$(CDPATH= cd -- "$1" && pwd); shift
-# bundle-local variant (fullMethodology/scripts): lint_commit.py sits NEXT to this
-# installer, not at gantry's ../hooks/. Functionally identical to gantry/scripts/install-commit-lint.sh.
 HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 HOOK="$REPO/.git/hooks/commit-msg"
 LINT="$REPO/tools/lint_commit.py"
+GENINDEX="$REPO/tools/gen_index.py"
 EXTRA_ARGS="$*"
 
 [ -d "$REPO/.git" ] || { echo "not a git repo: $REPO" >&2; exit 1; }
 
-if [ -e "$LINT" ]; then
-  echo "kept: $LINT already exists — the client owns its lint; not overwriting" >&2
-  if [ -n "$EXTRA_ARGS" ]; then
-    echo "note: ignoring '$EXTRA_ARGS' — the client's own lint encodes its own law" >&2
-    EXTRA_ARGS=""
+for tool in "$LINT" "$GENINDEX"; do
+  if [ -e "$tool" ]; then
+    echo "kept: $tool already exists — the client owns it; not overwriting" >&2
+  else
+    mkdir -p "$REPO/tools"
+    cp "$HERE/$(basename "$tool")" "$tool"
+    chmod +x "$tool"
+    echo "copied: $tool  (client content — commit it in the client, by the client's rules)"
   fi
-else
-  mkdir -p "$REPO/tools"
-  cp "$HERE/lint_commit.py" "$LINT"
-  chmod +x "$LINT"
-  echo "copied: $LINT  (client content — commit it in the client, by the client's rules)"
+done
+
+if [ -e "$LINT" ] && [ -n "$EXTRA_ARGS" ]; then
+  echo "note: ignoring '$EXTRA_ARGS' — the client's own lint encodes its own law" >&2
+  EXTRA_ARGS=""
 fi
 
 if [ -e "$HOOK" ] && ! grep -q "installed by gantry" "$HOOK"; then
