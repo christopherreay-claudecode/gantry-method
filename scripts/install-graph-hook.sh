@@ -38,10 +38,20 @@ fi
 
 cat > "$HOOK" <<EOF
 #!/bin/sh
-# installed by gantry (hooks/install.sh) — local automation, not repo content.
-# Regenerates GRAPH.md when a commit changes the tracker/plan inputs; safe
+# installed by gantry (scripts/install-graph-hook.sh) — local automation, not repo
+# content. Regenerates GRAPH.md when a commit changes the tracker/plan inputs; safe
 # no-op on machines without gantry. Remove this file to uninstall.
-exec "$HERE/graph-refresh.sh" "$REPO" "$ADAPTER" "$OUT" "$DEPS"
+#
+# The "never blocks a commit" guarantee lives in the body — but only if the body
+# RUNS. If gantry is moved, renamed, or deleted after install, exec'ing a missing
+# path fails and would hard-block EVERY commit in this repo. So the existence check
+# lives here, in the shim, ahead of the exec.
+BODY="$HERE/graph-refresh.sh"
+if [ ! -x "\$BODY" ]; then
+  printf 'gantry hook: body missing (%s) — skipping GRAPH refresh; commit proceeds. Re-run install-graph-hook.sh to fix.\n' "\$BODY" >&2
+  exit 0
+fi
+exec "\$BODY" "$REPO" "$ADAPTER" "$OUT" "$DEPS"
 EOF
 chmod +x "$HOOK"
 
