@@ -2,7 +2,7 @@
 """Commit lint — gantry's bootstrap template for the client contract §6.
 
 Origin: metalKnee-physics-2 tools/lint_commit.py (kickoff §5a), generalized.
-This file is NOT run from the gantry repo: hooks/install-commit-lint.sh copies
+This file is NOT run from the gantry repo: scripts/install-commit-lint.sh copies
 it into a client's tools/ where the CLIENT versions it — commit rules are the
 client's own law and must survive a clean clone with no gantry present.
 

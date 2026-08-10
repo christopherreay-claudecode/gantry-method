@@ -20,7 +20,7 @@ set -e
 [ -n "$1" ] || { echo "usage: install-commit-lint.sh <client-repo> [--tracker-dir D] [--core-prefix P]..." >&2; exit 1; }
 REPO=$(CDPATH= cd -- "$1" && pwd); shift
 # bundle-local variant (fullMethodology/scripts): lint_commit.py sits NEXT to this
-# installer, not at gantry's ../hooks/. Functionally identical to gantry/hooks/install-commit-lint.sh.
+# installer, not at gantry's ../hooks/. Functionally identical to gantry/scripts/install-commit-lint.sh.
 HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 HOOK="$REPO/.git/hooks/commit-msg"
 LINT="$REPO/tools/lint_commit.py"
@@ -48,7 +48,7 @@ fi
 
 cat > "$HOOK" <<EOF
 #!/usr/bin/env bash
-# installed by gantry (hooks/install-commit-lint.sh) — shim only; the lint
+# installed by gantry (scripts/install-commit-lint.sh) — shim only; the lint
 # itself is versioned client content at tools/lint_commit.py.
 set -euo pipefail
 REPO="\$(git rev-parse --show-toplevel)"

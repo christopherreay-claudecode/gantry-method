@@ -25,7 +25,7 @@ if [ -n "$4" ]; then
   DEPS=$(CDPATH= cd -- "$(dirname -- "$4")" && pwd)/$(basename -- "$4")
 fi
 # bundle-local variant (fullMethodology/scripts): graph-refresh.sh sits NEXT to this
-# installer, not at gantry's ../hooks/. Functionally identical to gantry/hooks/install.sh.
+# installer, not at gantry's ../hooks/. Functionally identical to gantry/scripts/install-graph-hook.sh.
 HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 HOOK="$REPO/.git/hooks/pre-commit"
 
