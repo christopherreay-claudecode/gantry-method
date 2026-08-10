@@ -282,7 +282,10 @@ adapter.json (paths, slug maps)  ──────────┘              
 `sha256` of the document with the `hash` field removed, canonicalized (sorted keys, NFC). The REV
 is stamped into `GRAPH.md`'s header and is the project's structural fingerprint: **a scene diff
 bisects to a state diff bisects to a client commit.** In CI you regenerate and fail on unexpected
-diff — visualization drift is a build break, same severity as any derived-data drift.
+diff — visualization drift is a build break, same severity as any derived-data drift. The gate is
+`extract --check`: builds the fresh map in memory, compares it to the committed `GRAPH.md`
+(normalizing the header commit stamp, since hook-refreshed digests legitimately differ in `@
+<sha>[+dirty]`), and exits 1 on any other drift.
 
 `generated_from` records `{repo, commit, dirty, extractor_version}`. **`dirty` is scoped to the
 input paths only** (tracker dir, plan, seam table) — unrelated noise in the client tree does not

@@ -35,6 +35,10 @@ but not a dependency of the adopted project.
 # extract (the core — from EITHER home; produces the map + graph state + prose sidecar):
 python3 gantry_extract.py --client <adapter.json> --root <client-repo> \
         --out <out>/state.json [--digest <client-repo>/GRAPH.md] [--deps <deps.json>]
+# CI drift gate: build in memory, compare the committed GRAPH.md, exit 1 on drift
+# (header stamp normalized — hook-refreshed digests pass):
+python3 gantry_extract.py --client <adapter.json> --root <client-repo> \
+        --out <out>/state.json --digest <client-repo>/GRAPH.md --check
 
 # index ledger — two equivalent ways:
 #   a) pointed at any client checkout (no copying needed):

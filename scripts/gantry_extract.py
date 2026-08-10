@@ -149,7 +149,10 @@ def parse_seams(kickoff_path: Path):
 
 # ----------------------------------------------------------------- digest ----
 
-def write_digest(doc: dict, path: Path):
+STAMP_RE = re.compile(r"@ [0-9a-f]{7,40}(\+dirty)? · REV [0-9a-f]{12}")
+
+
+def render_digest(doc: dict) -> str:
     """GRAPH.md — a very concise graph digest for an LLM working on the client
     codebase. One line per open item; details live in the issue files. To change
     this file, change the issues and re-run extract."""
@@ -217,7 +220,11 @@ def write_digest(doc: dict, path: Path):
                     and (e["status"].get("work") == "closed" or e["status"].get("decision") == "resolved"))
     lines.append("")
     lines.append(f"closed/resolved: {' '.join(closed) if closed else 'none'}")
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return "\n".join(lines) + "\n"
+
+
+def write_digest(doc: dict, path: Path):
+    path.write_text(render_digest(doc), encoding="utf-8")
 
 
 # ------------------------------------------------------------------- main ----
@@ -236,6 +243,11 @@ def main():
     ap.add_argument("--out", required=True, help="state.json path")
     ap.add_argument("--deps", help="reviewed dependency edges json (proposed/confirmed) to merge")
     ap.add_argument("--digest", help="GRAPH.md digest path (default: alongside --out)")
+    ap.add_argument("--check", action="store_true",
+                    help="build into memory and compare the fresh GRAPH.md against the "
+                         "committed one; write nothing, exit 1 on drift (CI gate). The "
+                         "header commit stamp (@ <sha>[+dirty] · REV) is normalized, so "
+                         "hook-refreshed digests pass.")
     args = ap.parse_args()
 
     adapter = json.loads(Path(args.client).read_text(encoding="utf-8"))
@@ -496,12 +508,29 @@ def main():
     doc["hash"] = canonical_hash(doc)
 
     out_path = Path(args.out)
+    digest_path = Path(args.digest) if args.digest else out_path.parent / "GRAPH.md"
+    digest_text = render_digest(doc)
+
+    if args.check:
+        if warnings:
+            print(f"\nwarnings ({len(warnings)}):", file=sys.stderr)
+            for w in warnings:
+                print(f"  - {w}", file=sys.stderr)
+        if not digest_path.exists():
+            print(f"GRAPH.md missing: {digest_path} — run extract first", file=sys.stderr)
+            return 1
+        norm = lambda s: STAMP_RE.sub("@ <stamp>", s, count=1)
+        if norm(digest_text) != norm(digest_path.read_text(encoding="utf-8")):
+            print(f"GRAPH.md is stale — re-run extract "
+                  f"(fresh REV {doc['hash'][:12]} vs {digest_path})", file=sys.stderr)
+            return 1
+        print(f"GRAPH.md up to date — REV {doc['hash'][:12]}")
+        return 0
+
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(doc, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
                         encoding="utf-8")
-
-    digest_path = Path(args.digest) if args.digest else out_path.parent / "GRAPH.md"
-    write_digest(doc, digest_path)
+    digest_path.write_text(digest_text, encoding="utf-8")
 
     # sidecar: issue source text for the viewer's reader pane (not graph state,
     # not hashed — see bind_body). Only ids that exist in the graph.
@@ -527,4 +556,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

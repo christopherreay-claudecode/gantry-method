@@ -39,7 +39,10 @@ derived-data drift, same severity as any other.
 
 ```sh
 python3 tools/gantry_extract.py --client .gantry/adapter.json --root . \
-    --out .gantry/out/state.json --digest GRAPH.md
+    --out .gantry/out/state.json --digest GRAPH.md --check
 python3 tools/gen_index.py --check
-git diff --exit-code -- GRAPH.md issues/INDEX.md
 ```
+
+`--check` builds the fresh map in memory and compares it to the committed
+`GRAPH.md` (the header commit stamp is normalized, so hook-refreshed digests
+pass); exit 1 on drift.
