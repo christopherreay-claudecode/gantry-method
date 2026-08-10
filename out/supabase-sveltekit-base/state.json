@@ -1,0 +1,615 @@
+{
+  "entities": [
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "9",
+          "source": "plan-v1"
+        },
+        {
+          "ref": "C-OPS",
+          "source": "plan-v1"
+        }
+      ],
+      "id": "constraint:audited-writes",
+      "kind": "constraint",
+      "label": "Audited writes",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "5",
+          "source": "plan-v1"
+        },
+        {
+          "ref": "C-AUTHZ",
+          "source": "plan-v1"
+        }
+      ],
+      "id": "constraint:claims-not-queries",
+      "kind": "constraint",
+      "label": "Claims, not queries",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "3",
+          "source": "plan-v1"
+        },
+        {
+          "ref": "C-SEAL",
+          "source": "plan-v1"
+        }
+      ],
+      "id": "constraint:declarative-reads",
+      "kind": "constraint",
+      "label": "Declarative reads",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "2",
+          "source": "plan-v1"
+        },
+        {
+          "ref": "C-SEAL",
+          "source": "plan-v1"
+        }
+      ],
+      "id": "constraint:derived-identity",
+      "kind": "constraint",
+      "label": "Derived identity",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "6",
+          "source": "plan-v1"
+        },
+        {
+          "ref": "C-AUTHZ",
+          "source": "plan-v1"
+        }
+      ],
+      "id": "constraint:four-gates-in-order",
+      "kind": "constraint",
+      "label": "Four gates in order",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "4",
+          "source": "plan-v1"
+        },
+        {
+          "ref": "C-SEAL",
+          "source": "plan-v1"
+        }
+      ],
+      "id": "constraint:impossible-states-are-impossible",
+      "kind": "constraint",
+      "label": "Impossible states are impossible",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "7",
+          "source": "plan-v1"
+        },
+        {
+          "ref": "C-AUTHZ",
+          "source": "plan-v1"
+        }
+      ],
+      "id": "constraint:one-vocabulary-at-every-layer",
+      "kind": "constraint",
+      "label": "One vocabulary at every layer",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "8",
+          "source": "plan-v1"
+        },
+        {
+          "ref": "C-OPS",
+          "source": "plan-v1"
+        }
+      ],
+      "id": "constraint:rate-analysis-is-mandatory",
+      "kind": "constraint",
+      "label": "Rate analysis is mandatory",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "1",
+          "source": "plan-v1"
+        },
+        {
+          "ref": "C-SEAL",
+          "source": "plan-v1"
+        }
+      ],
+      "id": "constraint:sealed-tables",
+      "kind": "constraint",
+      "label": "Sealed tables",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "10",
+          "source": "plan-v1"
+        },
+        {
+          "ref": "C-OPS",
+          "source": "plan-v1"
+        }
+      ],
+      "id": "constraint:swappable-frontend",
+      "kind": "constraint",
+      "label": "Swappable frontend",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0001",
+          "source": "tracker"
+        }
+      ],
+      "id": "gate:m0",
+      "kind": "gate",
+      "label": "M0 — the sealed schema stands",
+      "relations": [],
+      "status": {
+        "closure_authority": "mechanical",
+        "gate": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0002",
+          "source": "tracker"
+        }
+      ],
+      "id": "gate:m1",
+      "kind": "gate",
+      "label": "M1 — the four gates hold",
+      "relations": [],
+      "status": {
+        "closure_authority": "mechanical",
+        "gate": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0003",
+          "source": "tracker"
+        }
+      ],
+      "id": "gate:m2",
+      "kind": "gate",
+      "label": "M2 — the shell pumps one slice end-to-end",
+      "relations": [],
+      "status": {
+        "closure_authority": "mechanical",
+        "gate": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0005",
+          "source": "tracker"
+        }
+      ],
+      "id": "hold:rate-limit-placement",
+      "kind": "hold",
+      "label": "Ambiguity: rate-limit placement (in-DB vs edge)",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "constraint:rate-analysis-is-mandatory",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "seam:rate-limiter",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:phaseb-modules",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:phaseb-modules",
+          "type": "informs"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "decision": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0004",
+          "source": "tracker"
+        }
+      ],
+      "id": "hold:roles-model",
+      "kind": "hold",
+      "label": "Ambiguity: flat roles vs role→permission indirection",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "constraint:claims-not-queries",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "seam:role-model",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:m1-four-gates",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:m1-four-gates",
+          "type": "informs"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "decision": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0006",
+          "source": "tracker"
+        }
+      ],
+      "id": "phase:b",
+      "kind": "phase",
+      "label": "Phase B (placeholder): the module tier",
+      "relations": [],
+      "status": {
+        "gate": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "S3",
+          "source": "seam-table"
+        },
+        {
+          "ref": "freeze: M2",
+          "source": "seam-table"
+        }
+      ],
+      "id": "seam:island-renderer",
+      "kind": "seam",
+      "label": "island renderer (`SveltePages` → `OCreateIslands`)",
+      "relations": [],
+      "status": {
+        "stability": "provisional"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "S2",
+          "source": "seam-table"
+        },
+        {
+          "ref": "freeze: Phase B",
+          "source": "seam-table"
+        }
+      ],
+      "id": "seam:rate-limiter",
+      "kind": "seam",
+      "label": "rate limiter (`RateNote` → `DbThrottle`)",
+      "relations": [],
+      "status": {
+        "stability": "provisional"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "S1",
+          "source": "seam-table"
+        },
+        {
+          "ref": "freeze: Phase B",
+          "source": "seam-table"
+        }
+      ],
+      "id": "seam:role-model",
+      "kind": "seam",
+      "label": "role model (`FlatRoles` → `PermissionRoles`)",
+      "relations": [],
+      "status": {
+        "stability": "provisional"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0001",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:m0-sealed-schema",
+      "kind": "workorder",
+      "label": "M0: the sealed schema stands",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "constraint:sealed-tables",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:derived-identity",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:impossible-states-are-impossible",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:audited-writes",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:m0",
+          "type": "refs"
+        }
+      ],
+      "status": {
+        "closure_authority": "mechanical",
+        "work": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0002",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:m1-four-gates",
+      "kind": "workorder",
+      "label": "M1: the four gates hold",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "constraint:claims-not-queries",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:four-gates-in-order",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:one-vocabulary-at-every-layer",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:m0",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:m1",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:m2-shell-pumps",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:roles-model",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:roles-model",
+          "type": "defers-to"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:m2-shell-pumps",
+          "type": "informs"
+        }
+      ],
+      "status": {
+        "closure_authority": "mechanical",
+        "work": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0003",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:m2-shell-pumps",
+      "kind": "workorder",
+      "label": "M2: the shell pumps one slice end-to-end",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "constraint:swappable-frontend",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "seam:island-renderer",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:m1",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:m2",
+          "type": "refs"
+        }
+      ],
+      "status": {
+        "closure_authority": "mechanical",
+        "work": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0006",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:phaseb-modules",
+      "kind": "workorder",
+      "label": "Phase B (placeholder): the module tier",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "phase:b",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "seam:role-model",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "seam:rate-limiter",
+          "type": "refs"
+        }
+      ],
+      "status": {
+        "closure_authority": "mechanical",
+        "work": "open"
+      },
+      "supersedes": []
+    }
+  ],
+  "generated_from": {
+    "commit": "e346ef034dee97c244138714f5f6a264ec3ba74a",
+    "dirty": true,
+    "extractor_version": "0.4.0",
+    "repo": "supabase-sveltekit-base"
+  },
+  "hash": "ca82ffad676590be6db2cdbac0fe372265e6abd823a71290c6d20a5ae3fa6a7c",
+  "schema_version": "0.2"
+}

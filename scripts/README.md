@@ -5,6 +5,7 @@ only, no network, no model); the three shell scripts wire git hooks.
 
 | Script | What it is | Home (SPEC §7) |
 |---|---|---|
+| `adopt.sh` | **one-command adoption**: copies the client tools, wires both hooks, mints GRAPH.md (after the adapter is filled). Idempotent. | both |
 | `gantry_extract.py` | truth (plan + seams + tracker + git) → `state.json` + `GRAPH.md` + `bodies.json`. Deterministic. | **observer** — runs from the gantry repo; never copied into the client |
 | `gen_index.py` | tracker → `issues/INDEX.md` (the derived ledger). `--check` fails if stale. | **client** — copied into `<client>/tools/` and committed there |
 | `lint_commit.py` | enforce commit/tracker law: every commit refs an issue; `closes` never targets a human-gated type. | **client** — copied into `<client>/tools/` and committed there |
@@ -54,11 +55,19 @@ copy, don't edit.
 
 ## Adoption checklist (the receiving project's view)
 
-1. `python3 scripts/gantry_extract.py --client <adapter.json> --root . --digest GRAPH.md`
-   — generate the map. Add it to CI (`--check` style: fail if the committed `GRAPH.md` drifts).
-2. `sh scripts/install-commit-lint.sh . [--core-prefix src/]` — copies
-   `lint_commit.py` and `gen_index.py` into the project's `tools/`, wires the
-   commit-msg shim. The copies are committed like any source.
-3. `sh scripts/install-graph-hook.sh . <adapter.json> <out-dir> [deps.json]` — optional,
-   per-machine: keeps `GRAPH.md` fresh on every commit that touches the tracker.
-4. The adapter: copy `examples/adapter.json` and fill in paths/slug maps (SPEC §6).
+1. **`sh scripts/adopt.sh <client-repo> [--core-prefix src/] [--deps deps.json]`** — the whole
+   operational layer in one run: copies `lint_commit.py` + `gen_index.py` into the
+   project's `tools/`, wires the commit-msg shim, writes a stub adapter to
+   `.gantry/adapter.json`, and (once the adapter is real) wires the pre-commit
+   graph-refresh hook and mints `GRAPH.md`. Idempotent — re-run freely.
+2. Fill in `.gantry/adapter.json` (paths + slug maps, SPEC §6) and re-run adopt.sh to
+   mint `GRAPH.md`.
+3. Commit everything gantry created (`tools/`, `GRAPH.md`, `.gantry/adapter.json`) —
+   it is client content now. Add a CI step that regenerates `GRAPH.md` and fails on
+   drift (determinism contract, SPEC §6).
+4. From here: every session starts by reading `GRAPH.md`; declare dependencies on the
+   issue's `deps:` line the moment you learn them; reviewed proposals land in
+   `deps.json`; the lint enforces the commit law.
+
+The individual pieces (what adopt.sh calls) are below for the curious or for
+custom wiring.

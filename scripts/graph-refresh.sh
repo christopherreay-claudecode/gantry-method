@@ -32,7 +32,7 @@ print(a["tracker_dir"], a["plan"], a["kickoff"])' "$ADAPTER" 2>/dev/null) \
   || { note "adapter unreadable: $ADAPTER"; exit 0; }
 
 # only act when the staged changes touch the process inputs
-STAGED=$(git -C "$REPO" diff --cached --name-only -- $INPUTS)
+STAGED=$(git -C "$REPO" diff --cached --name-only -- $INPUTS 2>/dev/null || true)
 [ -n "$STAGED" ] || exit 0
 
 set -- --client "$ADAPTER" --root "$REPO" --out "$OUT/state.json" --digest "$REPO/GRAPH.md"

@@ -77,17 +77,21 @@ This repo is a **toolbox**, not a library you import. Two of the six scripts are
 
 To adopt:
 
-1. `cp examples/adapter.json .gantry-adapter.json` (or wherever you keep it) and fill in
-   your plan/seams/tracker paths + slug maps (SPEC §6).
-2. Run extract once to mint your `GRAPH.md`: `python3 scripts/gantry_extract.py
-   --client .gantry-adapter.json --root . --digest GRAPH.md`. Commit it. Wire a CI check
-   that fails if a fresh run drifts (determinism contract, SPEC §6).
-3. `sh scripts/install-commit-lint.sh .` — copies `gen_index.py` + `lint_commit.py` into
-   your `tools/`, wires the `commit-msg` shim. Commit the copies.
-4. (Optional, per-machine) `sh scripts/install-graph-hook.sh . .gantry-adapter.json <out-dir>`
-   — your `GRAPH.md` refreshes in the same commit that changes the tracker. Never blocks.
-5. Point your session-start ritual at `GRAPH.md` — that's the map every agent reads
-   instead of opening every issue (SPEC §6).
+1. **Run the one-command adoption**: `sh scripts/adopt.sh <repo> --core-prefix src/`.
+   It copies `gen_index.py` + `lint_commit.py` into your `tools/`, wires the
+   commit-msg lint shim, writes a stub adapter to `.gantry/adapter.json`, and wires
+   the pre-commit graph-refresh hook (which keeps `GRAPH.md` fresh in the same commit
+   that changes the tracker — and never blocks a commit).
+2. **Fill in the adapter** (`.gantry/adapter.json` — paths + slug maps, SPEC §6),
+   then re-run adopt.sh to mint your `GRAPH.md`. Commit `tools/`, `GRAPH.md`, and the
+   adapter — they are client content now.
+3. **Wire a CI drift check**: regenerate `GRAPH.md` in CI and fail on any diff
+   (determinism contract, SPEC §6).
+4. **The ritual from here**: every session starts by reading `GRAPH.md` — not the
+   issue files; declare dependencies on the issue's `deps:` line the moment you learn
+   them, and land reviewed proposals in `deps.json` (SPEC §5); the lint enforces the
+   commit law for you (every commit refs an issue; `closes` never targets a
+   human-gated type).
 
 `examples/` is the same loop on a toy project — read `examples/README.md` to see every
 artifact the pipeline emits, and to feel the invariants by breaking them on purpose.

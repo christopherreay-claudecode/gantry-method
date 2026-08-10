@@ -19,6 +19,7 @@ usage() { echo "usage: install.sh <client-repo> <adapter.json> <out-dir> [deps.j
 
 REPO=$(CDPATH= cd -- "$1" && pwd)
 ADAPTER=$(CDPATH= cd -- "$(dirname -- "$2")" && pwd)/$(basename -- "$2")
+mkdir -p "$3"
 OUT=$(CDPATH= cd -- "$3" && pwd)
 DEPS=""
 if [ -n "$4" ]; then

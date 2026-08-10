@@ -1,0 +1,4727 @@
+{
+  "entities": [
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "1",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-SIM",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:a-headless-simulation-core-no-ue",
+      "kind": "constraint",
+      "label": "A headless simulation core (no UE dependency) advances the world at a fixed 30Hz tick.",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "31",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-PUZZLE",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:a-level-scenario-definition-seed",
+      "kind": "constraint",
+      "label": "A level = (scenario definition, seed, victory + scoring conditions). Deterministic, replayable, hashable.",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "13",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-MECH",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:a-mech-is-a-data-defined-layered",
+      "kind": "constraint",
+      "label": "A mech is a data-defined layered anatomy, biological/military in structure:",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "5",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-DELAY",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:all-conscious-commands-execute-exactly-d",
+      "kind": "constraint",
+      "label": "All conscious commands execute exactly D = 300ms (9 ticks) after issue. All script commands execute exactly Ds = 100m…",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "10",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-TREE",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:arbitration-is-preemptive-by-priority-resolved",
+      "kind": "constraint",
+      "label": "Arbitration is preemptive by priority, resolved deterministically inside the tick (ingest → arbitrate → actuate → phy…",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "38",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-UE",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:art-direction-v1-abstract-high-readability-flat",
+      "kind": "constraint",
+      "label": "Art direction v1: abstract, high-readability (flat shading, strong silhouettes, clear substance color-coding). No nar…",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "42",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-SENSE",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:autonomic-repair-is-a-standing-principal",
+      "kind": "constraint",
+      "label": "Autonomic repair is a standing principal",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "28",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-ECON",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:beamer-is-a-pipeline-with-a",
+      "kind": "constraint",
+      "label": "Beamer is a pipeline with a visible, reorderable queue (through the control tree, delayed like everything).",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "21",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-PHYS",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:benchmark-constraint",
+      "kind": "constraint",
+      "label": "Benchmark constraint",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "25",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-SCRIPT",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:capacity-model-sustained-budget-burst",
+      "kind": "constraint",
+      "label": "Capacity model: sustained budget + burst; exceeding sustained accrues meat stress; hard limits trigger overburn effec…",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "29",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-ECON",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:collection",
+      "kind": "constraint",
+      "label": "Collection",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "7",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-DELAY",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:d-is-adjustable-150-350ms-via-scenario",
+      "kind": "constraint",
+      "label": "D is adjustable (150–350ms) via scenario config for feel experiments; Ds fixed at 100ms unless a scenario overrides f…",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "41",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-SENSE",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:damage-bookkeeping-is-a-field-diff",
+      "kind": "constraint",
+      "label": "Damage bookkeeping is a field diff",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "15",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-MECH",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:damage-is-graded-degradation-not-only",
+      "kind": "constraint",
+      "label": "Damage is graded degradation, not only binary detachment: armor ablates → internals become exposed → actuator volume …",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "53",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-TERRA",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:deformation-is-event-gated-and-pay-per-event",
+      "kind": "constraint",
+      "label": "Deformation is event-gated and pay-per-event",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "9",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-TREE",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:every-actuation-flows-through-one-arbitrated",
+      "kind": "constraint",
+      "label": "Every actuation flows through one arbitrated control tree. Principals: pilots, each pilot's scripts, embedded hull si…",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "33",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-PUZZLE",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:every-completed-level-produces-a-replay",
+      "kind": "constraint",
+      "label": "Every completed level produces a replay file; replays are the audit trail (prize-league-ready by construction).",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "3",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-SIM",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:every-tick-emits-a-state-hash",
+      "kind": "constraint",
+      "label": "Every tick emits a state hash. A replay file = (scenario id, seed, versions, command stream) and replays bit-identica…",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "18",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-PHYS",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:exactly-one-representation-is-dynamic-per",
+      "kind": "constraint",
+      "label": "Exactly one representation is dynamic per body pair at any tick (authority transfer, never blending). Promotion: wide…",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "55",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-TERRA",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:exteroception-is-metered-in-field-queries",
+      "kind": "constraint",
+      "label": "Exteroception is metered in field queries",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "48",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-LOCO",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:firmware-determinism-discipline-stricter-than",
+      "kind": "constraint",
+      "label": "Firmware determinism discipline (stricter than constraint 24)",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "49",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-LOCO",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:firmware-state-is-hashed",
+      "kind": "constraint",
+      "label": "Firmware state is hashed",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "2",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-SIM",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:given-scenario-seed-command-stream-the",
+      "kind": "constraint",
+      "label": "Given (scenario, seed, command stream), the simulation is bit-identical on every supported platform/compiler. Jolt bu…",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "40",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-SENSE",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:innate-sense-free",
+      "kind": "constraint",
+      "label": "Innate sense (free)",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "8",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-DELAY",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:late-dropped-conscious-commands-for-a-window",
+      "kind": "constraint",
+      "label": "Late/dropped conscious commands for a window are discarded, never stalled (lockstep never waits). Scripts continue re…",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "57",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-LOCO",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:layered-feasibility-and-the-recovery-ladder",
+      "kind": "constraint",
+      "label": "Layered feasibility and the recovery ladder",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "35",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-PUZZLE",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:level-content-v1-maps-to-the",
+      "kind": "constraint",
+      "label": "Level content v1 maps to the craft aspects: (a) delay locomotion & collection, (b) first combat with stock scripts, (…",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "12",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-TREE",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:multi-crew-is-supported-by-the-architecture",
+      "kind": "constraint",
+      "label": "Multi-crew is supported by the architecture from day one (N pilots per mech), even though early puzzle content is sin…",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "50",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-LOCO",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:no-locomotion-lod-in-v1",
+      "kind": "constraint",
+      "label": "No locomotion LOD in v1",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "51",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-TERRA",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:one-matter-representation",
+      "kind": "constraint",
+      "label": "One matter representation",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "14",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-MECH",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:physical-properties-mass-com-inertia-per",
+      "kind": "constraint",
+      "label": "Physical properties (mass, CoM, inertia per limb segment) are derived by integration over the material volume, never …",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "27",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-ECON",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:print-cost-law-implemented-exactly-e",
+      "kind": "constraint",
+      "label": "Print cost law implemented exactly: E = Σ volume·substance_rate + Σ switch_penalty(transitions); build time derived f…",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "20",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-PHYS",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:projectile-impacts-promote-only-the-impacted",
+      "kind": "constraint",
+      "label": "Projectile impacts promote only the impacted limb subtree.",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "19",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-PHYS",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:promotion-is-predictive-and-deterministic",
+      "kind": "constraint",
+      "label": "Promotion is predictive and deterministic: triggered from sim state only (closing distance < closing speed × K ticks)…",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "22",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-PHYS",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:r1-spike-representation-decision-gate",
+      "kind": "constraint",
+      "label": "R1 spike (representation decision gate)",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "16",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-MECH",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:representation-decision-gated-by-r1-spike",
+      "kind": "constraint",
+      "label": "Representation decision (gated by R1 spike, constraint 22)",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "24",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-SCRIPT",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:sandbox-v1-lua-pinned-interpreter-instruction",
+      "kind": "constraint",
+      "label": "Sandbox v1: Lua (pinned interpreter), instruction/ops-per-tick metering, memory cap, bandwidth caps derived from anat…",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "32",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-PUZZLE",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:scoring-axes-recorded-per-solution-ticks",
+      "kind": "constraint",
+      "label": "Scoring axes recorded per solution: ticks elapsed, energy spent, meat stress incurred, mass collected/spent. (Leaderb…",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "23",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-SCRIPT",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:scripts-execute-server-side-locally-emulated-in",
+      "kind": "constraint",
+      "label": "Scripts execute server-side (locally emulated in SP) against tick-state; outputs enter the command stream at the 100m…",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "46",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-LOCO",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:setpoints-are-trajectory-shaped-plans-are-sparse",
+      "kind": "constraint",
+      "label": "Setpoints are trajectory-shaped, plans are sparse",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "6",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-DELAY",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:single-player-runs-the-same-server",
+      "kind": "constraint",
+      "label": "Single player runs the same server loop locally (command bus, delays, validation). One codepath forever; netcode late…",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "34",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-PUZZLE",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:solution-telemetry-score-distributions-block",
+      "kind": "constraint",
+      "label": "Solution telemetry (score distributions, block/script usage) is loggable for balance analysis.",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "56",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-LOCO",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:stopping-is-a-plan-a-plan-less-state-does-not",
+      "kind": "constraint",
+      "label": "Stopping is a plan; a plan-less state does not exist",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "37",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-UE",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:the-300ms-delay-is-honestly-presented",
+      "kind": "constraint",
+      "label": "The 300ms delay is honestly presented: input feedback (command-pending indicators) may be immediate; world consequenc…",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "17",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-PHYS",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:the-articulated-skeleton-joints-motors-gait",
+      "kind": "constraint",
+      "label": "The articulated skeleton (joints, motors, gait, balance) always simulates at full logical fidelity for every mech. On…",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "4",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-SIM",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:the-core-runs-and-is-tested",
+      "kind": "constraint",
+      "label": "The core runs and is tested headless in CI: replay corpus must hash-match on every commit (regression gate).",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "47",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-LOCO",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:the-gait-frame-is-heading-relative",
+      "kind": "constraint",
+      "label": "The gait frame is heading-relative",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "26",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-SCRIPT",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:the-game-ships-with-stock-scripts",
+      "kind": "constraint",
+      "label": "The game ships with stock scripts (guard/parry, balance-save, point-defense) usable and parameterizable before the pl…",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "43",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-SENSE",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:the-nervous-system-is-physical",
+      "kind": "constraint",
+      "label": "The nervous system is physical",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "11",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-TREE",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:the-permission-role-structure-is-data-part",
+      "kind": "constraint",
+      "label": "The permission/role structure is data, part of the mech design, and editable at runtime by principals holding the per…",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "45",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-LOCO",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:the-plan-cascade",
+      "kind": "constraint",
+      "label": "The plan cascade",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "44",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-SENSE",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:the-servo-tier-firmware",
+      "kind": "constraint",
+      "label": "The servo tier (firmware)",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "52",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-TERRA",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:two-read-schemas-one-truth",
+      "kind": "constraint",
+      "label": "Two read schemas, one truth",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "36",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-UE",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:ue-reads-sim-state-snapshots-and",
+      "kind": "constraint",
+      "label": "UE reads sim state snapshots and interpolates 30Hz → display rate; presentation never writes sim state. All juice (de…",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "39",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-UE",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:ue-sim-binding-follows-the-uploaded-lockstep",
+      "kind": "constraint",
+      "label": "UE↔sim binding follows the uploaded lockstep tutorial patterns — revise this section after upload.",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "30",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-ECON",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:upgrades-between-levels-persist-in-a",
+      "kind": "constraint",
+      "label": "Upgrades between levels persist in a player profile (mech design + unlocked blocks + scripts).",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "54",
+          "source": "plan-v1.2"
+        },
+        {
+          "ref": "C-TERRA",
+          "source": "plan-v1.2"
+        }
+      ],
+      "id": "constraint:wrecks-become-terrain",
+      "kind": "constraint",
+      "label": "Wrecks become terrain",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0009",
+          "source": "tracker"
+        }
+      ],
+      "id": "gate:a3",
+      "kind": "gate",
+      "label": "A3 — Jolt harness + substitution",
+      "relations": [],
+      "status": {
+        "closure_authority": "mechanical",
+        "gate": "latched"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0010",
+          "source": "tracker"
+        }
+      ],
+      "id": "gate:a4",
+      "kind": "gate",
+      "label": "A4 — the server-authoritative control layer (Rev 2)",
+      "relations": [],
+      "status": {
+        "closure_authority": "mechanical",
+        "gate": "latched"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0001",
+          "source": "tracker"
+        },
+        {
+          "ref": "d9c584a",
+          "source": "git"
+        }
+      ],
+      "id": "gate:m0",
+      "kind": "gate",
+      "label": "M0 — tick loop + hasher + registry",
+      "relations": [],
+      "status": {
+        "closure_authority": "mechanical",
+        "gate": "latched"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0002",
+          "source": "tracker"
+        },
+        {
+          "ref": "611105e",
+          "source": "git"
+        }
+      ],
+      "id": "gate:m1",
+      "kind": "gate",
+      "label": "M1 — stubphys capsule stands",
+      "relations": [],
+      "status": {
+        "closure_authority": "mechanical",
+        "gate": "latched"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0003",
+          "source": "tracker"
+        },
+        {
+          "ref": "0856f35",
+          "source": "git"
+        }
+      ],
+      "id": "gate:m2",
+      "kind": "gate",
+      "label": "M2 — L0 servo spline tracking",
+      "relations": [],
+      "status": {
+        "closure_authority": "mechanical",
+        "gate": "latched"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0004",
+          "source": "tracker"
+        },
+        {
+          "ref": "97d7ef5",
+          "source": "git"
+        }
+      ],
+      "id": "gate:m3",
+      "kind": "gate",
+      "label": "M3 — L1 whole-body controller on degenerate plan",
+      "relations": [],
+      "status": {
+        "closure_authority": "mechanical",
+        "gate": "latched"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0005",
+          "source": "tracker"
+        },
+        {
+          "ref": "da02b48",
+          "source": "git"
+        }
+      ],
+      "id": "gate:m4",
+      "kind": "gate",
+      "label": "M4 — L2 stub walks and halts as a plan",
+      "relations": [],
+      "status": {
+        "closure_authority": "mechanical",
+        "gate": "latched"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0006",
+          "source": "tracker"
+        },
+        {
+          "ref": "aca6203",
+          "source": "git"
+        }
+      ],
+      "id": "gate:m5",
+      "kind": "gate",
+      "label": "M5 — recovery ladder rungs L0–L1",
+      "relations": [],
+      "status": {
+        "closure_authority": "mechanical",
+        "gate": "latched"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0007",
+          "source": "tracker"
+        },
+        {
+          "ref": "8a22146",
+          "source": "git"
+        }
+      ],
+      "id": "gate:m6",
+      "kind": "gate",
+      "label": "M6 — hash-earns-its-keep (firmware state is load-bearing)",
+      "relations": [],
+      "status": {
+        "closure_authority": "mechanical",
+        "gate": "latched"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0008",
+          "source": "tracker"
+        },
+        {
+          "ref": "4f452dc",
+          "source": "git"
+        }
+      ],
+      "id": "gate:m7",
+      "kind": "gate",
+      "label": "M7 — replay corpus + CI regression",
+      "relations": [],
+      "status": {
+        "closure_authority": "mechanical",
+        "gate": "latched"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0035",
+          "source": "tracker"
+        }
+      ],
+      "id": "hold:consideration-replay-tiers-permissioned-data-exposure",
+      "kind": "hold",
+      "label": "Consideration (DEFERRED): replay tiers = permissioned data-exposure levels",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-servo-tier-firmware",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-plan-cascade",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "seam:command-bus",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:amendment-framework-rev2-server-authoritative",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:spec-rev2-mech-bus-permissioned-channels",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:amendment-framework-rev2-server-authoritative",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:spec-rev2-mech-bus-permissioned-channels",
+          "type": "informs"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "decision": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0026",
+          "source": "tracker"
+        }
+      ],
+      "id": "hold:cop-to-jolt-actuation-mapping",
+      "kind": "hold",
+      "label": "Ambiguity: CoP command -> Jolt articulated-body actuation mapping",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "seam:ibodystate",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:a3",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-servo-tier-firmware",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:a3-jolt-substitution",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s4-ibodystate",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:lipm-vs-rigid-trunk-pitch-drift",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s4-ibodystate",
+          "type": "informs"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "decision": "resolved"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0024",
+          "source": "tracker"
+        }
+      ],
+      "id": "hold:detmath-backing-jolt-float-vs-double",
+      "kind": "hold",
+      "label": "Ambiguity: det_math backing — \"only Jolt math\" vs Jolt float-only/no-pow vs the double mandate",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "seam:det-math",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:a3",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:given-scenario-seed-command-stream-the",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:a3-jolt-substitution",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:double-vs-float",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s1-detmath",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:double-vs-float",
+          "type": "informs"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "decision": "resolved"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0014",
+          "source": "tracker"
+        }
+      ],
+      "id": "hold:double-vs-float",
+      "kind": "hold",
+      "label": "Ambiguity: world-coordinate precision (double vs single float)",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "constraint:given-scenario-seed-command-stream-the",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:a3",
+          "type": "defers-to"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "decision": "resolved"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0027",
+          "source": "tracker"
+        }
+      ],
+      "id": "hold:feas-l1-tolerance-real-body",
+      "kind": "hold",
+      "label": "Ambiguity: feas_L1 support-membership tolerance on real bodies (1e-9 → 1e-3)",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "constraint:layered-feasibility-and-the-recovery-ladder",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "seam:ibodystate",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:a3",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:m3",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:a3-jolt-substitution",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:a4-control-tree-firmware",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s4-ibodystate",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:omega-gravity-source",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:detmath-backing-jolt-float-vs-double",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:a4-control-tree-firmware",
+          "type": "informs"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "decision": "resolved"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0022",
+          "source": "tracker"
+        }
+      ],
+      "id": "hold:feas-l2-anchor",
+      "kind": "hold",
+      "label": "Ambiguity: feas_L2 reachable-set anchoring (plan-anchored vs stance-anchored)",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "constraint:layered-feasibility-and-the-recovery-ladder",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "seam:istepplanner",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:m4",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:m5",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:phaseb-placeholder",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:amendment-deps-line-and-graph-md",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "phase:b",
+          "type": "defers-to"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "decision": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0028",
+          "source": "tracker"
+        }
+      ],
+      "id": "hold:lipm-vs-rigid-trunk-pitch-drift",
+      "kind": "hold",
+      "label": "Ambiguity: LIPM point-mass vs rigid-trunk pendulum — secular pitch drift in the real-body walk",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "seam:ibodystate",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:a3",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:layered-feasibility-and-the-recovery-ladder",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-servo-tier-firmware",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:phaseb-placeholder",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s4-ibodystate",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:cop-to-jolt-actuation-mapping",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:feas-l1-tolerance-real-body",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:amendment-movement-control-architecture",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s4-ibodystate",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "phase:b",
+          "type": "defers-to"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "decision": "resolved"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0019",
+          "source": "tracker"
+        }
+      ],
+      "id": "hold:omega-gravity-source",
+      "kind": "hold",
+      "label": "Ambiguity: ω = √(g/h) — gravity source for the controller (S4 read surface)",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "seam:ibodystate",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-plan-cascade",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:layered-feasibility-and-the-recovery-ladder",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s4-ibodystate",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:a3",
+          "type": "defers-to"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s4-ibodystate",
+          "type": "informs"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "decision": "resolved"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0013",
+          "source": "tracker"
+        }
+      ],
+      "id": "hold:q13-torque-law",
+      "kind": "hold",
+      "label": "Q13: actuator torque law placeholder",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-plan-cascade",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:setpoints-are-trajectory-shaped-plans-are-sparse",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:phaseb-placeholder",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:phaseb-placeholder",
+          "type": "defers-to"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "decision": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0034",
+          "source": "tracker"
+        }
+      ],
+      "id": "hold:recorded-actuator-stream-is-not-just-the-splineset",
+      "kind": "hold",
+      "label": "Ambiguity: the recorded ACTUATOR stream is NOT just the SplineSet (foot placement + disturbances re-enter physics)",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "seam:setpoint-spline",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "seam:ibodystate",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "seam:command-bus",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:a4",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-servo-tier-firmware",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-plan-cascade",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:a4-control-tree-firmware",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:lipm-vs-rigid-trunk-pitch-drift",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:amendment-framework-rev2-server-authoritative",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:spec-rev2-mech-bus-permissioned-channels",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:a4-control-tree-firmware",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:amendment-framework-rev2-server-authoritative",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:spec-rev2-mech-bus-permissioned-channels",
+          "type": "informs"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "decision": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0031",
+          "source": "tracker"
+        }
+      ],
+      "id": "hold:role-change-and-script-envelope-vs-s7-payload",
+      "kind": "hold",
+      "label": "Ambiguity: \"roles editable via delayed commands through the bus\" + the script envelope have no S7 payload to ride on",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "seam:command-bus",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:a4",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:arbitration-is-preemptive-by-priority-resolved",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:firmware-state-is-hashed",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:a4-control-tree-firmware",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:amendment-movement-control-architecture",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s7-command-bus",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:amendment-framework-rev2-server-authoritative",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:spec-rev2-mech-bus-permissioned-channels",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:a4-control-tree-firmware",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s7-command-bus",
+          "type": "informs"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "decision": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0017",
+          "source": "tracker"
+        }
+      ],
+      "id": "hold:spline-curve-encoding",
+      "kind": "hold",
+      "label": "Ambiguity: SetpointSpline.curve[4] encoding (coefficients vs samples)",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "constraint:setpoints-are-trajectory-shaped-plans-are-sparse",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "seam:setpoint-spline",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s3-setpointspline",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s3-setpointspline",
+          "type": "informs"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "decision": "resolved"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "simcore/phys/jolt_articulated.h",
+          "source": "code"
+        },
+        {
+          "ref": "simcore/loco/joint_walk.h",
+          "source": "code"
+        }
+      ],
+      "id": "part:articulated-legs",
+      "kind": "part",
+      "label": "B1 articulated mech — trunk + 2 legs, hip/knee/ankle joints (IJointedBody seam)",
+      "relations": [],
+      "status": {},
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "simcore/loco/control_matrix.h",
+          "source": "code"
+        },
+        {
+          "ref": "simcore/loco/control_matrix.cpp",
+          "source": "code"
+        }
+      ],
+      "id": "part:control-matrix",
+      "kind": "part",
+      "label": "ControlMatrix — per-channel actuator resolution, resolved-writes stream",
+      "relations": [],
+      "status": {},
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "simcore/loco/stepper.h",
+          "source": "code"
+        },
+        {
+          "ref": "simcore/loco/stepper.cpp",
+          "source": "code"
+        }
+      ],
+      "id": "part:planner-l2",
+      "kind": "part",
+      "label": "L2 footstep planner stub — walk, decelerate, halt-as-a-plan",
+      "relations": [],
+      "status": {},
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "simcore/loco/ladder.h",
+          "source": "code"
+        },
+        {
+          "ref": "simcore/loco/ladder.cpp",
+          "source": "code"
+        }
+      ],
+      "id": "part:recovery-ladder",
+      "kind": "part",
+      "label": "recovery ladder rungs L0-L1 — absorb in-stride, escalate with reason",
+      "relations": [],
+      "status": {},
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "simcore/replay/replay.h",
+          "source": "code"
+        },
+        {
+          "ref": "corpus",
+          "source": "code"
+        }
+      ],
+      "id": "part:replay-corpus",
+      "kind": "part",
+      "label": "replay file format + corpus, CI regression gate",
+      "relations": [],
+      "status": {},
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "simcore/loco/servo.h",
+          "source": "code"
+        },
+        {
+          "ref": "simcore/loco/servo.cpp",
+          "source": "code"
+        }
+      ],
+      "id": "part:servo-l0",
+      "kind": "part",
+      "label": "L0 servo tier — per-substep actuation, torque budget (Q13 seat)",
+      "relations": [],
+      "status": {},
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "simcore/core/hash.h",
+          "source": "code"
+        },
+        {
+          "ref": "simcore/core/tick.h",
+          "source": "code"
+        }
+      ],
+      "id": "part:tick-hash-chain",
+      "kind": "part",
+      "label": "per-tick state hash chain + IHashable registry",
+      "relations": [],
+      "status": {},
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "simcore/loco/wbc.h",
+          "source": "code"
+        },
+        {
+          "ref": "simcore/loco/wbc.cpp",
+          "source": "code"
+        }
+      ],
+      "id": "part:wbc-l1",
+      "kind": "part",
+      "label": "L1 whole-body controller — per-tick, preview-mandated",
+      "relations": [],
+      "status": {},
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0011",
+          "source": "tracker"
+        }
+      ],
+      "id": "phase:b",
+      "kind": "phase",
+      "label": "Phase B: articulated legs · SDF field · melee bodies",
+      "relations": [],
+      "status": {
+        "gate": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0012",
+          "source": "tracker"
+        }
+      ],
+      "id": "phase:c",
+      "kind": "phase",
+      "label": "Phase C (placeholder)",
+      "relations": [],
+      "status": {
+        "gate": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "S7",
+          "source": "seam-table"
+        },
+        {
+          "ref": "freeze: FROZEN at A4",
+          "source": "seam-table"
+        }
+      ],
+      "id": "seam:command-bus",
+      "kind": "seam",
+      "label": "command bus / PlanIntent (test-inject → delay pipeline)",
+      "relations": [],
+      "status": {
+        "stability": "provisional"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "S1",
+          "source": "seam-table"
+        },
+        {
+          "ref": "freeze: FROZEN at A3 swap",
+          "source": "seam-table"
+        }
+      ],
+      "id": "seam:det-math",
+      "kind": "seam",
+      "label": "det_math backing (libm-backed → Jolt math)",
+      "relations": [],
+      "status": {
+        "stability": "frozen"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "S8",
+          "source": "seam-table"
+        },
+        {
+          "ref": "freeze: PROVISIONAL through Phase A",
+          "source": "seam-table"
+        }
+      ],
+      "id": "seam:escalation-stream",
+      "kind": "seam",
+      "label": "escalation stream (EscalationReason) (record-only → consumed by repair/pilot (Phase B+))",
+      "relations": [],
+      "status": {
+        "stability": "provisional"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "S2",
+          "source": "seam-table"
+        },
+        {
+          "ref": "freeze: FROZEN at M0",
+          "source": "seam-table"
+        }
+      ],
+      "id": "seam:hash-registry",
+      "kind": "seam",
+      "label": "IHashable + tick-hash registry (one impl (core))",
+      "relations": [],
+      "status": {
+        "stability": "frozen"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "S4",
+          "source": "seam-table"
+        },
+        {
+          "ref": "freeze: ready-to-freeze at M3; FROZEN at A3",
+          "source": "seam-table"
+        }
+      ],
+      "id": "seam:ibodystate",
+      "kind": "seam",
+      "label": "IBodyState + actuation channels (stubphys → Jolt bodies)",
+      "relations": [],
+      "status": {
+        "stability": "frozen"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "S5",
+          "source": "seam-table"
+        },
+        {
+          "ref": "freeze: FROZEN at M4",
+          "source": "seam-table"
+        }
+      ],
+      "id": "seam:istepplanner",
+      "kind": "seam",
+      "label": "IStepPlanner (FlatGroundStub → TerrainStepper (Phase B))",
+      "relations": [],
+      "status": {
+        "stability": "frozen"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "S6",
+          "source": "seam-table"
+        },
+        {
+          "ref": "freeze: signature FROZEN at M4; semantics extended Phase B",
+          "source": "seam-table"
+        }
+      ],
+      "id": "seam:iterrainquery",
+      "kind": "seam",
+      "label": "ITerrainQuery (FlatPlaneQuery → heightfield+SDF (Phase B))",
+      "relations": [],
+      "status": {
+        "stability": "frozen"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "S3",
+          "source": "seam-table"
+        },
+        {
+          "ref": "freeze: FROZEN at M2",
+          "source": "seam-table"
+        }
+      ],
+      "id": "seam:setpoint-spline",
+      "kind": "seam",
+      "label": "SetpointSpline (the 30↔120 Hz crossing) (one format, two readers)",
+      "relations": [],
+      "status": {
+        "stability": "frozen"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0009",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:a3-jolt-substitution",
+      "kind": "workorder",
+      "label": "A3: Jolt harness + substitution",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "seam:det-math",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "seam:ibodystate",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:a3",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:benchmark-constraint",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-servo-tier-firmware",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:double-vs-float",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s4-ibodystate",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:omega-gravity-source",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:detmath-backing-jolt-float-vs-double",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s1-detmath",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:cop-to-jolt-actuation-mapping",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:feas-l1-tolerance-real-body",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:lipm-vs-rigid-trunk-pitch-drift",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:amendment-movement-control-architecture",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s4-ibodystate",
+          "type": "blocks"
+        }
+      ],
+      "status": {
+        "closure_authority": "mechanical",
+        "work": "closed"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0010",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:a4-control-tree-firmware",
+      "kind": "workorder",
+      "label": "A4: the server-authoritative control layer (Rev 2)",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "gate:a4",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:phaseb-placeholder",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:lipm-vs-rigid-trunk-pitch-drift",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:amendment-movement-control-architecture",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s7-command-bus",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:amendment-framework-rev2-server-authoritative",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:spec-rev2-mech-bus-permissioned-channels",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:control-matrix-v1-per-channel-resolution",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:phaseb-placeholder",
+          "type": "blocks"
+        }
+      ],
+      "status": {
+        "closure_authority": "mechanical",
+        "work": "closed"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0023",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:amendment-deps-line-and-graph-md",
+      "kind": "workorder",
+      "label": "Amendment: optional `deps:` header line + `GRAPH.md` as generated root artifact",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "seam:escalation-stream",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:a3",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:a4",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:m6-hash-earns-keep",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:a3-jolt-substitution",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:a4-control-tree-firmware",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:phaseb-placeholder",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:phasec-placeholder",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:q13-torque-law",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:double-vs-float",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s2-hash-registry",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s3-setpointspline",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:spline-curve-encoding",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s4-ibodystate",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:omega-gravity-source",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s5-istepplanner",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s6-iterrainquery-signature",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:feas-l2-anchor",
+          "type": "mentions"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "work": "closed"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0032",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:amendment-framework-rev2-server-authoritative",
+      "kind": "workorder",
+      "label": "Amendment: Framework Revision 2 — server-authoritative script layer (the divergence marker)",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "constraint:a-headless-simulation-core-no-ue",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-servo-tier-firmware",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-plan-cascade",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "seam:command-bus",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:a4",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "phase:b",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:a4-control-tree-firmware",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:amendment-movement-control-architecture",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s7-command-bus",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:role-change-and-script-envelope-vs-s7-payload",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:spec-rev2-mech-bus-permissioned-channels",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:control-matrix-v1-per-channel-resolution",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:a4-control-tree-firmware",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:amendment-movement-control-architecture",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s7-command-bus",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:role-change-and-script-envelope-vs-s7-payload",
+          "type": "informs"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "work": "closed"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0029",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:amendment-movement-control-architecture",
+      "kind": "workorder",
+      "label": "Amendment: movement-control architecture (layered floor + trainable skill slots + contractual-handoff arbitration)",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "constraint:arbitration-is-preemptive-by-priority-resolved",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-servo-tier-firmware",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:layered-feasibility-and-the-recovery-ladder",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:a4",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "phase:b",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:a4-control-tree-firmware",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:phaseb-placeholder",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:cop-to-jolt-actuation-mapping",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:feas-l1-tolerance-real-body",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:lipm-vs-rigid-trunk-pitch-drift",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:amendment-framework-rev2-server-authoritative",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:a4-control-tree-firmware",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:phaseb-placeholder",
+          "type": "informs"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "work": "closed"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0045",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:amendment-reconcile-rev2-nexii-into-constraints",
+      "kind": "workorder",
+      "label": "Amendment: reconcile the Rev-2 / five-nexii / wire design into the numbered constraints",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "constraint:all-conscious-commands-execute-exactly-d",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:scripts-execute-server-side-locally-emulated-in",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-servo-tier-firmware",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "seam:command-bus",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:amendment-framework-rev2-server-authoritative",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:spec-rev2-mech-bus-permissioned-channels",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:recorded-actuator-stream-is-not-just-the-splineset",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:control-matrix-v1-per-channel-resolution",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:spec-the-wire-data-structures-between-components",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:roadmap-five-nexii-reconciliation",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:amendment-framework-rev2-server-authoritative",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:spec-rev2-mech-bus-permissioned-channels",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:spec-the-wire-data-structures-between-components",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:roadmap-five-nexii-reconciliation",
+          "type": "informs"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "work": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0037",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:b1-articulated-legs",
+      "kind": "workorder",
+      "label": "B1: articulated legs (Phase B mech body plan)",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "phase:b",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "seam:ibodystate",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-servo-tier-firmware",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:layered-feasibility-and-the-recovery-ladder",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:phaseb-placeholder",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s4-ibodystate",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:lipm-vs-rigid-trunk-pitch-drift",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:recorded-actuator-stream-is-not-just-the-splineset",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:spec-the-wire-data-structures-between-components",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:phaseb-placeholder",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s4-ibodystate",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:lipm-vs-rigid-trunk-pitch-drift",
+          "type": "informs"
+        }
+      ],
+      "status": {
+        "closure_authority": "mechanical",
+        "work": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0036",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:control-matrix-v1-per-channel-resolution",
+      "kind": "workorder",
+      "label": "ControlMatrix v1: server-side per-channel actuator resolution",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "seam:command-bus",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:a4",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:arbitration-is-preemptive-by-priority-resolved",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-servo-tier-firmware",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-plan-cascade",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:a4-control-tree-firmware",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:amendment-movement-control-architecture",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:amendment-framework-rev2-server-authoritative",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:spec-rev2-mech-bus-permissioned-channels",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:recorded-actuator-stream-is-not-just-the-splineset",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:a4-control-tree-firmware",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:amendment-framework-rev2-server-authoritative",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:spec-rev2-mech-bus-permissioned-channels",
+          "type": "informs"
+        }
+      ],
+      "status": {
+        "closure_authority": "mechanical",
+        "work": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0025",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:freeze-s1-detmath",
+      "kind": "workorder",
+      "label": "S1 ready to freeze: det_math transcendental surface (Jolt-era backing)",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "seam:det-math",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:a3",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:given-scenario-seed-command-stream-the",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:firmware-determinism-discipline-stricter-than",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:a3-jolt-substitution",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:double-vs-float",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:detmath-backing-jolt-float-vs-double",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:double-vs-float",
+          "type": "informs"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "work": "closed"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0015",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:freeze-s2-hash-registry",
+      "kind": "workorder",
+      "label": "S2 ready to freeze: IHashable + tick-hash registry",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "seam:hash-registry",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:m0",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:every-tick-emits-a-state-hash",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:firmware-state-is-hashed",
+          "type": "refs"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "work": "closed"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0016",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:freeze-s3-setpointspline",
+      "kind": "workorder",
+      "label": "S3 ready to freeze: SetpointSpline (the 30↔120 Hz crossing)",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "seam:setpoint-spline",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:m2",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:setpoints-are-trajectory-shaped-plans-are-sparse",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:firmware-determinism-discipline-stricter-than",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:spline-curve-encoding",
+          "type": "mentions"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "work": "closed"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0018",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:freeze-s4-ibodystate",
+      "kind": "workorder",
+      "label": "S4 ready to freeze: IBodyState + actuation channels",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "seam:ibodystate",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:m3",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-plan-cascade",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:setpoints-are-trajectory-shaped-plans-are-sparse",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:firmware-state-is-hashed",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:a3-jolt-substitution",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:omega-gravity-source",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:cop-to-jolt-actuation-mapping",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:feas-l1-tolerance-real-body",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:lipm-vs-rigid-trunk-pitch-drift",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:a3",
+          "type": "defers-to"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "work": "closed"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0020",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:freeze-s5-istepplanner",
+      "kind": "workorder",
+      "label": "S5 ready to freeze: IStepPlanner (FlatGroundStub → TerrainStepper)",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "seam:istepplanner",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:m4",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-plan-cascade",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:stopping-is-a-plan-a-plan-less-state-does-not",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:layered-feasibility-and-the-recovery-ladder",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:a4-control-tree-firmware",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:feas-l2-anchor",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:a4-control-tree-firmware",
+          "type": "informs"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "work": "closed"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0021",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:freeze-s6-iterrainquery-signature",
+      "kind": "workorder",
+      "label": "S6 ready to freeze (SIGNATURE): ITerrainQuery (FlatPlaneQuery → heightfield+SDF)",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "seam:iterrainquery",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:m4",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:two-read-schemas-one-truth",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "phase:b",
+          "type": "defers-to"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "work": "closed"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0030",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:freeze-s7-command-bus",
+      "kind": "workorder",
+      "label": "S7 ready to freeze: command bus / `PlanIntent` + the true delay pipeline",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "seam:command-bus",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:a4",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:every-actuation-flows-through-one-arbitrated",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:firmware-state-is-hashed",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:a4-control-tree-firmware",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:phaseb-placeholder",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:amendment-framework-rev2-server-authoritative",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:spec-rev2-mech-bus-permissioned-channels",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:a4-control-tree-firmware",
+          "type": "informs"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "work": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0001",
+          "source": "tracker"
+        },
+        {
+          "ref": "d9c584a",
+          "source": "git"
+        }
+      ],
+      "id": "workorder:m0-tick-hash-registry",
+      "kind": "workorder",
+      "label": "M0: tick loop + hasher + registry",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "seam:hash-registry",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:m0",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:a-headless-simulation-core-no-ue",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:given-scenario-seed-command-stream-the",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:every-tick-emits-a-state-hash",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-core-runs-and-is-tested",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:firmware-state-is-hashed",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s2-hash-registry",
+          "type": "mentions"
+        }
+      ],
+      "status": {
+        "closure_authority": "mechanical",
+        "work": "closed"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0002",
+          "source": "tracker"
+        },
+        {
+          "ref": "611105e",
+          "source": "git"
+        }
+      ],
+      "id": "workorder:m1-stubphys-stand",
+      "kind": "workorder",
+      "label": "M1: stubphys capsule stands",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "seam:ibodystate",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:m1",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:given-scenario-seed-command-stream-the",
+          "type": "refs"
+        }
+      ],
+      "status": {
+        "closure_authority": "mechanical",
+        "work": "closed"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0003",
+          "source": "tracker"
+        },
+        {
+          "ref": "0856f35",
+          "source": "git"
+        }
+      ],
+      "id": "workorder:m2-l0-servo-spline",
+      "kind": "workorder",
+      "label": "M2: L0 servo spline tracking",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "seam:setpoint-spline",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:m2",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:setpoints-are-trajectory-shaped-plans-are-sparse",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:firmware-determinism-discipline-stricter-than",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:q13-torque-law",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s3-setpointspline",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:spline-curve-encoding",
+          "type": "mentions"
+        }
+      ],
+      "status": {
+        "closure_authority": "mechanical",
+        "work": "closed"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0004",
+          "source": "tracker"
+        },
+        {
+          "ref": "97d7ef5",
+          "source": "git"
+        }
+      ],
+      "id": "workorder:m3-l1-wbc-remain",
+      "kind": "workorder",
+      "label": "M3: L1 whole-body controller on degenerate plan",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "seam:ibodystate",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:m3",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-plan-cascade",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:firmware-state-is-hashed",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:layered-feasibility-and-the-recovery-ladder",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s4-ibodystate",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:omega-gravity-source",
+          "type": "mentions"
+        }
+      ],
+      "status": {
+        "closure_authority": "mechanical",
+        "work": "closed"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0005",
+          "source": "tracker"
+        },
+        {
+          "ref": "da02b48",
+          "source": "git"
+        }
+      ],
+      "id": "workorder:m4-l2-walk-halt",
+      "kind": "workorder",
+      "label": "M4: L2 stub walks and halts as a plan",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "seam:istepplanner",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "seam:iterrainquery",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:m4",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-plan-cascade",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:stopping-is-a-plan-a-plan-less-state-does-not",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s5-istepplanner",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s6-iterrainquery-signature",
+          "type": "mentions"
+        }
+      ],
+      "status": {
+        "closure_authority": "mechanical",
+        "work": "closed"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0006",
+          "source": "tracker"
+        },
+        {
+          "ref": "aca6203",
+          "source": "git"
+        }
+      ],
+      "id": "workorder:m5-ladder-rungs",
+      "kind": "workorder",
+      "label": "M5: recovery ladder rungs L0–L1",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "gate:m5",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:layered-feasibility-and-the-recovery-ladder",
+          "type": "refs"
+        }
+      ],
+      "status": {
+        "closure_authority": "mechanical",
+        "work": "closed"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0007",
+          "source": "tracker"
+        },
+        {
+          "ref": "8a22146",
+          "source": "git"
+        }
+      ],
+      "id": "workorder:m6-hash-earns-keep",
+      "kind": "workorder",
+      "label": "M6: hash-earns-its-keep (firmware state is load-bearing)",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "gate:m6",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:every-tick-emits-a-state-hash",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:firmware-state-is-hashed",
+          "type": "refs"
+        }
+      ],
+      "status": {
+        "closure_authority": "mechanical",
+        "work": "closed"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0008",
+          "source": "tracker"
+        },
+        {
+          "ref": "4f452dc",
+          "source": "git"
+        }
+      ],
+      "id": "workorder:m7-replay-corpus",
+      "kind": "workorder",
+      "label": "M7: replay corpus + CI regression",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "gate:m7",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:every-tick-emits-a-state-hash",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-core-runs-and-is-tested",
+          "type": "refs"
+        }
+      ],
+      "status": {
+        "closure_authority": "mechanical",
+        "work": "closed"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0040",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:nexus1-controlmatrix",
+      "kind": "workorder",
+      "label": "Nexus 1: the ControlMatrix (realtime C&C hub)",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "constraint:all-conscious-commands-execute-exactly-d",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:every-actuation-flows-through-one-arbitrated",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:scripts-execute-server-side-locally-emulated-in",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-servo-tier-firmware",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-plan-cascade",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "seam:command-bus",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s7-command-bus",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:role-change-and-script-envelope-vs-s7-payload",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:spec-rev2-mech-bus-permissioned-channels",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:recorded-actuator-stream-is-not-just-the-splineset",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:control-matrix-v1-per-channel-resolution",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:spec-the-wire-data-structures-between-components",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:control-matrix-v1-per-channel-resolution",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s7-command-bus",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:role-change-and-script-envelope-vs-s7-payload",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:spec-rev2-mech-bus-permissioned-channels",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:recorded-actuator-stream-is-not-just-the-splineset",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:spec-the-wire-data-structures-between-components",
+          "type": "informs"
+        }
+      ],
+      "status": {
+        "closure_authority": "mechanical",
+        "work": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0041",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:nexus2-mech-builder",
+      "kind": "workorder",
+      "label": "Nexus 2: the Mech Builder (authoring + builder-assist)",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "constraint:a-mech-is-a-data-defined-layered",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:physical-properties-mass-com-inertia-per",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:print-cost-law-implemented-exactly-e",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:nexus3-mech-spec-language",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:nexus3-mech-spec-language",
+          "type": "defers-to"
+        }
+      ],
+      "status": {
+        "closure_authority": "mechanical",
+        "work": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0042",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:nexus3-mech-spec-language",
+      "kind": "workorder",
+      "label": "Nexus 3: the Mech Spec Language (blueprint compiler)",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "constraint:a-mech-is-a-data-defined-layered",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:physical-properties-mass-com-inertia-per",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:sandbox-v1-lua-pinned-interpreter-instruction",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:print-cost-law-implemented-exactly-e",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-nervous-system-is-physical",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:b1-articulated-legs",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:spec-the-wire-data-structures-between-components",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:nexus5-jolt-mujoco-bridge",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:spec-the-wire-data-structures-between-components",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:nexus5-jolt-mujoco-bridge",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:b1-articulated-legs",
+          "type": "defers-to"
+        }
+      ],
+      "status": {
+        "closure_authority": "mechanical",
+        "work": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0043",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:nexus4-dojo-diagnostics",
+      "kind": "workorder",
+      "label": "Nexus 4: Dojo Diagnostics (gait telemetry, first-class)",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-core-runs-and-is-tested",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:scoring-axes-recorded-per-solution-ticks",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:solution-telemetry-score-distributions-block",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:spec-the-wire-data-structures-between-components",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:nexus5-jolt-mujoco-bridge",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:nexus5-jolt-mujoco-bridge",
+          "type": "informs"
+        }
+      ],
+      "status": {
+        "closure_authority": "mechanical",
+        "work": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0044",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:nexus5-jolt-mujoco-bridge",
+      "kind": "workorder",
+      "label": "Nexus 5: the Jolt⇄MuJoCo Bridge (sim2sim)",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "constraint:given-scenario-seed-command-stream-the",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:scripts-execute-server-side-locally-emulated-in",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-servo-tier-firmware",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:spec-the-wire-data-structures-between-components",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:nexus3-mech-spec-language",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:nexus4-dojo-diagnostics",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:nexus3-mech-spec-language",
+          "type": "defers-to"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:nexus4-dojo-diagnostics",
+          "type": "informs"
+        }
+      ],
+      "status": {
+        "closure_authority": "mechanical",
+        "work": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0011",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:phaseb-placeholder",
+      "kind": "workorder",
+      "label": "Phase B: articulated legs · SDF field · melee bodies",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "phase:b",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "seam:ibodystate",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-servo-tier-firmware",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:two-read-schemas-one-truth",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:a4-control-tree-firmware",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s4-ibodystate",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:lipm-vs-rigid-trunk-pitch-drift",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s7-command-bus",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:b1-articulated-legs",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:roadmap-five-nexii-reconciliation",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:nexus1-controlmatrix",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:nexus3-mech-spec-language",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:nexus4-dojo-diagnostics",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:nexus5-jolt-mujoco-bridge",
+          "type": "mentions"
+        }
+      ],
+      "status": {
+        "closure_authority": "mechanical",
+        "work": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0012",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:phasec-placeholder",
+      "kind": "workorder",
+      "label": "Phase C (placeholder)",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "phase:c",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:roadmap-five-nexii-reconciliation",
+          "type": "mentions"
+        }
+      ],
+      "status": {
+        "closure_authority": "mechanical",
+        "work": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0039",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:roadmap-five-nexii-reconciliation",
+      "kind": "workorder",
+      "label": "Roadmap: the Five Nexii mapped onto the tracker (supersedes phase framing)",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "phase:b",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "phase:c",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:a-mech-is-a-data-defined-layered",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:scripts-execute-server-side-locally-emulated-in",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-servo-tier-firmware",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:phaseb-placeholder",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:phasec-placeholder",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:q13-torque-law",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:feas-l2-anchor",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:lipm-vs-rigid-trunk-pitch-drift",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s7-command-bus",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:role-change-and-script-envelope-vs-s7-payload",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:spec-rev2-mech-bus-permissioned-channels",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:recorded-actuator-stream-is-not-just-the-splineset",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:control-matrix-v1-per-channel-resolution",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:b1-articulated-legs",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:spec-the-wire-data-structures-between-components",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:nexus1-controlmatrix",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:nexus2-mech-builder",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:nexus3-mech-spec-language",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:nexus4-dojo-diagnostics",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:nexus5-jolt-mujoco-bridge",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:phaseb-placeholder",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:phasec-placeholder",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:control-matrix-v1-per-channel-resolution",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:spec-the-wire-data-structures-between-components",
+          "type": "informs"
+        }
+      ],
+      "status": {
+        "closure_authority": "mechanical",
+        "work": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0033",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:spec-rev2-mech-bus-permissioned-channels",
+      "kind": "workorder",
+      "label": "Spec: the Rev-2 mech bus — permissioned channel pub/sub (supersedes the narrow S7 framing)",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "seam:command-bus",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-servo-tier-firmware",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-plan-cascade",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:a4",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "phase:b",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:a4-control-tree-firmware",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:phaseb-placeholder",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:amendment-movement-control-architecture",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s7-command-bus",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:role-change-and-script-envelope-vs-s7-payload",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:amendment-framework-rev2-server-authoritative",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:control-matrix-v1-per-channel-resolution",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:a4-control-tree-firmware",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s7-command-bus",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:role-change-and-script-envelope-vs-s7-payload",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:amendment-framework-rev2-server-authoritative",
+          "type": "informs"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "work": "closed"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0038",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:spec-the-wire-data-structures-between-components",
+      "kind": "workorder",
+      "label": "Spec: the wire — data structures crossing component boundaries",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "constraint:given-scenario-seed-command-stream-the",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:every-tick-emits-a-state-hash",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:all-conscious-commands-execute-exactly-d",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:scripts-execute-server-side-locally-emulated-in",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-servo-tier-firmware",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:the-plan-cascade",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "seam:setpoint-spline",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "seam:ibodystate",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "seam:command-bus",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:phaseb-placeholder",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s7-command-bus",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:role-change-and-script-envelope-vs-s7-payload",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:spec-rev2-mech-bus-permissioned-channels",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:recorded-actuator-stream-is-not-just-the-splineset",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:control-matrix-v1-per-channel-resolution",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:roadmap-five-nexii-reconciliation",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:phaseb-placeholder",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s7-command-bus",
+          "type": "informs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:control-matrix-v1-per-channel-resolution",
+          "type": "informs"
+        }
+      ],
+      "status": {
+        "closure_authority": "mechanical",
+        "work": "open"
+      },
+      "supersedes": []
+    }
+  ],
+  "generated_from": {
+    "commit": "4a1cf6490c63ab5c2877a955ec066beaa2a2cbe0",
+    "dirty": true,
+    "extractor_version": "0.4.0",
+    "repo": "metalKnee-physics-2"
+  },
+  "hash": "98b9a16274c0613130b5a72a9e21d93dfc48943e27ecb01e29a898714a6904fd",
+  "schema_version": "0.2"
+}

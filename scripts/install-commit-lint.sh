@@ -31,6 +31,8 @@ EXTRA_ARGS="$*"
 
 [ -d "$REPO/.git" ] || { echo "not a git repo: $REPO" >&2; exit 1; }
 
+HAD_LINT=0
+[ -e "$LINT" ] && HAD_LINT=1
 for tool in "$LINT" "$GENINDEX"; do
   if [ -e "$tool" ]; then
     echo "kept: $tool already exists — the client owns it; not overwriting" >&2
@@ -42,7 +44,7 @@ for tool in "$LINT" "$GENINDEX"; do
   fi
 done
 
-if [ -e "$LINT" ] && [ -n "$EXTRA_ARGS" ]; then
+if [ "$HAD_LINT" -eq 1 ] && [ -n "$EXTRA_ARGS" ]; then
   echo "note: ignoring '$EXTRA_ARGS' — the client's own lint encodes its own law" >&2
   EXTRA_ARGS=""
 fi
@@ -59,7 +61,7 @@ cat > "$HOOK" <<EOF
 set -euo pipefail
 REPO="\$(git rev-parse --show-toplevel)"
 MSG="\$(cat "\$1")"
-FILES="\$(git diff --cached --name-only)"
+FILES="\$(git diff --cached --name-only 2>/dev/null || true)"
 python3 "\$REPO/tools/lint_commit.py" --message "\$MSG" --files \$FILES $EXTRA_ARGS
 EOF
 chmod +x "$HOOK"
