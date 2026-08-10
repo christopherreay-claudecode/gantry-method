@@ -1,0 +1,419 @@
+{
+  "entities": [
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "1",
+          "source": "plan-v1"
+        },
+        {
+          "ref": "C-CORE",
+          "source": "plan-v1"
+        }
+      ],
+      "id": "constraint:deterministic-tick",
+      "kind": "constraint",
+      "label": "Deterministic tick",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "3",
+          "source": "plan-v1"
+        },
+        {
+          "ref": "C-CTRL",
+          "source": "plan-v1"
+        }
+      ],
+      "id": "constraint:one-command-bus",
+      "kind": "constraint",
+      "label": "One command bus",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "2",
+          "source": "plan-v1"
+        },
+        {
+          "ref": "C-CORE",
+          "source": "plan-v1"
+        }
+      ],
+      "id": "constraint:replay-is-truth",
+      "kind": "constraint",
+      "label": "Replay is truth",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "4",
+          "source": "plan-v1"
+        },
+        {
+          "ref": "C-CTRL",
+          "source": "plan-v1"
+        }
+      ],
+      "id": "constraint:setpoints-not-forces",
+      "kind": "constraint",
+      "label": "Setpoints, not forces",
+      "relations": [],
+      "status": {
+        "closure_authority": "human"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0001",
+          "source": "tracker"
+        },
+        {
+          "ref": "a1b2c3d",
+          "source": "git"
+        }
+      ],
+      "id": "gate:m0",
+      "kind": "gate",
+      "label": "M0 — the tick loop stands",
+      "relations": [],
+      "status": {
+        "closure_authority": "mechanical",
+        "gate": "latched"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0002",
+          "source": "tracker"
+        }
+      ],
+      "id": "gate:m1",
+      "kind": "gate",
+      "label": "M1 — the press completes one cycle",
+      "relations": [],
+      "status": {
+        "closure_authority": "mechanical",
+        "gate": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0004",
+          "source": "tracker"
+        }
+      ],
+      "id": "hold:torque-law",
+      "kind": "hold",
+      "label": "Ambiguity: the exact setpoint→force law",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "constraint:setpoints-not-forces",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:m1-press-cycle",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:m1-press-cycle",
+          "type": "informs"
+        },
+        {
+          "evidence": "The real setpoint->force law is pinned when firmware lands at M1; until then the\nhold stays open and the code takes the most conservative reading.",
+          "provenance": "proposed",
+          "target": "workorder:m1-press-cycle",
+          "type": "defers-to"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "decision": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0006",
+          "source": "tracker"
+        }
+      ],
+      "id": "phase:b",
+      "kind": "phase",
+      "label": "Phase B (placeholder)",
+      "relations": [],
+      "status": {
+        "gate": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "S2",
+          "source": "seam-table"
+        },
+        {
+          "ref": "freeze: Phase B",
+          "source": "seam-table"
+        }
+      ],
+      "id": "seam:press-driver",
+      "kind": "seam",
+      "label": "press driver (`AnalyticPress` → `RigidBodyPress`)",
+      "relations": [],
+      "status": {
+        "stability": "provisional"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "S1",
+          "source": "seam-table"
+        },
+        {
+          "ref": "freeze: M1",
+          "source": "seam-table"
+        }
+      ],
+      "id": "seam:setpoint-iface",
+      "kind": "seam",
+      "label": "setpoint interface (`SetpointStub` → `SetpointSpline`)",
+      "relations": [],
+      "status": {
+        "stability": "frozen"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0005",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:amendment-add-recovery",
+      "kind": "workorder",
+      "label": "Amendment: add a jam-recovery constraint",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "constraint:deterministic-tick",
+          "type": "refs"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "work": "closed"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0003",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:freeze-s1-setpoint",
+      "kind": "workorder",
+      "label": "S1 ready to freeze: the setpoint interface",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "seam:setpoint-iface",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:setpoints-not-forces",
+          "type": "refs"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "work": "closed"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0001",
+          "source": "tracker"
+        },
+        {
+          "ref": "a1b2c3d",
+          "source": "git"
+        }
+      ],
+      "id": "workorder:m0-tick-loop",
+      "kind": "workorder",
+      "label": "M0: the tick loop stands",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "constraint:deterministic-tick",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:replay-is-truth",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:m0",
+          "type": "refs"
+        }
+      ],
+      "status": {
+        "closure_authority": "mechanical",
+        "work": "closed"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0002",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:m1-press-cycle",
+      "kind": "workorder",
+      "label": "M1: the press completes one cycle",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "constraint:one-command-bus",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "seam:setpoint-iface",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:m0",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:m1",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:m0-tick-loop",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s1-setpoint",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:torque-law",
+          "type": "mentions"
+        },
+        {
+          "provenance": "parsed",
+          "target": "hold:torque-law",
+          "type": "defers-to"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:freeze-s1-setpoint",
+          "type": "informs"
+        }
+      ],
+      "status": {
+        "closure_authority": "mechanical",
+        "work": "open"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
+          "ref": "#0006",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:phaseb-placeholder",
+      "kind": "workorder",
+      "label": "Phase B (placeholder)",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "phase:b",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "seam:press-driver",
+          "type": "refs"
+        }
+      ],
+      "status": {
+        "closure_authority": "mechanical",
+        "work": "open"
+      },
+      "supersedes": []
+    }
+  ],
+  "generated_from": {
+    "commit": "59c97acd6968aeb8881d1f27382a7001c67477da",
+    "dirty": true,
+    "extractor_version": "0.4.0",
+    "repo": "widget-press (fullMethodology example)"
+  },
+  "hash": "94e19f878f53b7a74efddc951b0ec238f10343cc5c5a465d6632013727bdeb78",
+  "schema_version": "0.2"
+}

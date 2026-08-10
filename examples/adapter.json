@@ -1,0 +1,16 @@
+{
+  "client": "widget-press (fullMethodology example)",
+  "tracker_dir": "issues",
+  "plan": "plan.md",
+  "plan_source": "plan-v1",
+  "kickoff": "seams.md",
+  "seam_slugs": {
+    "S1": "setpoint-iface",
+    "S2": "press-driver"
+  },
+  "q_holds": {
+    "Q1": "torque-law"
+  },
+  "constraint_slug_overrides": {},
+  "parts": []
+}

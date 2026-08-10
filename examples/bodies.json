@@ -1,0 +1,69 @@
+{
+  "bodies": {
+    "gate:m0": {
+      "file": "issues/0001-m0-tick-loop.md",
+      "number": "0001",
+      "text": "# #0001 — M0: the tick loop stands\ntype: milestone        status: closed\nrefs: [1] [2]   opened: seed   closed-by: a1b2c3d\n\n**Component constraint (Tier 2):** a fixed-rate tick advances the press and emits a per-tick\nstate hash; a replay of (program, seed) re-executes bit-identically.\n**Traces to (Tier 1):** the operator's felt \"always the same way\" — repeatability is the feel.\n\nSatisfies constraints 1 and 2. This milestone issue is named with a gate slug (`m0-…`), so\nextract also yields the **gate `m0`**; closing this issue by commit `a1b2c3d` latches it.\n\nEvidence: `test_m0_determinism` green; two runs byte-identical; replay corpus re-hashes.\n",
+      "title": "M0: the tick loop stands",
+      "type": "milestone"
+    },
+    "gate:m1": {
+      "file": "issues/0002-m1-press-cycle.md",
+      "number": "0002",
+      "text": "# #0002 — M1: the press completes one cycle\ntype: milestone        status: open\nrefs: [3] [S1] [m0]   opened: M0   closed-by: <sha>\ndeps: defers-to #0004; informs #0003\n\n**Component constraint (Tier 2):** an operator setpoint, issued through the command bus, drives\nfirmware that closes one press cycle; the executed stream replays bit-identically.\n**Traces to (Tier 1):** a committed stroke lands — the operator commits intent, the machine\ncompletes it identically every time.\n\nSatisfies constraints 3 and 4; builds on gate `m0` (#0001) and the S1 setpoint interface. Named\nwith the gate slug `m1-…`, so extract yields the open **gate `m1`**.\n\nDependencies declared at the moment they were known:\n- `defers-to #0004` — the exact setpoint→force law is an open decision; this milestone takes the\n  conservative reading and defers the real law.\n- `informs #0003` — landing firmware is what makes S1 ready to freeze.\n",
+      "title": "M1: the press completes one cycle",
+      "type": "milestone"
+    },
+    "hold:torque-law": {
+      "file": "issues/0004-ambiguity-torque-law.md",
+      "number": "0004",
+      "text": "# #0004 — Ambiguity: the exact setpoint→force law\ntype: ambiguity        status: open\nrefs: [4]   opened: M1   closed-by: <human sign-off>\ndeps: informs #0002\n\n**The open decision:** constraint 4 says firmware turns setpoints into forces, but the exact law\n`force(setpoint, position, load)` is not yet pinned. Choosing it silently in firmware code would\nbe accidental design.\n\n**Traces to (Tier 1):** the law shapes how a committed stroke *feels* landing — too important to\ndefault without a human decision.\n\nAn `ambiguity` becomes a **hold** (kind `hold`): the code must not resolve it silently; it takes\nthe most conservative reading until a human closes this. Its filename slug (`…-torque-law`) plus\nthe adapter's `q_holds: {\"Q1\": \"torque-law\"}` mean any issue that refs `[Q1]` resolves here.\n`informs #0002` — the outcome shapes M1 without blocking it.\n",
+      "title": "Ambiguity: the exact setpoint→force law",
+      "type": "ambiguity"
+    },
+    "phase:b": {
+      "file": "issues/0006-phaseb-placeholder.md",
+      "number": "0006",
+      "text": "# #0006 — Phase B (placeholder)\ntype: milestone        status: open\nrefs: [PhaseB] [S2]   opened: seed   closed-by: <all Phase-B gates latched>\n\nPlaceholder per the seeding rule: exactly one issue for a far phase, expanded into real milestone\nissues only on phase entry (no speculative decomposition of unbuilt phases).\n\n**Scope:** the real rigid-body press driver behind seam **S2** (`AnalyticPress` → `RigidBodyPress`),\nwhich stays provisional until this lands. Named with a phase slug (`phaseb-…`), so extract yields\nthe open **phase `b`**; refs `[S2]` so it is anchored (not floating) even though `[PhaseB]`\nresolves to itself.\n",
+      "title": "Phase B (placeholder)",
+      "type": "milestone"
+    },
+    "workorder:amendment-add-recovery": {
+      "file": "issues/0005-amendment-add-recovery.md",
+      "number": "0005",
+      "text": "# #0005 — Amendment: add a jam-recovery constraint\ntype: amendment-proposal        status: closed\nrefs: [1]   opened: M1   closed-by: signed off by Owner 2026-02-02\n\n**Proposed change to the plan (Tier 1):** add a constraint that a jammed stroke recovers to a safe\nrest state deterministically, rather than stalling. This is a change to *truth*, so it does not\nedit a constraint in place — it is an `amendment-proposal`, decided by a human, landing as a new\nplan version.\n\n**Traces to (Tier 1):** an honest machine fails predictably; a jam that stalls unrepeatably breaks\nthe \"always the same way\" promise.\n\n`amendment-proposal` is **human-gated**: closed here by Owner sign-off. On landing, the plan gains\nthe new numbered constraint (with an alias/supersedes note if it splits an existing one), and\nissues may then ref it. Refs constraint 1 as the anchor it extends.\n",
+      "title": "Amendment: add a jam-recovery constraint",
+      "type": "amendment-proposal"
+    },
+    "workorder:freeze-s1-setpoint": {
+      "file": "issues/0003-freeze-s1-setpoint.md",
+      "number": "0003",
+      "text": "# #0003 — S1 ready to freeze: the setpoint interface\ntype: freeze-request        status: closed\nrefs: [S1] [4]   opened: M1   closed-by: signed off by Owner 2026-02-01\n\n**Component constraint (Tier 2):** the operator→firmware boundary (seam S1) is stable enough that\nchanges require amendment, not ad-hoc edits.\n**Traces to (Tier 1):** a learnable machine needs a stable command surface — the stroke means the\nsame thing tomorrow as today.\n\n`freeze-request` is a **human-gated** type: it closes only by a person's sign-off (never a bare\nsha). This one is closed by \"signed off by Owner …\", so extract marks seam **S1 frozen**. Had it\nbeen closed by a sha, extract would override it back to OPEN and warn (invariant 2) — a design\nsurface cannot be frozen by accident.\n",
+      "title": "S1 ready to freeze: the setpoint interface",
+      "type": "freeze-request"
+    },
+    "workorder:m0-tick-loop": {
+      "file": "issues/0001-m0-tick-loop.md",
+      "number": "0001",
+      "text": "# #0001 — M0: the tick loop stands\ntype: milestone        status: closed\nrefs: [1] [2]   opened: seed   closed-by: a1b2c3d\n\n**Component constraint (Tier 2):** a fixed-rate tick advances the press and emits a per-tick\nstate hash; a replay of (program, seed) re-executes bit-identically.\n**Traces to (Tier 1):** the operator's felt \"always the same way\" — repeatability is the feel.\n\nSatisfies constraints 1 and 2. This milestone issue is named with a gate slug (`m0-…`), so\nextract also yields the **gate `m0`**; closing this issue by commit `a1b2c3d` latches it.\n\nEvidence: `test_m0_determinism` green; two runs byte-identical; replay corpus re-hashes.\n",
+      "title": "M0: the tick loop stands",
+      "type": "milestone"
+    },
+    "workorder:m1-press-cycle": {
+      "file": "issues/0002-m1-press-cycle.md",
+      "number": "0002",
+      "text": "# #0002 — M1: the press completes one cycle\ntype: milestone        status: open\nrefs: [3] [S1] [m0]   opened: M0   closed-by: <sha>\ndeps: defers-to #0004; informs #0003\n\n**Component constraint (Tier 2):** an operator setpoint, issued through the command bus, drives\nfirmware that closes one press cycle; the executed stream replays bit-identically.\n**Traces to (Tier 1):** a committed stroke lands — the operator commits intent, the machine\ncompletes it identically every time.\n\nSatisfies constraints 3 and 4; builds on gate `m0` (#0001) and the S1 setpoint interface. Named\nwith the gate slug `m1-…`, so extract yields the open **gate `m1`**.\n\nDependencies declared at the moment they were known:\n- `defers-to #0004` — the exact setpoint→force law is an open decision; this milestone takes the\n  conservative reading and defers the real law.\n- `informs #0003` — landing firmware is what makes S1 ready to freeze.\n",
+      "title": "M1: the press completes one cycle",
+      "type": "milestone"
+    },
+    "workorder:phaseb-placeholder": {
+      "file": "issues/0006-phaseb-placeholder.md",
+      "number": "0006",
+      "text": "# #0006 — Phase B (placeholder)\ntype: milestone        status: open\nrefs: [PhaseB] [S2]   opened: seed   closed-by: <all Phase-B gates latched>\n\nPlaceholder per the seeding rule: exactly one issue for a far phase, expanded into real milestone\nissues only on phase entry (no speculative decomposition of unbuilt phases).\n\n**Scope:** the real rigid-body press driver behind seam **S2** (`AnalyticPress` → `RigidBodyPress`),\nwhich stays provisional until this lands. Named with a phase slug (`phaseb-…`), so extract yields\nthe open **phase `b`**; refs `[S2]` so it is anchored (not floating) even though `[PhaseB]`\nresolves to itself.\n",
+      "title": "Phase B (placeholder)",
+      "type": "milestone"
+    }
+  },
+  "schema_version": "0.2",
+  "state_hash": "94e19f878f53b7a74efddc951b0ec238f10343cc5c5a465d6632013727bdeb78"
+}

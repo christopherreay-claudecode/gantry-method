@@ -1,0 +1,9 @@
+[
+  {
+    "from": "hold:torque-law",
+    "type": "defers-to",
+    "target": "workorder:m1-press-cycle",
+    "provenance": "proposed",
+    "evidence": "The real setpoint->force law is pinned when firmware lands at M1; until then the\nhold stays open and the code takes the most conservative reading."
+  }
+]
