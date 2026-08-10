@@ -263,7 +263,9 @@ stronger than any later machine proposal.
 
 `extract` is a **deterministic, stdlib-only, model-free, network-free** parser. Same client
 commit + same adapter ⟹ byte-identical outputs. It reads the plan, the seam table, and the
-tracker, and writes three artifacts:
+tracker, and writes three artifacts. In an adopted project the extractor is **client
+content**: `adopt.sh` copies it to `tools/gantry_extract.py`, the developer LLM runs it by
+hand whenever the map is needed, and the pre-commit shim calls the same copy (SPEC §7).
 
 ```
 CLIENT REPO (truth)                       extract (deterministic)         ARTIFACTS
@@ -344,39 +346,51 @@ seam table is any markdown table with rows `| S# | name | impls (now → later) 
 
 ---
 
-## §7 The two hooks — opposite ownership on purpose
+## §7 The hooks — client law in, wiring out
 
-The method uses two git hooks whose ownership is **deliberately opposite**. Getting this right is
-what lets a clean clone of the client build and reason about itself with zero knowledge that the
-observer exists.
+The method uses two git hooks whose ownership is **deliberately opposite** — and
+deliberately framed so that the *adopted project* is self-sufficient. After
+`adopt.sh`, everything the client needs to build its own map and enforce its own
+law is **committed inside the client**; only the `.git/hooks` shims are unversioned
+(git never versions hooks). A clean clone of the client builds, lints, and reasons
+about itself with zero knowledge that a gantry repo exists.
 
 ```
                     GRAPH REFRESH                         COMMIT LINT
 what it does        re-extract + stage GRAPH.md           reject a commit that breaks tracker law
-whose law           the OBSERVER's convenience            the CLIENT's own law
-lives where         entirely OUTSIDE the client repo      tools/lint_commit.py — INSIDE, committed
-                    (.git/hooks + the gantry repo)        (.git/hooks shim is unversioned)
-survives clean clone?   no — and that's the point         yes — the lint is client content
+                    (the developer LLM's session map)
+whose law           the CLIENT's own development flow     the CLIENT's own law
+lives where         tools/gantry_extract.py — INSIDE,     tools/lint_commit.py — INSIDE, committed
+                    committed (.git/hooks shim unversioned)
+survives clean clone?   yes — the builder is committed    yes — the lint is client content
 may block a commit?     NEVER (any failure → exit 0)      YES (that is its whole job)
-installer           scripts/install-graph-hook.sh         scripts/install-commit-lint.sh
+installer           scripts/adopt.sh → install-graph-hook.sh   scripts/adopt.sh → install-commit-lint.sh
 ```
 
-**Graph refresh** (`graph-refresh.sh`, wired by `install-graph-hook.sh`): on each commit, *if the
-staged changes touch the extract inputs*, it re-runs extract and `git add GRAPH.md`, so the
-refreshed digest rides in the **same commit** that changed the issues. It is a hard rule that it
-**never blocks**: missing python3, missing observer, or a failed extract prints a note and
-`exit 0`. *Stale-but-committed beats fresh-but-mandatory.* Because HEAD is by definition behind the
-tree at pre-commit time, hook-generated digests read `@ <sha>+dirty` — `<sha>` is the parent, and
-the `+dirty` is the very commit carrying the digest.
+**Graph refresh** (shim wired by `install-graph-hook.sh`): the pre-commit shim is
+self-contained — it calls the client's **own** `tools/gantry_extract.py`, derives
+the adapter/out paths from the repo at runtime, and never references the gantry
+repo. On each commit, *if the staged changes touch the extract inputs* (tracker
+dir, plan, kickoff), it re-runs extract and `git add GRAPH.md`, so the refreshed
+digest rides in the **same commit** that changed the issues. It is a hard rule that
+it **never blocks**: missing python3, missing extractor, or a failed extract prints
+a note and `exit 0`. *Stale-but-committed beats fresh-but-mandatory.* Because HEAD
+is by definition behind the tree at pre-commit time, hook-generated digests read
+`@ <sha>+dirty` — `<sha>` is the parent, and the `+dirty` is the very commit
+carrying the digest. The developer LLM may also run the builder by hand any time —
+that is the point of it being client content: the map is a tool in the project,
+not a service outside it.
 
-**Commit lint** (`lint_commit.py`, wired by `install-commit-lint.sh`): every commit references ≥1
-issue (`#NNNN`); a `closes`/`fixes`/`resolves #N` never targets a human-gated type; no core-code
-path (declared via `--core-prefix`) is touched without an issue ref. The lint is **copied into the
-client's `tools/` and committed there** — commit rules are the client's own law and must survive a
-clean clone. If the client already owns a lint, the installer keeps it and only wires the shim.
+**Commit lint** (`lint_commit.py`, wired by `install-commit-lint.sh`): every commit
+references ≥1 issue (`#NNNN`); a `closes`/`fixes`/`resolves #N` never targets a
+human-gated type; no core-code path (declared via `--core-prefix`) is touched
+without an issue ref. The lint is **copied into the client's `tools/` and committed
+there** — commit rules are the client's own law and must survive a clean clone. If
+the client already owns a lint, the installer keeps it and only wires the shim.
 
-Read the maxim off the table: **graph refresh is the observer's hook and stays out of the repo;
-the commit lint is the client's law and goes into it.**
+Read the maxim off the table: **the builder and the lint are the client's own tools
+and live in its repo, committed; the `.git/hooks` shims are unversioned wiring on
+each machine.**
 
 ---
 
@@ -416,12 +430,12 @@ Everything named above ships in `scripts/`, each runnable and self-documented:
 
 | Script | Role | Typical invocation |
 |---|---|---|
-| `gantry_extract.py` | truth → `state.json` + `GRAPH.md` + `bodies.json` (§6) | `python3 gantry_extract.py --client A.json --root R --out S.json [--deps D.json]` |
-| `gen_index.py` | tracker → `issues/INDEX.md` (derived ledger) | `python3 gen_index.py` · `--check` in CI |
+| `adopt.sh` | one-command adoption: copies the three tools into a client, writes the ritual, wires both hooks, mints GRAPH.md (§7) | `sh adopt.sh <repo> [--core-prefix P]` |
+| `gantry_extract.py` | truth → `state.json` + `GRAPH.md` + `bodies.json` (§6); copied into adopting clients as `tools/gantry_extract.py` | `python3 gantry_extract.py --client A.json --root R --out S.json [--deps D.json]` |
+| `gen_index.py` | tracker → `issues/INDEX.md` (derived ledger) | `python3 gen_index.py [--root R]` · `--check` in CI |
 | `lint_commit.py` | enforce commit/tracker law (§7) | `lint_commit.py --message M --files … [--core-prefix P]` |
-| `graph-refresh.sh` | pre-commit body: refresh+stage `GRAPH.md`, never blocks | (called by the installed shim) |
-| `install-graph-hook.sh` | wire graph-refresh into a client (observer-owned) | `install-graph-hook.sh <repo> <adapter> <out> [deps]` |
-| `install-commit-lint.sh` | copy the lint into a client + wire the shim (client-owned) | `install-commit-lint.sh <repo> [--core-prefix src/]` |
+| `install-graph-hook.sh` | write the self-contained pre-commit shim (calls the client's own extractor; never blocks) | `install-graph-hook.sh <repo> [--deps D]` |
+| `install-commit-lint.sh` | copy `lint_commit.py` + `gen_index.py` into a client + wire the shim (client-owned) | `install-commit-lint.sh <repo> [--core-prefix src/]` |
 
 Determinism holds across all of them: no wall-clock, no randomness, no network in extract, index,
 or lint. The graph obeys the same religion its first client imposes on its own code — which is the

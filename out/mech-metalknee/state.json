@@ -1592,6 +1592,12 @@
           "provenance": "parsed",
           "target": "gate:a3",
           "type": "defers-to"
+        },
+        {
+          "evidence": "confirm the\nsim-core float policy at the Jolt substitution (A3), where charter §1's `float`\nstorage becomes live and the two must be reconciled explicitly.",
+          "provenance": "proposed",
+          "target": "workorder:a3-jolt-substitution",
+          "type": "blocks"
         }
       ],
       "status": {
@@ -1714,6 +1720,12 @@
         {
           "provenance": "parsed",
           "target": "phase:b",
+          "type": "defers-to"
+        },
+        {
+          "evidence": "Natural decision point: **M6**, when L2 plan repair is built\nand consumes feas_L2's semantics (repair must insert recovery steps within exactly\nthis reachable set).",
+          "provenance": "proposed",
+          "target": "workorder:m6-hash-earns-keep",
           "type": "defers-to"
         }
       ],
@@ -1838,6 +1850,12 @@
           "provenance": "parsed",
           "target": "workorder:freeze-s4-ibodystate",
           "type": "informs"
+        },
+        {
+          "evidence": "The natural decision point is the **S4 freeze at A3** (the Jolt body makes the\ngravity source concrete).",
+          "provenance": "proposed",
+          "target": "workorder:a3-jolt-substitution",
+          "type": "defers-to"
         }
       ],
       "status": {
@@ -2073,6 +2091,12 @@
         {
           "provenance": "parsed",
           "target": "workorder:freeze-s3-setpointspline",
+          "type": "informs"
+        },
+        {
+          "evidence": "This choice is entirely on the **L1 emit side** (M3): L1 must write `curve[s]` = the\ncubic sampled at substep s.",
+          "provenance": "proposed",
+          "target": "workorder:m3-l1-wbc-remain",
           "type": "informs"
         }
       ],
@@ -3346,6 +3370,12 @@
           "provenance": "parsed",
           "target": "gate:a3",
           "type": "defers-to"
+        },
+        {
+          "evidence": "its scheduled **freeze event is A3** (the Jolt\nsubstitution), NOT M3",
+          "provenance": "proposed",
+          "target": "workorder:a3-jolt-substitution",
+          "type": "defers-to"
         }
       ],
       "status": {
@@ -3443,6 +3473,12 @@
         {
           "provenance": "parsed",
           "target": "phase:b",
+          "type": "defers-to"
+        },
+        {
+          "evidence": "the semantics\n(return values) are expected to be extended in Phase B behind this same signature.",
+          "provenance": "proposed",
+          "target": "workorder:phaseb-placeholder",
           "type": "defers-to"
         }
       ],
@@ -3609,6 +3645,12 @@
           "provenance": "parsed",
           "target": "constraint:given-scenario-seed-command-stream-the",
           "type": "refs"
+        },
+        {
+          "evidence": "that gate is M3\n  (per seam table), after L1 exercises the full read surface.",
+          "provenance": "proposed",
+          "target": "workorder:m3-l1-wbc-remain",
+          "type": "defers-to"
         }
       ],
       "status": {
@@ -3667,6 +3709,12 @@
           "provenance": "parsed",
           "target": "hold:spline-curve-encoding",
           "type": "mentions"
+        },
+        {
+          "evidence": "full ring logic deferred\n  to L2 (M3/M4).",
+          "provenance": "proposed",
+          "target": "workorder:m3-l1-wbc-remain",
+          "type": "defers-to"
         }
       ],
       "status": {
@@ -3725,6 +3773,12 @@
           "provenance": "parsed",
           "target": "hold:omega-gravity-source",
           "type": "mentions"
+        },
+        {
+          "evidence": "the request\n  source lands at M5. Not over-built.",
+          "provenance": "proposed",
+          "target": "workorder:m5-ladder-rungs",
+          "type": "defers-to"
         }
       ],
       "status": {
@@ -3783,6 +3837,12 @@
           "provenance": "parsed",
           "target": "workorder:freeze-s6-iterrainquery-signature",
           "type": "mentions"
+        },
+        {
+          "evidence": "Escalation consumption is M5 — not built.",
+          "provenance": "proposed",
+          "target": "workorder:m5-ladder-rungs",
+          "type": "defers-to"
         }
       ],
       "status": {
@@ -3816,6 +3876,12 @@
           "provenance": "parsed",
           "target": "constraint:layered-feasibility-and-the-recovery-ladder",
           "type": "refs"
+        },
+        {
+          "evidence": "RECORD `EscalationReason{layer=2}` (L2 plan repair is NOT built — that is M6).",
+          "provenance": "proposed",
+          "target": "workorder:m6-hash-earns-keep",
+          "type": "defers-to"
         }
       ],
       "status": {
@@ -3892,6 +3958,24 @@
           "provenance": "parsed",
           "target": "constraint:the-core-runs-and-is-tested",
           "type": "refs"
+        },
+        {
+          "evidence": "Jolt substitution\n(A3, S4 real impl)",
+          "provenance": "proposed",
+          "target": "workorder:a3-jolt-substitution",
+          "type": "defers-to"
+        },
+        {
+          "evidence": "DEFERRED to later\nphases (NOT this slice): S7 command-bus/300 ms delay (A4)",
+          "provenance": "proposed",
+          "target": "workorder:a4-control-tree-firmware",
+          "type": "defers-to"
+        },
+        {
+          "evidence": "terrain/Lua/UE (Phase B+).",
+          "provenance": "proposed",
+          "target": "workorder:phaseb-placeholder",
+          "type": "defers-to"
         }
       ],
       "status": {
@@ -4316,6 +4400,12 @@
           "provenance": "parsed",
           "target": "workorder:nexus5-jolt-mujoco-bridge",
           "type": "mentions"
+        },
+        {
+          "evidence": "**Do not build until Phase A exit test passes in CI.**",
+          "provenance": "proposed",
+          "target": "workorder:a4-control-tree-firmware",
+          "type": "defers-to"
         }
       ],
       "status": {
@@ -4345,6 +4435,12 @@
           "provenance": "parsed",
           "target": "workorder:roadmap-five-nexii-reconciliation",
           "type": "mentions"
+        },
+        {
+          "evidence": "**Gated on the tutorial upload and on A+B completion.**",
+          "provenance": "proposed",
+          "target": "phase:b",
+          "type": "defers-to"
         }
       ],
       "status": {
@@ -4717,11 +4813,11 @@
     }
   ],
   "generated_from": {
-    "commit": "4a1cf6490c63ab5c2877a955ec066beaa2a2cbe0",
-    "dirty": true,
+    "commit": "ec86682406bcdf4259877ce2f3f6820d532e4c87",
+    "dirty": false,
     "extractor_version": "0.4.0",
     "repo": "metalKnee-physics-2"
   },
-  "hash": "98b9a16274c0613130b5a72a9e21d93dfc48943e27ecb01e29a898714a6904fd",
+  "hash": "7d03ec15a9efed49f4c5dac0f36d4090dc8d68cb768a03ce266700a89cd39cb6",
   "schema_version": "0.2"
 }

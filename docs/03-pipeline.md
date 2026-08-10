@@ -78,22 +78,25 @@ the same IDs, and are the accessibility fallback: everything the scene claims mu
 readable flat — every entity appears on at least one sheet. A gantry deployment with
 the 3D viewer deleted is still a complete, if less legible, statement of the project.
 
-## Hook mode (the observer automates itself, never the client)
+## Hook mode (the client automates itself)
 
-`scripts/install-graph-hook.sh <client-repo> <adapter> <out-dir> [deps.json]` writes
-a small shim into the client's `.git/hooks/pre-commit`. Git hooks are never versioned
-or cloned, which is exactly the point: the client's *committed* content keeps zero
-gantry dependency — a clean clone builds, lints, and reasons about itself with no
-knowledge that gantry exists. The hook is a property of one machine, installed by
-the human who owns both repos, not a property of the client project.
+Adoption (`scripts/adopt.sh`) copies the extractor into the client as
+`tools/gantry_extract.py` — committed, client content — and
+`scripts/install-graph-hook.sh` writes a small shim into the client's
+`.git/hooks/pre-commit`. Git hooks are never versioned or cloned, which is exactly
+the point: the client's *committed* content is fully self-sufficient — a clean
+clone builds, lints, and regenerates its own `GRAPH.md` with no gantry repo
+present. The shim is a property of one machine, installed by the human who owns
+the repo, not a property of the project.
 
 What the shim does on each commit:
 
 - If the staged changes don't touch the extract inputs (tracker dir, plan,
   kickoff), it does nothing.
-- Otherwise it re-runs extract and stages the refreshed `GRAPH.md`, so the digest
-  rides in the **same commit** that changed the issues.
-- It **never blocks a commit**: missing python3, missing gantry, or a failed
+- Otherwise it re-runs extract (the client's own `tools/gantry_extract.py`) and
+  stages the refreshed `GRAPH.md`, so the digest rides in the **same commit** that
+  changed the issues.
+- It **never blocks a commit**: missing python3, missing extractor, or a failed
   extract prints a note and exits 0. Stale-but-committed beats fresh-but-mandatory.
 
 The commit stamp is made honest by the dirty marker: at pre-commit time HEAD is
@@ -104,16 +107,16 @@ carries the digest. Extract records the same fact in
 client tree does not count as dirty). A digest with no `+dirty` marker was
 generated from exactly the named commit.
 
-There is a second, separate hook with the opposite ownership: the commit lint
-(spec §7 — every commit refs an issue; `closes` never targets a human-gated
-type). `scripts/install-commit-lint.sh <client-repo> [--tracker-dir D]
-[--core-prefix P]...` copies `scripts/lint_commit.py` into the client's `tools/`
-— where the CLIENT commits and owns it, because commit rules are the client's
-own law and must survive a clean clone with no gantry — and wires the
-unversioned `.git/hooks/commit-msg` shim. If the client already has a lint, the
-installer keeps it, drops any requested flags (the client's lint encodes its own
-law), and only wires the shim. In short: graph refresh is the observer's hook and
-stays out of the repo; the commit lint is the client's law and goes into it.
+There is a second, separate hook: the commit lint (spec §7 — every commit refs an
+issue; `closes` never targets a human-gated type). `scripts/install-commit-lint.sh
+<client-repo> [--tracker-dir D] [--core-prefix P]...` copies `scripts/lint_commit.py`
+(and `gen_index.py`) into the client's `tools/` — where the CLIENT commits and
+owns them, because commit rules are the client's own law and must survive a clean
+clone — and wires the unversioned `.git/hooks/commit-msg` shim. If the client
+already has a lint, the installer keeps it, drops any requested flags (the
+client's lint encodes its own law), and only wires the shim. In short: the
+builder and the lint are the client's own tools, committed in its repo; the
+`.git/hooks` shims are unversioned wiring on each machine.
 
 ## The bodies sidecar (why issue text is not in state.json)
 

@@ -78,15 +78,18 @@ This repo is a **toolbox**, not a library you import. Two of the six scripts are
 To adopt:
 
 1. **Run the one-command adoption**: `sh scripts/adopt.sh <repo> --core-prefix src/`.
-   It copies `gen_index.py` + `lint_commit.py` into your `tools/`, wires the
+   It copies the tools into your `tools/` — **including the GRAPH.md builder**
+   (`gantry_extract.py`) and a `tools/README.md` describing the ritual — wires the
    commit-msg lint shim, writes a stub adapter to `.gantry/adapter.json`, and wires
-   the pre-commit graph-refresh hook (which keeps `GRAPH.md` fresh in the same commit
-   that changes the tracker — and never blocks a commit).
+   the pre-commit graph-refresh shim (self-contained: calls *your* copy of the
+   builder; keeps `GRAPH.md` fresh in the same commit that changes the tracker;
+   never blocks).
 2. **Fill in the adapter** (`.gantry/adapter.json` — paths + slug maps, SPEC §6),
    then re-run adopt.sh to mint your `GRAPH.md`. Commit `tools/`, `GRAPH.md`, and the
-   adapter — they are client content now.
-3. **Wire a CI drift check**: regenerate `GRAPH.md` in CI and fail on any diff
-   (determinism contract, SPEC §6).
+   adapter — from here the project **carries its own GRAPH.md builder**: a clean
+   clone regenerates its own map, and the developer LLM uses it as an in-repo tool.
+3. **Wire a CI drift check**: regenerate `GRAPH.md` + `INDEX.md` in CI and fail on
+   any diff (determinism contract, SPEC §6).
 4. **The ritual from here**: every session starts by reading `GRAPH.md` — not the
    issue files; declare dependencies on the issue's `deps:` line the moment you learn
    them, and land reviewed proposals in `deps.json` (SPEC §5); the lint enforces the

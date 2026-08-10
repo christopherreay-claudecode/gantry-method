@@ -216,6 +216,10 @@
         {
           "ref": "#0001",
           "source": "tracker"
+        },
+        {
+          "ref": "bd050ac",
+          "source": "git"
         }
       ],
       "id": "gate:m0",
@@ -224,7 +228,7 @@
       "relations": [],
       "status": {
         "closure_authority": "mechanical",
-        "gate": "open"
+        "gate": "latched"
       },
       "supersedes": []
     },
@@ -234,6 +238,10 @@
         {
           "ref": "#0002",
           "source": "tracker"
+        },
+        {
+          "ref": "bd050ac",
+          "source": "git"
         }
       ],
       "id": "gate:m1",
@@ -242,7 +250,7 @@
       "relations": [],
       "status": {
         "closure_authority": "mechanical",
-        "gate": "open"
+        "gate": "latched"
       },
       "supersedes": []
     },
@@ -252,6 +260,10 @@
         {
           "ref": "#0003",
           "source": "tracker"
+        },
+        {
+          "ref": "bd050ac",
+          "source": "git"
         }
       ],
       "id": "gate:m2",
@@ -260,7 +272,7 @@
       "relations": [],
       "status": {
         "closure_authority": "mechanical",
-        "gate": "open"
+        "gate": "latched"
       },
       "supersedes": []
     },
@@ -376,7 +388,7 @@
       "label": "island renderer (`SveltePages` → `OCreateIslands`)",
       "relations": [],
       "status": {
-        "stability": "provisional"
+        "stability": "frozen"
       },
       "supersedes": []
     },
@@ -426,8 +438,51 @@
       "aliases": [],
       "bindings": [
         {
+          "ref": "#0007",
+          "source": "tracker"
+        }
+      ],
+      "id": "workorder:freeze-s3-island-renderer",
+      "kind": "workorder",
+      "label": "S3 ready to freeze: the island mount contract",
+      "relations": [
+        {
+          "provenance": "parsed",
+          "target": "seam:island-renderer",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "constraint:swappable-frontend",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "gate:m2",
+          "type": "refs"
+        },
+        {
+          "provenance": "parsed",
+          "target": "workorder:m2-shell-pumps",
+          "type": "mentions"
+        }
+      ],
+      "status": {
+        "closure_authority": "human",
+        "work": "closed"
+      },
+      "supersedes": []
+    },
+    {
+      "aliases": [],
+      "bindings": [
+        {
           "ref": "#0001",
           "source": "tracker"
+        },
+        {
+          "ref": "bd050ac",
+          "source": "git"
         }
       ],
       "id": "workorder:m0-sealed-schema",
@@ -462,7 +517,7 @@
       ],
       "status": {
         "closure_authority": "mechanical",
-        "work": "open"
+        "work": "closed"
       },
       "supersedes": []
     },
@@ -472,6 +527,10 @@
         {
           "ref": "#0002",
           "source": "tracker"
+        },
+        {
+          "ref": "bd050ac",
+          "source": "git"
         }
       ],
       "id": "workorder:m1-four-gates",
@@ -526,7 +585,7 @@
       ],
       "status": {
         "closure_authority": "mechanical",
-        "work": "open"
+        "work": "closed"
       },
       "supersedes": []
     },
@@ -536,6 +595,10 @@
         {
           "ref": "#0003",
           "source": "tracker"
+        },
+        {
+          "ref": "bd050ac",
+          "source": "git"
         }
       ],
       "id": "workorder:m2-shell-pumps",
@@ -565,7 +628,7 @@
       ],
       "status": {
         "closure_authority": "mechanical",
-        "work": "open"
+        "work": "closed"
       },
       "supersedes": []
     },
@@ -605,11 +668,11 @@
     }
   ],
   "generated_from": {
-    "commit": "e346ef034dee97c244138714f5f6a264ec3ba74a",
+    "commit": "bd050ac7b06f95ac3f5f2847146036495f603d31",
     "dirty": true,
     "extractor_version": "0.4.0",
     "repo": "supabase-sveltekit-base"
   },
-  "hash": "ca82ffad676590be6db2cdbac0fe372265e6abd823a71290c6d20a5ae3fa6a7c",
+  "hash": "ada9a444638749883371a22690cf0555c1f8d598cb570c035ca11af513b6cb85",
   "schema_version": "0.2"
 }

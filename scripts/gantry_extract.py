@@ -3,6 +3,13 @@
 
 stdlib only. No wall-clock, no randomness, no network. Same client commit +
 same adapter ==> byte-identical output. See docs/03-pipeline.md.
+
+Two homes (scripts/adopt.sh decides):
+  - observer side: run from the gantry repo over any client checkout
+      python3 scripts/gantry_extract.py --client ADAPTER --root CLIENT ...
+  - adopted client: copied into <client>/tools/gantry_extract.py and COMMITTED
+    there, so the client carries its own GRAPH.md builder. Computes paths from
+    arguments only — the same file works from either home.
 """
 
 import argparse

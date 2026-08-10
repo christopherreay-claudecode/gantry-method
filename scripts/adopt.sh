@@ -3,18 +3,23 @@
 #
 # Usage: adopt.sh <client-repo> [--core-prefix P]... [--deps deps.json]
 #
-# Does the whole operational layer in one run:
-#   1. copies the client-side tools (gen_index.py, lint_commit.py) into
-#      <client>/tools/ and wires the commit-msg lint shim;
-#   2. writes a stub adapter (<client>/.gantry/adapter.json) if none exists,
+# Does the whole operational layer in one run. Everything it creates becomes
+# CLIENT CONTENT — committed by the client, surviving a clean clone with no
+# gantry repo present:
+#   1. copies the client-side tools into <client>/tools/: gantry_extract.py
+#      (the GRAPH.md builder), gen_index.py, lint_commit.py, plus a
+#      tools/README.md describing the ritual;
+#   2. wires the commit-msg lint shim (calls the client's own tools/ copy);
+#   3. writes a stub adapter (<client>/.gantry/adapter.json) if none exists,
 #      and says LOUDLY what to fill in;
-#   3. wires the pre-commit graph-refresh hook (observer-side; never blocks);
-#   4. runs extract once to mint <client>/GRAPH.md (after the adapter is real).
+#   4. wires the pre-commit graph-refresh shim (self-contained: calls the
+#      client's own extractor; never blocks);
+#   5. runs the client's own extractor once to mint <client>/GRAPH.md.
 #
 # Idempotent: re-run after filling the adapter to mint GRAPH.md. Installers
 # refuse to overwrite existing client-owned content and non-gantry hooks.
-# The hooks are per-machine wiring; only tools/ + GRAPH.md + the adapter are
-# committed by the client.
+# Only the .git/hooks shims are unversioned wiring — everything else the
+# client commits.
 
 set -e
 
@@ -36,11 +41,28 @@ while [ -n "$1" ]; do
 done
 
 ADAPTER="$REPO/.gantry/adapter.json"
-OUT="$REPO/.gantry/out"
 ADAPTER_READY=1
 
 echo "== gantry adopt: $REPO"
-echo "   1. client-side tools + commit-msg lint"
+echo "   1. client tools -> $REPO/tools/  (commit these: they are client content)"
+mkdir -p "$REPO/tools"
+for tool in gantry_extract.py gen_index.py lint_commit.py; do
+  if [ -e "$REPO/tools/$tool" ]; then
+    echo "   kept: tools/$tool (client already owns it)"
+  else
+    cp "$HERE/$tool" "$REPO/tools/$tool"
+    chmod +x "$REPO/tools/$tool"
+    echo "   copied: tools/$tool"
+  fi
+done
+if [ -e "$REPO/tools/README.md" ]; then
+  echo "   kept: tools/README.md"
+else
+  cp "$HERE/tools-README.template.md" "$REPO/tools/README.md"
+  echo "   copied: tools/README.md (the ritual — read it first)"
+fi
+
+echo "   2. commit-msg lint shim"
 sh "$HERE/install-commit-lint.sh" "$REPO" $CORE_PREFIXES
 
 if [ -f "$ADAPTER" ]; then
@@ -59,20 +81,20 @@ else
   echo ""
 fi
 
-echo "   3. pre-commit graph-refresh hook (observer-side, never blocks)"
+echo "   3. pre-commit graph-refresh shim (self-contained, never blocks)"
 if [ "$ADAPTER_READY" -eq 1 ]; then
-  sh "$HERE/install-graph-hook.sh" "$REPO" "$ADAPTER" "$OUT" ${DEPS:+"$DEPS"}
+  sh "$HERE/install-graph-hook.sh" "$REPO" ${DEPS:+--deps "$DEPS"}
 else
   echo "   skipped (adapter is a stub — re-run adopt.sh after filling it in)"
 fi
 
-echo "   4. mint GRAPH.md"
+echo "   4. mint GRAPH.md (with the client's own extractor)"
 if [ "$ADAPTER_READY" -eq 1 ]; then
   if ! git -C "$REPO" rev-parse HEAD >/dev/null 2>&1; then
     echo "   skipped — no commits yet in $REPO; extract stamps the commit it"
     echo "   reads, so: make your first commit, then re-run adopt.sh to mint GRAPH.md."
-  elif python3 "$HERE/gantry_extract.py" --client "$ADAPTER" --root "$REPO" \
-       --out "$OUT/state.json" --digest "$REPO/GRAPH.md" ${DEPS:+--deps "$DEPS"}; then
+  elif python3 "$REPO/tools/gantry_extract.py" --client "$ADAPTER" --root "$REPO" \
+       --out "$REPO/.gantry/out/state.json" --digest "$REPO/GRAPH.md" ${DEPS:+--deps "$DEPS"}; then
     echo "   GRAPH.md minted at $REPO/GRAPH.md — commit it (and tools/, and the adapter)."
   else
     echo "   extract failed — fix the adapter and re-run adopt.sh" >&2
@@ -82,10 +104,10 @@ else
 fi
 
 echo ""
-echo "   From here, the ritual (SPEC.md):"
+echo "   From here, the ritual (tools/README.md in the client):"
 echo "     - every session starts by reading GRAPH.md — not the issue files"
 echo "     - declare dependencies on the issue's 'deps:' line the moment you"
 echo "       learn them; reviewed proposals land in deps.json (--deps)"
 echo "     - the commit lint enforces: every commit refs an issue; 'closes'"
 echo "       never targets a human-gated type"
-echo "     - add a CI step that regenerates GRAPH.md and fails on drift"
+echo "     - add a CI step that regenerates GRAPH.md + INDEX.md and fails on drift"
