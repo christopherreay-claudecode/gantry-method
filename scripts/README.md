@@ -6,6 +6,7 @@ only, no network, no model); the three shell scripts wire git hooks.
 | Script | What it is | Home (SPEC §7) |
 |---|---|---|
 | `adopt.sh` | **one-command adoption**: copies the client tools (incl. the GRAPH.md builder), writes the ritual (`tools/README.md`), wires both hooks, mints GRAPH.md (after the adapter is filled). Idempotent. | both |
+| `fork-app.sh` | **fork a new app repo out of a gantry-adopted base**: manifest copy (truth + machinery), identity edits, inherited issues closed as a reference set, fresh git init + birth commit (lint-exempt: no issue exists yet), adopt + verify + mint. SPEC §8. | observer — run from the gantry repo |
 | `gantry_extract.py` | truth (plan + seams + tracker + git) → `state.json` + `GRAPH.md` + `bodies.json`. Deterministic. | **both**: runnable from the gantry repo (observer), and copied into the client as `tools/gantry_extract.py` — committed, client-owned |
 | `gen_index.py` | tracker → `issues/INDEX.md` (the derived ledger). `--check` fails if stale. | client — copied into `<client>/tools/` and committed there |
 | `lint_commit.py` | enforce commit/tracker law: every commit refs an issue; `closes` never targets a human-gated type. | client — copied into `<client>/tools/` and committed there |
@@ -52,6 +53,11 @@ python3 tools/gen_index.py --check
 # commit lint (what the commit-msg hook calls — client side, from tools/):
 python3 lint_commit.py --message "M1: press stands (#0002)" \
         --files src/press.c [--tracker-dir issues] [--core-prefix src/]
+
+# fork a new app out of a base (the app starts with the base's closed reference
+# set and numbers its own issues from #1000 — SPEC §8; --fresh-tools ships the
+# current extractor/lint even if the base's tools/ copies are older):
+sh fork-app.sh <base-repo> <new-app-dir> --name my-app [--fresh-tools] [--local-stack]
 
 # install the hooks on THIS machine (hooks are never versioned):
 sh install-graph-hook.sh  <client-repo> [--adapter .gantry/adapter.json] [--deps deps.json]

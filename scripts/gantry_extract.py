@@ -21,7 +21,7 @@ import sys
 import unicodedata
 from pathlib import Path
 
-EXTRACTOR_VERSION = "0.4.0"
+EXTRACTOR_VERSION = "0.4.1"
 SCHEMA_VERSION = "0.2"
 DEP_TYPES = {"blocks", "awaits-stamp", "defers-to", "informs"}
 
@@ -324,12 +324,17 @@ def main():
 
     # tracker
     tracker = root / adapter["tracker_dir"]
+    issue_min = adapter.get("issue_min", 0) or 0
     issues = []
     for path in sorted(tracker.glob("[0-9][0-9][0-9][0-9]-*.md")):
         issue, err = parse_issue(path)
         if err:
             warnings.append(err)
             continue
+        if issue_min and int(issue["number"]) < issue_min:
+            warnings.append(f"#{issue['number']}: below issue_min {issue_min:04d} — "
+                            f"this repo's issues are numbered from {issue_min:04d} "
+                            f"(copied-in history is fine; new issues must stay at or above it)")
         issues.append(issue)
 
     frozen_seams = set()

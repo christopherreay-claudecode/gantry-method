@@ -170,6 +170,10 @@ Line by line, each rule is precisely what the parser matches:
 
 - **Title** — `# #NNNN — Title`. A literal `#`, space, `#NNNN` (four digits), space, an
   **em-dash `—`**, space, then the title. (A hyphen will not match; it must be the em-dash.)
+  Numbering need not start at `0001`: the adapter's `issue_min` (SPEC §6) sets this repo's
+  floor. A repo forked from a base keeps the base's issues (`#0001`–`#0013`, a *closed
+  reference set*) below the floor and numbers its own work from `#1000` — the extractor
+  warns on any issue under the floor, so a fresh issue filed at `#0007` gets flagged.
 - **`type:` / `status:`** — `type: <token>   status: <token>`, both single tokens.
 - **`refs:` … `opened:` … `closed-by:`** — all three keys **on one line, in this order.**
   `refs:` is zero or more `[token]` groups; `opened:` is a free label (a gate name or `seed`);
@@ -334,6 +338,7 @@ One JSON file per client tells extract where truth lives and how to slug it:
 {
   "client": "<repo label for the GRAPH header>",
   "tracker_dir": "issues",
+  "issue_min": 1000,
   "plan": "plan.md",            "plan_source": "plan-v1",
   "kickoff": "seams.md",
   "seam_slugs": { "S1": "setpoint-iface", "S2": "press-driver" },
@@ -342,6 +347,13 @@ One JSON file per client tells extract where truth lives and how to slug it:
   "parts": [ { "id": "part:...", "label": "...", "bindings": [ ... ] } ]
 }
 ```
+
+`issue_min` is optional and defaults to 0: the floor for this repo's issue numbers.
+Extract warns on any issue below it ("copied-in history is fine; new issues must
+stay at or above it") — the guardrail for a forked repo that inherits a closed
+reference set (`#0001`–…) but numbers its own work from `#1000`. Setting it costs
+nothing and catches the classic fork mistake: filing a new issue at `#0007` because
+that's where the base's numbering left off.
 
 The plan is parsed inside its `## 2.` section: numbered items `N. **Bold Name.** body`, optionally
 grouped under `### C-GROUP` headings; the bold lead name becomes the constraint's stable slug. The
@@ -425,6 +437,36 @@ entire adoption is three points:
 5. **Onboard extract** — write the adapter json; run extract in CI so `GRAPH.md` stays fresh;
    optionally install the two hooks on your machine.
 
+### Forking an app out of a base (the copy, not the link)
+
+When the base is a gantry-adopted tooling repo and the app is a product built on it,
+`scripts/fork-app.sh` copies the base's *starting truth + machinery* into a completely
+separate repo — no links, no submodules, no shared state; the app lives alone. The script's
+manifest is the contract: plan, seams, tracker, specs, supabase migrations (0000–0008),
+src/tests/tools/scripts, the drift workflow, and the adapter — nothing else (`.git`,
+`.env`, `.gantry/out/`, `METALAND/`, `node_modules`, build output are all excluded, each
+for a stated reason; anything unlisted is reported, not copied).
+
+Three decisions make the fork coherent under this spec:
+
+- **The inherited issues are a closed reference set.** Their work belonged to the base;
+  the app is not doing it. `fork-app.sh` marks every inherited open issue `closed`
+  (commit-closable types get the base's fork-point sha; human-gated types get a
+  "reference: inherited from base @ <sha>" sentence — closure authority is respected in
+  both directions).
+- **The app numbers its own issues from `#1000`** (`issue_min` in the adapter). The
+  inherited `#0001`–`#0013` sit below the floor as history; extract warns on any *new*
+  issue filed under it.
+- **The birth commit is exempt from commit law.** It cannot reference an issue that does
+  not exist yet, so it is made with the lint bypassed and carries the message
+  `app repo born from base @ <sha>`. From the first app issue (`#1000`) on, the ordinary
+  law applies.
+
+`fork-app.sh` then runs adopt.sh (hooks), npm install, the app's own check/build/test
+scripts (and optionally the local supabase stack with `--local-stack`), and mints
+`GRAPH.md` + `issues/INDEX.md` — which the operator commits together with the first app
+issue. Remaining secrets (`.env`) are copied by hand, outside git, never via the fork.
+
 ---
 
 ## §9 The scripts (reference)
@@ -434,6 +476,7 @@ Everything named above ships in `scripts/`, each runnable and self-documented:
 | Script | Role | Typical invocation |
 |---|---|---|
 | `adopt.sh` | one-command adoption: copies the three tools into a client, writes the ritual, wires both hooks, mints GRAPH.md (§7) | `sh adopt.sh <repo> [--core-prefix P]` |
+| `fork-app.sh` | fork a new app repo out of a gantry-adopted base: manifest copy, identity edits, inherited issues closed as a reference set, fresh init + birth commit, adopt, verify (§8) | `sh fork-app.sh <base> <app> [--name N] [--fresh-tools] [--local-stack]` |
 | `gantry_extract.py` | truth → `state.json` + `GRAPH.md` + `bodies.json` (§6); copied into adopting clients as `tools/gantry_extract.py` | `python3 gantry_extract.py --client A.json --root R --out S.json [--deps D.json]` |
 | `gen_index.py` | tracker → `issues/INDEX.md` (derived ledger) | `python3 gen_index.py [--root R]` · `--check` in CI |
 | `lint_commit.py` | enforce commit/tracker law (§7) | `lint_commit.py --message M --files … [--core-prefix P]` |
