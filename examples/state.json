@@ -150,6 +150,12 @@
           "provenance": "parsed",
           "target": "workorder:m1-press-cycle",
           "type": "informs"
+        },
+        {
+          "evidence": "The real setpoint->force law is pinned when firmware lands at M1; until then the\nhold stays open and the code takes the most conservative reading.",
+          "provenance": "proposed",
+          "target": "workorder:m1-press-cycle",
+          "type": "defers-to"
         }
       ],
       "status": {
@@ -403,11 +409,11 @@
     }
   ],
   "generated_from": {
-    "commit": "8b944d7d65b35e4a6eea4d4d54fb3f0a954b7569",
+    "commit": "a7d2a2464cc68f6e1691de494dd9f882d75c1cc2",
     "dirty": false,
-    "extractor_version": "0.4.0",
+    "extractor_version": "0.4.1",
     "repo": "widget-press (fullMethodology example)"
   },
-  "hash": "5f1d11029607c17d211a98137dd5ea55e74c865c98dd0009062bfef61207c95c",
+  "hash": "0cb092d76fc6bcc00cc2b2a15eb15cc626c25d3de88cb6b7686ba121bc1c7467",
   "schema_version": "0.2"
 }
