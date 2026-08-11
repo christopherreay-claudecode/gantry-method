@@ -454,9 +454,9 @@ Three decisions make the fork coherent under this spec:
   (commit-closable types get the base's fork-point sha; human-gated types get a
   "reference: inherited from base @ <sha>" sentence — closure authority is respected in
   both directions).
-- **The app numbers its own issues from `#1000`** (`issue_min` in the adapter). The
-  inherited `#0001`–`#0013` sit below the floor as history; extract warns on any *new*
-  issue filed under it.
+- **The app numbers its own issues from `--issue-min`** (a required fork flag; lands as
+  `issue_min` in the adapter). The inherited `#0001`–`#0013` sit below the floor as history;
+  extract warns on any *new* issue filed under it.
 - **The birth commit is exempt from commit law.** It cannot reference an issue that does
   not exist yet, so it is made with the lint bypassed and carries the message
   `app repo born from base @ <sha>`. From the first app issue (`#1000`) on, the ordinary
@@ -476,7 +476,7 @@ Everything named above ships in `scripts/`, each runnable and self-documented:
 | Script | Role | Typical invocation |
 |---|---|---|
 | `adopt.sh` | one-command adoption: copies the three tools into a client, writes the ritual, wires both hooks, mints GRAPH.md (§7) | `sh adopt.sh <repo> [--core-prefix P]` |
-| `fork-app.sh` | fork a new app repo out of a gantry-adopted base: manifest copy, identity edits, inherited issues closed as a reference set, fresh init + birth commit, adopt, verify (§8) | `sh fork-app.sh <base> <app> [--name N] [--fresh-tools] [--local-stack]` |
+| `fork-app.sh` | fork a new app repo out of a gantry-adopted base: manifest copy, identity edits, inherited issues closed as a reference set, fresh init + birth commit, adopt, verify (§8) | `sh fork-app.sh <base> <app> --issue-min N [--name N] [--fresh-tools] [--local-stack]` |
 | `gantry_extract.py` | truth → `state.json` + `GRAPH.md` + `bodies.json` (§6); copied into adopting clients as `tools/gantry_extract.py` | `python3 gantry_extract.py --client A.json --root R --out S.json [--deps D.json]` |
 | `gen_index.py` | tracker → `issues/INDEX.md` (derived ledger) | `python3 gen_index.py [--root R]` · `--check` in CI |
 | `lint_commit.py` | enforce commit/tracker law (§7) | `lint_commit.py --message M --files … [--core-prefix P]` |

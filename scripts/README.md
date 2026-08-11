@@ -55,9 +55,9 @@ python3 lint_commit.py --message "M1: press stands (#0002)" \
         --files src/press.c [--tracker-dir issues] [--core-prefix src/]
 
 # fork a new app out of a base (the app starts with the base's closed reference
-# set and numbers its own issues from #1000 — SPEC §8; --fresh-tools ships the
-# current extractor/lint even if the base's tools/ copies are older):
-sh fork-app.sh <base-repo> <new-app-dir> --name my-app [--fresh-tools] [--local-stack]
+# set and numbers its own issues from --issue-min — SPEC §8; --fresh-tools ships
+# the current extractor/lint even if the base's tools/ copies are older):
+sh fork-app.sh <base-repo> <new-app-dir> --issue-min 1000 --name my-app [--fresh-tools] [--local-stack]
 
 # install the hooks on THIS machine (hooks are never versioned):
 sh install-graph-hook.sh  <client-repo> [--adapter .gantry/adapter.json] [--deps deps.json]

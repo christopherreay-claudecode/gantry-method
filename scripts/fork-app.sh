@@ -1,8 +1,15 @@
 #!/bin/sh
 # gantry — fork a new app repo out of a gantry-adopted base repo.
 #
-# Usage: fork-app.sh <base-repo> <new-app-dir> [--name NAME] [--keep-open]
-#                    [--local-stack] [--fresh-tools] [--no-install] [--no-commit]
+# Usage: fork-app.sh <base-repo> <new-app-dir> --issue-min NNNN [--name NAME]
+#                    [--keep-open] [--local-stack] [--fresh-tools]
+#                    [--no-install] [--no-commit]
+#
+# --issue-min NNNN is REQUIRED: the floor for the app's own issue numbers (the
+# adapter's issue_min). Inherited issues sit below it as a closed reference
+# set; new issues are numbered at or above it. Pick the floor deliberately —
+# forking with the wrong floor is how an app ends up colliding with its base's
+# numbering.
 #
 # A fork is a COMPLETELY SEPARATE repo: it copies the base's starting truth
 # and machinery, then lives alone. The manifest below is the contract — copy
@@ -15,12 +22,12 @@
 #   2. small edits: adapter client + issue_min, supabase project_id,
 #      package.json name, README ritual header
 #   3. close the inherited issues as a REFERENCE SET (their work belongs to
-#      the base's history; the app's own issues start at #1000) — unless
+#      the base's history; the app's own issues start at --issue-min) — unless
 #      --keep-open
 #   4. fresh git init + birth commit (exempt from commit law: no issue exists
 #      yet — the commit-msg lint would reject it, and nothing is open to ref)
 #   5. adopt.sh for the hooks, npm install, verify, mint GRAPH.md + INDEX.md
-#   6. stop. The operator files the first app issue (#1000) and commits it —
+#   6. stop. The operator files the first app issue (at --issue-min) and commits it —
 #      that commit (and every one after) carries the issue ref the lint wants.
 #
 # Not copied, each for a reason:
@@ -34,7 +41,7 @@ set -e
 
 HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 
-usage() { echo "usage: fork-app.sh <base-repo> <new-app-dir> [--name NAME] [--keep-open] [--local-stack] [--fresh-tools] [--no-install] [--no-commit]" >&2; exit 1; }
+usage() { echo "usage: fork-app.sh <base-repo> <new-app-dir> --issue-min NNNN [--name NAME] [--keep-open] [--local-stack] [--fresh-tools] [--no-install] [--no-commit]" >&2; exit 1; }
 [ -n "$1" ] || usage
 BASE=$(CDPATH= cd -- "$1" && pwd); shift
 [ -n "$1" ] || usage
@@ -45,6 +52,7 @@ APP=$(CDPATH= cd -- "$APP_ARG" && pwd)
 [ -z "$(ls -A "$APP" 2>/dev/null)" ] || { echo "refusing: $APP is not empty" >&2; exit 1; }
 
 NAME=$(basename "$APP")
+ISSUE_MIN=""
 KEEP_OPEN=0
 LOCAL_STACK=0
 FRESH_TOOLS=0
@@ -52,15 +60,20 @@ NO_INSTALL=0
 NO_COMMIT=0
 while [ -n "$1" ]; do
   case "$1" in
-    --name)        [ -n "$2" ] || usage; NAME="$2"; shift 2 ;;
-    --keep-open)   KEEP_OPEN=1; shift ;;
+    --issue-min)  [ -n "$2" ] || usage; ISSUE_MIN="$2"; shift 2 ;;
+    --name)       [ -n "$2" ] || usage; NAME="$2"; shift 2 ;;
+    --keep-open)  KEEP_OPEN=1; shift ;;
     --local-stack) LOCAL_STACK=1; shift ;;
     --fresh-tools) FRESH_TOOLS=1; shift ;;
-    --no-install)  NO_INSTALL=1; shift ;;
-    --no-commit)   NO_COMMIT=1; shift ;;
+    --no-install) NO_INSTALL=1; shift ;;
+    --no-commit)  NO_COMMIT=1; shift ;;
     *) usage ;;
   esac
 done
+
+case "$ISSUE_MIN" in
+  ''|*[!0-9]*) echo "error: --issue-min NNNN is required (the floor for this repo's issue numbers)" >&2; exit 1 ;;
+esac
 
 BASESHA=$(git -C "$BASE" rev-parse HEAD | cut -c1-7)
 
@@ -141,10 +154,11 @@ done
 # ------------------------------------------------------------------ 2. edits ----
 echo "== identity edits"
 if grep -q '"issue_min"' "$APP/.gantry/adapter.json" 2>/dev/null; then
-  echo "   kept: .gantry/adapter.json issue_min (already set)"
+  sed -i 's/"issue_min": [0-9]*/"issue_min": '"$ISSUE_MIN"'/' "$APP/.gantry/adapter.json"
+  echo "   set: .gantry/adapter.json issue_min: $ISSUE_MIN (issues numbered from here)"
 else
-  sed -i '/^[[:space:]]*"tracker_dir":/a\  "issue_min": 1000,' "$APP/.gantry/adapter.json"
-  echo "   set: .gantry/adapter.json issue_min: 1000 (issues numbered from here)"
+  sed -i '/^[[:space:]]*"tracker_dir":/a\  "issue_min": '"$ISSUE_MIN"',' "$APP/.gantry/adapter.json"
+  echo "   set: .gantry/adapter.json issue_min: $ISSUE_MIN (issues numbered from here)"
 fi
 sed -i 's/"client": "[^"]*"/"client": "'"$NAME"'"/' "$APP/.gantry/adapter.json"
 echo "   set: .gantry/adapter.json client: $NAME"
@@ -160,8 +174,8 @@ cat > "$APP/README.md.forkhead" <<EOF
 # $NAME
 
 > Born from **$(basename "$BASE")** @ $BASESHA — a gantry fork. This repo's
-> issues are numbered from **#1000**; issues #0001-#0013 are the closed
-> reference set inherited from the base. Session start: read \`GRAPH.md\`, then
+> issues are numbered from **#$ISSUE_MIN**; the inherited issues are the closed
+> reference set. Session start: read \`GRAPH.md\`, then
 > \`tools/README.md\`.
 
 EOF
@@ -219,7 +233,7 @@ else
   git -C "$APP" add -A
   git -C "$APP" commit -q --no-verify \
     -m "app repo born from base @ $BASESHA" \
-    -m "Fork of $(basename "$BASE"). Inherited issues #0001-#0013 are a closed reference set; this repo's issues are numbered from #1000. (Birth commit is exempt from commit law: no issue exists yet — the first app issue, #1000, will carry the ref from here on.)"
+    -m "Fork of $(basename "$BASE"). Inherited issues are a closed reference set; this repo's issues are numbered from #$ISSUE_MIN. (Birth commit is exempt from commit law: no issue exists yet — the first app issue, #$ISSUE_MIN, will carry the ref from here on.)"
   echo "   committed: \"app repo born from base @ $BASESHA\""
 fi
 
@@ -270,6 +284,6 @@ fi
 echo ""
 echo "   NEXT STEPS (the operator):"
 echo "     - copy .env by hand (secrets — never via git)"
-echo "     - file the first app issue: issues/1000-<slug>.md  (refs the base constraint it serves)"
-echo "     - commit it WITH GRAPH.md + issues/INDEX.md — that commit carries the #1000 ref"
-echo "     - the 'below issue_min 1000' warnings on inherited issues are expected (copied history)"
+echo "     - file the first app issue: issues/$ISSUE_MIN-<slug>.md  (refs the base constraint it serves)"
+echo "     - commit it WITH GRAPH.md + issues/INDEX.md — that commit carries the #$ISSUE_MIN ref"
+echo "     - the 'below issue_min $ISSUE_MIN' warnings on inherited issues are expected (copied history)"
