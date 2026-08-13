@@ -190,7 +190,7 @@ Line by line, each rule is precisely what the parser matches:
 |---|---|---|
 | bare digits | a **constraint** number in the plan | `[3]` → `constraint:one-command-bus` |
 | `S` + digit | a **seam** | `[S1]` → `seam:setpoint-iface` |
-| `m`/`a` + digits | a **gate** | `[m0]`, `[a3]` |
+| `m`/`a`/`g` + digits | a **gate** | `[m0]`, `[a3]`, `[g1]` |
 | `Phase` + word | a **phase** | `[PhaseB]` → `phase:b` |
 | `Q` + digits | a **hold** (an open question), via the adapter's `q_holds` map | `[Q1]` → `hold:torque-law` |
 

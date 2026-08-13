@@ -49,7 +49,7 @@ ISSUE_META_RE = re.compile(r"^type:\s*(\S+)\s+status:\s*(\S+)")
 ISSUE_REFS_RE = re.compile(r"^refs:\s*(.*?)\s+opened:\s*(.+?)\s+closed-by:\s*(.+)$")
 ISSUE_DEPS_RE = re.compile(r"^deps:\s*(.+)$")
 REF_TOKEN_RE = re.compile(r"\[([^\]]+)\]")
-GATE_TOKEN_RE = re.compile(r"^[ma]\d+$")
+GATE_TOKEN_RE = re.compile(r"^[mag]\d+$")
 
 
 def parse_issue(path: Path):
@@ -595,7 +595,7 @@ def main():
             gbind = [{"source": "tracker", "ref": f"#{issue['number']}"}]
             if closed and SHA_RE.match(issue["closed_by"]):
                 gbind.append({"source": "git", "ref": issue["closed_by"]})
-            glabel = re.sub(r"^[MA]\d+:\s*", "", issue["label"])
+            glabel = re.sub(r"^[MAG]\d+:\s*", "", issue["label"])
             if gid not in entities:
                 add({"id": gid, "kind": "gate", "label": f"{first.upper()} — {glabel}"[:120],
                      "status": gstatus, "bindings": gbind})
