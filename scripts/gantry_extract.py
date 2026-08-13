@@ -21,7 +21,7 @@ import sys
 import unicodedata
 from pathlib import Path
 
-EXTRACTOR_VERSION = "0.4.2"
+EXTRACTOR_VERSION = "0.4.3"
 SCHEMA_VERSION = "0.2"
 DEP_TYPES = {"blocks", "awaits-stamp", "defers-to", "informs"}
 
@@ -149,7 +149,8 @@ def parse_seams(kickoff_path: Path):
 
 # -------------------------------------------------------------- proposals ----
 
-PROPOSAL_SECTION_RE = re.compile(r"^##\s+(constraints|seams|issues)$")
+PROPOSAL_SECTION_RE = re.compile(r"^##\s+(constraints|seams|issues|routes)$")
+PROPOSAL_DECISION_RE = re.compile(r"^##\s+decision\s*:\s*(.+)$")
 PROPOSAL_BULLET_RE = re.compile(r"^\s*-\s+(.+)$")
 PROPOSAL_ISSUE_H1_RE = re.compile(r"^#(\d{4})\s+—\s+(.+)$")
 
@@ -162,8 +163,9 @@ def parse_proposals(path: Path, warnings: list) -> dict:
     place it renders (SPEC §6). Grammar mirrors the core grammars so promotion
     is a copy into plan.md / seams.md / issues/, not a rewrite:
 
-        ## constraints
-        - **name.** claim a test could check.
+        ## decision: presets            ← a matrix row: ONE open decision
+        - **per-material.** ...         ← its candidate answers (alternatives)
+        - **per-operator.** ...         ← promote exactly one
 
         ## seams
         - **S3 name.** impls now → later; freeze at M4
@@ -173,13 +175,21 @@ def parse_proposals(path: Path, warnings: list) -> dict:
           type: ambiguity        status: open
           refs: [2]   opened: seed
 
-    Returns {constraints: [...], seams: [...], issues: [...]} — each a dict
-    for the digest annex. Anything unparsable warns (nothing silently dropped).
+        ## routes                       ← prose combinations over the matrix;
+        - route A (label): presets[per-material] × auth[passwordless]
+          the LLM proposes them; a human weighs them. Not parsed, just shown.
+
+    Returns {decisions, constraints, seams, issues, routes} for the digest
+    annex. Anything unparsable warns (nothing silently dropped); an issue
+    number drafted in two decisions warns (they are alternatives — the number
+    must be promoted once).
     """
-    out = {"constraints": [], "seams": [], "issues": []}
+    out = {"decisions": [], "constraints": [], "seams": [], "issues": [],
+           "routes": []}
     text = path.read_text(encoding="utf-8").splitlines()
     section = None
-    pending = None  # (lines,) for a multi-line issue entry
+    decision = None   # current decision dict, or None
+    pending = None    # (lines,) for a multi-line issue entry
     meta_re = re.compile(r"\s*" + ISSUE_META_RE.pattern.lstrip("^"))
     refs_re = re.compile(r"\s*" + ISSUE_REFS_RE.pattern.lstrip("^"))
 
@@ -206,21 +216,51 @@ def parse_proposals(path: Path, warnings: list) -> dict:
                 warnings.append(f"{path.name}: unparsable proposed issue (no "
                                 f"'#NNNN — title'): {lines[0][:60]!r}")
             else:
-                out["issues"].append({"number": num, "label": label, "type": typ,
-                                      "status": status, "refs": refs or ""})
+                entry = {"number": num, "label": label, "type": typ,
+                         "status": status, "refs": refs or ""}
+                if decision is not None:
+                    decision["alternatives"].append({"kind": "issue", **entry})
+                else:
+                    out["issues"].append(entry)
             pending = None
 
+    def flush_decision():
+        nonlocal decision
+        if decision is not None:
+            out["decisions"].append(decision)
+            decision = None
+
     for line in text:
+        dm = PROPOSAL_DECISION_RE.match(line)
+        if dm:
+            flush_pending()
+            flush_decision()
+            section = "decision"
+            decision = {"name": dm.group(1).strip(), "alternatives": []}
+            continue
         sm = PROPOSAL_SECTION_RE.match(line)
         if sm:
             flush_pending()
+            flush_decision()
             section = sm.group(1)
             continue
         bm = PROPOSAL_BULLET_RE.match(line)
         if bm:
             flush_pending()
-            if section == "constraints":
-                m = BOLD_NAME_RE.match(bm.group(1))
+            content = bm.group(1)
+            if section == "decision":
+                m = BOLD_NAME_RE.match(content)
+                if m:
+                    decision["alternatives"].append(
+                        {"kind": "constraint",
+                         "name": m.group(1).rstrip("."), "text": m.group(2).strip()})
+                elif PROPOSAL_ISSUE_H1_RE.match(content):
+                    pending = [content]
+                else:
+                    warnings.append(f"{path.name}: decision '{decision['name']}' "
+                                    f"alternative without **bold name**: {line.strip()[:60]!r}")
+            elif section == "constraints":
+                m = BOLD_NAME_RE.match(content)
                 if m:
                     out["constraints"].append(
                         {"name": m.group(1).rstrip("."), "text": m.group(2).strip()})
@@ -228,7 +268,7 @@ def parse_proposals(path: Path, warnings: list) -> dict:
                     warnings.append(f"{path.name}: proposed constraint without "
                                     f"**bold name**: {line.strip()[:60]!r}")
             elif section == "seams":
-                m = BOLD_NAME_RE.match(bm.group(1))
+                m = BOLD_NAME_RE.match(content)
                 if m:
                     out["seams"].append(
                         {"name": m.group(1).rstrip("."), "text": m.group(2).strip()})
@@ -236,13 +276,31 @@ def parse_proposals(path: Path, warnings: list) -> dict:
                     warnings.append(f"{path.name}: proposed seam without "
                                     f"**bold name**: {line.strip()[:60]!r}")
             elif section == "issues":
-                pending = [bm.group(1)]
+                pending = [content]
+            elif section == "routes":
+                out["routes"].append(content.strip())
             else:
                 warnings.append(f"{path.name}: proposal outside a section "
-                                f"(## constraints|seams|issues): {line.strip()[:60]!r}")
-        elif section == "issues" and pending is not None and line.strip():
+                                f"(## decision: X | constraints | seams | issues | routes): "
+                                f"{line.strip()[:60]!r}")
+        elif pending is not None and line.strip():
+            # continuation lines of a multi-line issue entry (flat ## issues
+            # OR inside a decision block)
             pending.append(line)
     flush_pending()
+    flush_decision()
+
+    # alternatives are one-shot: an issue number drafted under two decisions
+    # cannot be promoted twice — the human must pick the winning decision.
+    seen = {}
+    for d in out["decisions"]:
+        for alt in d["alternatives"]:
+            if alt.get("number"):
+                if alt["number"] in seen:
+                    warnings.append(f"#{alt['number']} drafted under two decisions "
+                                    f"({seen[alt['number']]} and '{d['name']}') — "
+                                    f"alternatives; promote exactly one")
+                seen[alt["number"]] = d["name"]
     return out
 
 
@@ -327,7 +385,9 @@ def render_proposals_annex(proposals: dict) -> str:
     in state.json, never in the REV; the digest shows it so an agent can see
     what a human is weighing. Promotion = copy into the core truth (plan.md /
     seams.md / issues/), where it becomes graph state and renders in the core
-    sections."""
+    sections. Decisions render as a matrix (one row per open decision, its
+    candidate answers beneath); routes render last as the LLM-proposed
+    combinations over the matrix."""
     if not any(proposals.values()):
         return ""
     lines = [
@@ -335,6 +395,18 @@ def render_proposals_annex(proposals: dict) -> str:
         "# When accepted: copy into plan.md / seams.md / issues/ and re-run extract.",
         "",
     ]
+    if proposals.get("decisions"):
+        lines.append("decision matrix (promote exactly one alternative per decision):")
+        for d in proposals["decisions"]:
+            lines.append(f"  {d['name']}:")
+            for alt in d["alternatives"]:
+                if alt["kind"] == "issue":
+                    gated = " ⛭human" if (alt.get("type") or "") in HUMAN_GATED_TYPES else ""
+                    lines.append(f"    - #{alt['number']} {alt['label']}{gated}"
+                                 f" ({alt.get('type') or '?'} · refs {alt.get('refs') or '—'})")
+                else:
+                    lines.append(f"    - {alt['name']}: {alt['text']}")
+        lines.append("")
     if proposals.get("constraints"):
         lines.append("proposed constraints (no number yet — assigned at promotion):")
         for c in proposals["constraints"]:
@@ -351,6 +423,12 @@ def render_proposals_annex(proposals: dict) -> str:
             gated = " ⛭human" if (i.get("type") or "") in HUMAN_GATED_TYPES else ""
             lines.append(f"  - #{i['number']} {i['label']}{gated}"
                          f" ({i.get('type') or '?'} · refs {i.get('refs') or '—'})")
+        lines.append("")
+    if proposals.get("routes"):
+        lines.append("proposed routes (prose combinations over the matrix — the LLM"
+                     " proposes, a human weighs):")
+        for r in proposals["routes"]:
+            lines.append(f"  - {r}")
         lines.append("")
     return "\n".join(lines) + "\n"
 

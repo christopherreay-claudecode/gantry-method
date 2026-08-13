@@ -58,9 +58,19 @@ closed/resolved: #0001 #0003 #0005                ← the two human-gated closur
                                                       the sha-closed milestone (#0001)
 
 ## proposed — tentative, on the table, NOT part of the graph   ← proposals.md annex (§6):
-  - idle-timeout: ...                              ← draft constraints: NO numbers yet, no REV
-  - S3 telemetry-writer: ...                       ←    movement, no refs; promotion is a copy
-  - #1007 hold: material presets UX ⛭human ...     ←    into plan.md/seams.md/issues/, then re-run
+  decision matrix (promote exactly one alternative per decision):   ← ## decision: X
+    presets:                                                        ←    blocks — the
+      - per-material: ...                                           ←    matrix rows, all
+      - per-operator: ...                                           ←    co-present
+    auth:
+      - passwordless-default: ...
+      - password-required: ...
+  proposed seams:
+    - S3 telemetry-writer: ...                    ← drafts: no REV movement, no refs;
+  proposed issues:                                 ←    promotion is a copy into
+    - #1007 hold: material presets UX ⛭human ...  ←    plan.md/seams.md/issues/, then re-run
+  proposed routes (prose over the matrix):         ← LLM-proposed combinations,
+    - route A: presets[per-material] × ...         ←    human-weighed, not parsed
 ```
 
 ## Things worth trying (to feel the invariants)

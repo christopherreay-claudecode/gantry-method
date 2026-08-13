@@ -363,11 +363,13 @@ seam table is any markdown table with rows `| S# | name | impls (now → later) 
 ### The proposed annex — content on the table, not in the graph
 
 `proposals` (optional) names a curated file of **proposed content** — drafts from the
-Tier-1 interview and working sessions that a human is weighing. It parses three blocks:
+Tier-1 interview and working sessions that a human is weighing. It parses four kinds of
+block:
 
 ```
-## constraints
-- **idle-timeout.** An unattended session times out to a safe state.
+## decision: presets             ← a matrix row: ONE open decision
+- **per-material.** ...          ← its candidate answers; promote exactly one
+- **per-operator.** ...
 
 ## seams
 - **S3 telemetry-writer.** local log → supabase telemetry; freeze at M2
@@ -376,7 +378,23 @@ Tier-1 interview and working sessions that a human is weighing. It parses three 
 - #1007 — hold: presets UX
   type: ambiguity        status: open
   refs: [3]   opened: seed
+
+## routes
+- route A (defaults): presets[per-material] × auth[passwordless-default]
+  ← prose combinations over the matrix, proposed by the LLM, weighed by a
+  human. Not parsed further — a route is a recommendation, never a container.
 ```
+
+The **decision matrix** is the structure: one `## decision:` block per open
+decision, its candidate answers beneath it (constraint-style `**name.**` claims
+or draft issue blocks). Decisions are mutually exclusive *within* a block —
+promote exactly one — and the extractor warns if a draft issue number appears
+under two decisions (it can be promoted only once). **Routes** are prose lines
+the LLM proposes ("the coherent combination I'd take is route A"); they render
+last in the annex and cost nothing structurally, so the matrix stays small and
+one-gulp — no combinatorial explosion of containers. Do not branch proposals
+into git branches: checkout is exclusive, so an agent reading `GRAPH.md` at
+session start would see one branch, not the matrix.
 
 The grammar mirrors the core grammars deliberately: **promotion is a copy**, not a
 rewrite — accept a proposal by copying it into `plan.md` / `seams.md` / `issues/` (the

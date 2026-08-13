@@ -6,10 +6,15 @@ the plan, the seam table, or the tracker yet; a human stamps each item in
 renders in the core sections) or out (delete it). The extractor warns on
 anything it cannot parse — nothing is silently dropped.
 
-## constraints
+## decision: presets
 
-- **idle-timeout.** An unattended press session times out and returns to a safe state.
-- **pressure-curve-memory.** The press remembers the last good pressure curve per material.
+- **per-material.** The press remembers the last good pressure curve per material.
+- **per-operator.** The press remembers the last good pressure curve per operator.
+
+## decision: auth
+
+- **passwordless-default.** A new session starts passwordless when the machine allows it.
+- **password-required.** Every session requires the operator password.
 
 ## seams
 
@@ -21,3 +26,8 @@ anything it cannot parse — nothing is silently dropped.
   type: ambiguity        status: open
   refs: [3]   opened: seed
   Should presets be per-material or per-operator?
+
+## routes
+
+- route A (defaults): presets[per-material] × auth[passwordless-default] × telemetry[local]
+- route B (conservative): presets[per-operator] × auth[password-required] × telemetry[supabase]
