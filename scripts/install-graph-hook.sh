@@ -31,6 +31,12 @@ while [ -n "$1" ]; do
   esac
 done
 
+# repo-relative paths for the refresh scope (git pathspec is repo-root-relative)
+ADAPTER_REL=${ADAPTER#"$REPO"/}
+DEPS_REL=${DEPS#"$REPO"/}
+EXTRA="$ADAPTER_REL tools/gantry_extract.py"
+if [ -n "$DEPS_REL" ]; then EXTRA="$EXTRA $DEPS_REL"; fi
+
 HOOK="$REPO/.git/hooks/pre-commit"
 
 [ -d "$REPO/.git" ] || { echo "not a git repo: $REPO" >&2; exit 1; }
@@ -43,7 +49,8 @@ cat > "$HOOK" <<EOF
 #!/bin/sh
 # installed by gantry (scripts/install-graph-hook.sh) — local automation, not repo
 # content. Regenerates GRAPH.md (via the client's OWN tools/gantry_extract.py)
-# when a commit changes the tracker/plan inputs; safe no-op on any failure.
+# when a commit changes any extract input — tracker, plan, seams, proposals,
+# adapter, extractor tool, or deps; safe no-op on any failure.
 # Remove this file to uninstall.
 REPO="\$(git rev-parse --show-toplevel)"
 EXTRACT="\$REPO/tools/gantry_extract.py"
@@ -61,6 +68,9 @@ a = json.load(open(sys.argv[1]))
 print(" ".join([a["tracker_dir"], a["plan"], a["kickoff"]] +
                ([a["proposals"]] if a.get("proposals") else [])))' "\$ADAPTER" 2>/dev/null) \\
   || { note "adapter unreadable: \$ADAPTER"; exit 0; }
+# the adapter, the extractor tool, and reviewed deps are also extract inputs
+# (they change the digest) — keep them in the refresh scope
+INPUTS="\$INPUTS $EXTRA"
 
 # only act when the staged changes touch the process inputs
 STAGED=\$(git -C "\$REPO" diff --cached --name-only -- \$INPUTS 2>/dev/null || true)
