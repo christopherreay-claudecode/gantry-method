@@ -380,6 +380,107 @@ def render_digest(doc: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
+def render_sources(doc: dict, bodies: dict, adapter: dict) -> str:
+    """GRAPH.md sources section — the navigation index: every entity name points
+    at the file holding its full content, so a reader jumps from the map to the
+    prose. Not graph state: never enters state.json or the REV (sidecar data,
+    like the proposed annex). Constraint numbers and seam S-numbers come from the
+    parsed entities; issue files group the bodies sidecar by path. Deterministic."""
+    ents = {e["id"]: e for e in doc["entities"]}
+
+    def constraint_nums() -> list:
+        nums = []
+        for e in doc["entities"]:
+            if e["kind"] != "constraint":
+                continue
+            for b in e["bindings"]:
+                if b["source"] == adapter["plan_source"] and b["ref"].isdigit():
+                    nums.append(int(b["ref"]))
+        return sorted(set(nums))
+
+    def collapse(nums) -> str:
+        runs = [[nums[0], nums[0]]]
+        for n in nums[1:]:
+            if n == runs[-1][1] + 1:
+                runs[-1][1] = n
+            else:
+                runs.append([n, n])
+        return ", ".join(f"{a}" if a == b else f"{a}–{b}" for a, b in runs)
+
+    cnums = constraint_nums()
+    if not cnums:
+        plan_label = "constraints none"
+    elif len(cnums) == 1:
+        plan_label = f"constraint {cnums[0]}"
+    else:
+        plan_label = f"constraints {collapse(cnums)}"
+
+    def seam_nums() -> list:
+        rev = {slug: s for s, slug in adapter.get("seam_slugs", {}).items()}
+        snums = []
+        for e in doc["entities"]:
+            if e["kind"] == "seam":
+                s = rev.get(e["id"].split(":", 1)[1])
+                if s:
+                    snums.append(s)
+        if not snums:
+            snums = sorted(adapter.get("seam_slugs", {}))
+        return sorted(set(snums), key=lambda s: int(s[1:]))
+
+    qrev = {slug: q for q, slug in adapter.get("q_holds", {}).items()}
+    prio = {"gate": 0, "phase": 1, "hold": 2, "workorder": 3}
+
+    def label(e) -> str:
+        slug = e["id"].split(":", 1)[1]
+        if e["kind"] == "gate":
+            return f"gate {slug}"
+        if e["kind"] == "phase":
+            return f"phase {slug}"
+        if e["kind"] == "hold":
+            q = qrev.get(slug)
+            return f"hold {q} ({slug})" if q else f"hold {slug}"
+        for b in e["bindings"]:
+            if b["source"] == "tracker":
+                return b["ref"]
+        return "?"
+
+    files = {}
+    for eid, body in bodies.items():
+        e = ents.get(eid)
+        if not e or e["kind"] not in prio:
+            continue
+        files.setdefault(body["file"], []).append(e)
+
+    paths = [adapter["plan"], adapter["kickoff"]]
+    if adapter.get("proposals"):
+        paths.append(adapter["proposals"])
+    paths.extend(sorted(files))
+    width = max(len(p) for p in paths)
+
+    lines = ["", "sources — where the full content lives:"]
+    lines.append(f"  {adapter['plan']:<{width}} → {plan_label}")
+    lines.append(f"  {adapter['kickoff']:<{width}} → seams {', '.join(seam_nums())}")
+    if adapter.get("proposals"):
+        lines.append(f"  {adapter['proposals']:<{width}} → proposed content (on the table)")
+    for file in sorted(files):
+        entries = sorted(files[file], key=lambda e: (prio[e["kind"]], e["id"]))
+        keep = [e for e in entries if e["kind"] != "workorder"
+                or not any(x["kind"] != "workorder" for x in entries)]
+        lines.append(f"  {file:<{width}} → {', '.join(label(e) for e in keep)}")
+
+    content = adapter.get("content")
+    if isinstance(content, list) and content:
+        lines.append("  business content (external, curated in the adapter):")
+        bw = max(len(c["path"]) for c in content)
+        for c in content:
+            note = c.get("note")
+            if note:
+                lines.append(f"    {c['path']:<{bw}} → {note}")
+            else:
+                lines.append(f"    {c['path']}")
+    return "\n".join(lines) + "\n"
+
+
 def render_proposals_annex(proposals: dict) -> str:
     """The proposed-content annex — on the table, NOT part of the graph. Never
     in state.json, never in the REV; the digest shows it so an agent can see
@@ -733,7 +834,8 @@ def main():
 
     out_path = Path(args.out)
     digest_path = Path(args.digest) if args.digest else out_path.parent / "GRAPH.md"
-    digest_text = render_digest(doc) + render_proposals_annex(proposals)
+    digest_text = render_digest(doc) + render_sources(doc, bodies, adapter) \
+        + render_proposals_annex(proposals)
 
     if args.check:
         if warnings:

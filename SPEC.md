@@ -317,10 +317,25 @@ dependency edges (blocks = must resolve first):
   …
 
 closed/resolved: #0001 #0003 …
+
+sources — where the full content lives:
+  plan.md      → constraints 1–4
+  seams.md     → seams S1, S2
+  proposals.md → proposed content (on the table)
+  issues/0002-m1-press-cycle.md → gate m1
+  issues/0008-gantry-adoption.md → #0008
+  business content (external, curated in the adapter):
+    ../sister-repo/legal/comm-log.md → one-line description
 ```
 
 `⛭human` marks a human-gated item; `(floating)` marks an item with no resolvable ref. Everything
 in the map is regenerated; the truth is upstream. **Never hand-edit it** — it will be overwritten.
+
+The **sources** section is the navigation index: it maps every entity name in the map to the file
+that holds its full content — the plan (constraint numbers collapsed into ranges), the seam table
+(S-numbers), the optional proposals file, and one line per issue file (a milestone issue that
+yields both a gate and a workorder shows the gate, not the redundant `#NNNN`; a plain workorder
+shows its `#NNNN`). It renders only in `GRAPH.md`, never in `state.json` or the REV.
 
 ### `bodies.json` — why issue prose is a sidecar
 
@@ -345,6 +360,7 @@ One JSON file per client tells extract where truth lives and how to slug it:
   "seam_slugs": { "S1": "setpoint-iface", "S2": "press-driver" },
   "q_holds":    { "Q1": "torque-law" },
   "constraint_slug_overrides": {},
+  "content": [ { "path": "../sister-repo/legal/comm-log.md", "note": "one-line description" } ],
   "parts": [ { "id": "part:...", "label": "...", "bindings": [ ... ] } ]
 }
 ```
@@ -355,6 +371,13 @@ stay at or above it") — the guardrail for a forked repo that inherits a closed
 reference set (`#0001`–…) but numbers its own work from `#1000`. Setting it costs
 nothing and catches the classic fork mistake: filing a new issue at `#0007` because
 that's where the base's numbering left off.
+
+`content` (optional) is a list of external business files — each an entry `{"path": …,
+"note": …}` (`note` optional) — pointing at curated files outside the client's own truth
+stack. Extract renders them as a "business content" block in `GRAPH.md`'s sources section:
+a navigation aid for a reader who must also consult files that are not part of the graph
+(legal, commercial, sister-repo documents). It is **not** graph state: it never enters
+`state.json` or the REV, and the human-curated order is preserved verbatim.
 
 The plan is parsed inside its `## 2.` section: numbered items `N. **Bold Name.** body`, optionally
 grouped under `### C-GROUP` headings; the bold lead name becomes the constraint's stable slug. The
