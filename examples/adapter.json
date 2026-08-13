@@ -4,6 +4,7 @@
   "plan": "plan.md",
   "plan_source": "plan-v1",
   "kickoff": "seams.md",
+  "proposals": "proposals.md",
   "seam_slugs": {
     "S1": "setpoint-iface",
     "S2": "press-driver"

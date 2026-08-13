@@ -21,7 +21,7 @@ import sys
 import unicodedata
 from pathlib import Path
 
-EXTRACTOR_VERSION = "0.4.1"
+EXTRACTOR_VERSION = "0.4.2"
 SCHEMA_VERSION = "0.2"
 DEP_TYPES = {"blocks", "awaits-stamp", "defers-to", "informs"}
 
@@ -147,6 +147,105 @@ def parse_seams(kickoff_path: Path):
     return out
 
 
+# -------------------------------------------------------------- proposals ----
+
+PROPOSAL_SECTION_RE = re.compile(r"^##\s+(constraints|seams|issues)$")
+PROPOSAL_BULLET_RE = re.compile(r"^\s*-\s+(.+)$")
+PROPOSAL_ISSUE_H1_RE = re.compile(r"^#(\d{4})\s+—\s+(.+)$")
+
+
+def parse_proposals(path: Path, warnings: list) -> dict:
+    """Parse the curated proposals file (adapter key "proposals").
+
+    PROPOSED CONTENT is on the table but NOT part of the graph: it never
+    enters state.json or the REV — the digest's "proposed" annex is the only
+    place it renders (SPEC §6). Grammar mirrors the core grammars so promotion
+    is a copy into plan.md / seams.md / issues/, not a rewrite:
+
+        ## constraints
+        - **name.** claim a test could check.
+
+        ## seams
+        - **S3 name.** impls now → later; freeze at M4
+
+        ## issues
+        - #1001 — hold: title
+          type: ambiguity        status: open
+          refs: [2]   opened: seed
+
+    Returns {constraints: [...], seams: [...], issues: [...]} — each a dict
+    for the digest annex. Anything unparsable warns (nothing silently dropped).
+    """
+    out = {"constraints": [], "seams": [], "issues": []}
+    text = path.read_text(encoding="utf-8").splitlines()
+    section = None
+    pending = None  # (lines,) for a multi-line issue entry
+    meta_re = re.compile(r"\s*" + ISSUE_META_RE.pattern.lstrip("^"))
+    refs_re = re.compile(r"\s*" + ISSUE_REFS_RE.pattern.lstrip("^"))
+
+    def flush_pending():
+        nonlocal pending
+        if pending:
+            lines = pending
+            num = label = typ = status = refs = None
+            for line in lines:
+                m = PROPOSAL_ISSUE_H1_RE.match(line)
+                if m:
+                    num, label = m.group(1), m.group(2).strip()
+                m = meta_re.match(line)
+                if m:
+                    typ, status = m.group(1), m.group(2)
+                m = refs_re.match(line)
+                if m:
+                    refs = m.group(1).strip()
+                elif refs is None:
+                    m2 = re.match(r"^\s*refs:\s*(.+?)\s+opened:", line)
+                    if m2:
+                        refs = m2.group(1).strip()
+            if not num or not label:
+                warnings.append(f"{path.name}: unparsable proposed issue (no "
+                                f"'#NNNN — title'): {lines[0][:60]!r}")
+            else:
+                out["issues"].append({"number": num, "label": label, "type": typ,
+                                      "status": status, "refs": refs or ""})
+            pending = None
+
+    for line in text:
+        sm = PROPOSAL_SECTION_RE.match(line)
+        if sm:
+            flush_pending()
+            section = sm.group(1)
+            continue
+        bm = PROPOSAL_BULLET_RE.match(line)
+        if bm:
+            flush_pending()
+            if section == "constraints":
+                m = BOLD_NAME_RE.match(bm.group(1))
+                if m:
+                    out["constraints"].append(
+                        {"name": m.group(1).rstrip("."), "text": m.group(2).strip()})
+                else:
+                    warnings.append(f"{path.name}: proposed constraint without "
+                                    f"**bold name**: {line.strip()[:60]!r}")
+            elif section == "seams":
+                m = BOLD_NAME_RE.match(bm.group(1))
+                if m:
+                    out["seams"].append(
+                        {"name": m.group(1).rstrip("."), "text": m.group(2).strip()})
+                else:
+                    warnings.append(f"{path.name}: proposed seam without "
+                                    f"**bold name**: {line.strip()[:60]!r}")
+            elif section == "issues":
+                pending = [bm.group(1)]
+            else:
+                warnings.append(f"{path.name}: proposal outside a section "
+                                f"(## constraints|seams|issues): {line.strip()[:60]!r}")
+        elif section == "issues" and pending is not None and line.strip():
+            pending.append(line)
+    flush_pending()
+    return out
+
+
 # ----------------------------------------------------------------- digest ----
 
 STAMP_RE = re.compile(r"@ [0-9a-f]{7,40}(\+dirty)? · REV [0-9a-f]{12}")
@@ -220,6 +319,39 @@ def render_digest(doc: dict) -> str:
                     and (e["status"].get("work") == "closed" or e["status"].get("decision") == "resolved"))
     lines.append("")
     lines.append(f"closed/resolved: {' '.join(closed) if closed else 'none'}")
+    return "\n".join(lines) + "\n"
+
+
+def render_proposals_annex(proposals: dict) -> str:
+    """The proposed-content annex — on the table, NOT part of the graph. Never
+    in state.json, never in the REV; the digest shows it so an agent can see
+    what a human is weighing. Promotion = copy into the core truth (plan.md /
+    seams.md / issues/), where it becomes graph state and renders in the core
+    sections."""
+    if not any(proposals.values()):
+        return ""
+    lines = [
+        "## proposed — tentative, on the table, NOT part of the graph",
+        "# When accepted: copy into plan.md / seams.md / issues/ and re-run extract.",
+        "",
+    ]
+    if proposals.get("constraints"):
+        lines.append("proposed constraints (no number yet — assigned at promotion):")
+        for c in proposals["constraints"]:
+            lines.append(f"  - {c['name']}: {c['text']}")
+        lines.append("")
+    if proposals.get("seams"):
+        lines.append("proposed seams:")
+        for s in proposals["seams"]:
+            lines.append(f"  - {s['name']}: {s['text']}")
+        lines.append("")
+    if proposals.get("issues"):
+        lines.append("proposed issues (not real tracker items until filed):")
+        for i in proposals["issues"]:
+            gated = " ⛭human" if (i.get("type") or "") in HUMAN_GATED_TYPES else ""
+            lines.append(f"  - #{i['number']} {i['label']}{gated}"
+                         f" ({i.get('type') or '?'} · refs {i.get('refs') or '—'})")
+        lines.append("")
     return "\n".join(lines) + "\n"
 
 
@@ -497,6 +629,15 @@ def main():
     # dirty = uncommitted changes (staged, unstaged, or untracked) under the
     # extract INPUT paths only — other noise in the client tree doesn't count.
     input_paths = [adapter["tracker_dir"], adapter["plan"], adapter["kickoff"]]
+    proposals = {}
+    if adapter.get("proposals"):
+        prop_path = root / adapter["proposals"]
+        if prop_path.exists():
+            proposals = parse_proposals(prop_path, warnings)
+            if not Path(adapter["proposals"]).is_absolute():
+                input_paths.append(adapter["proposals"])
+        else:
+            warnings.append(f"proposals: {prop_path} declared in adapter but missing — skipped")
     porcelain = subprocess.run(
         ["git", "-C", str(root), "status", "--porcelain", "--"] + input_paths,
         capture_output=True, text=True, check=True).stdout.strip()
@@ -514,7 +655,7 @@ def main():
 
     out_path = Path(args.out)
     digest_path = Path(args.digest) if args.digest else out_path.parent / "GRAPH.md"
-    digest_text = render_digest(doc)
+    digest_text = render_digest(doc) + render_proposals_annex(proposals)
 
     if args.check:
         if warnings:

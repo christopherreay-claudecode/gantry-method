@@ -55,7 +55,12 @@ dependency edges (blocks = must resolve first):
   #0004 —informs→ #0002 [parsed]
 
 closed/resolved: #0001 #0003 #0005                ← the two human-gated closures (#0003, #0005) +
-                                                     the sha-closed milestone (#0001)
+                                                      the sha-closed milestone (#0001)
+
+## proposed — tentative, on the table, NOT part of the graph   ← proposals.md annex (§6):
+  - idle-timeout: ...                              ← draft constraints: NO numbers yet, no REV
+  - S3 telemetry-writer: ...                       ←    movement, no refs; promotion is a copy
+  - #1007 hold: material presets UX ⛭human ...     ←    into plan.md/seams.md/issues/, then re-run
 ```
 
 ## Things worth trying (to feel the invariants)

@@ -341,6 +341,7 @@ One JSON file per client tells extract where truth lives and how to slug it:
   "issue_min": 1000,
   "plan": "plan.md",            "plan_source": "plan-v1",
   "kickoff": "seams.md",
+  "proposals": "proposals.md",
   "seam_slugs": { "S1": "setpoint-iface", "S2": "press-driver" },
   "q_holds":    { "Q1": "torque-law" },
   "constraint_slug_overrides": {},
@@ -358,6 +359,39 @@ that's where the base's numbering left off.
 The plan is parsed inside its `## 2.` section: numbered items `N. **Bold Name.** body`, optionally
 grouped under `### C-GROUP` headings; the bold lead name becomes the constraint's stable slug. The
 seam table is any markdown table with rows `| S# | name | impls (now → later) | freeze event |`.
+
+### The proposed annex — content on the table, not in the graph
+
+`proposals` (optional) names a curated file of **proposed content** — drafts from the
+Tier-1 interview and working sessions that a human is weighing. It parses three blocks:
+
+```
+## constraints
+- **idle-timeout.** An unattended session times out to a safe state.
+
+## seams
+- **S3 telemetry-writer.** local log → supabase telemetry; freeze at M2
+
+## issues
+- #1007 — hold: presets UX
+  type: ambiguity        status: open
+  refs: [3]   opened: seed
+```
+
+The grammar mirrors the core grammars deliberately: **promotion is a copy**, not a
+rewrite — accept a proposal by copying it into `plan.md` / `seams.md` / `issues/` (the
+tracker numbering floor applies), delete it to reject. Until then it renders only in
+the digest's `## proposed` annex, and it is subject to three exclusions:
+
+- **Never in `state.json`, never in the REV.** Proposals churn is the bodies.json case
+  (prose, not graph state): weighing a draft must not move the structural fingerprint
+  of the shipped graph. Accepting it moves the REV — because that *is* structural change.
+- **Nothing silently dropped.** Unparsable proposals warn (invariant 4).
+- **Not refs.** A proposal is not an upstream anchor; no issue may `refs:` it, and a
+  body `#NNNN` mention of a proposed issue warns as unresolved (it is not real yet).
+
+`proposals.md` is a truth input like the rest — editing it refreshes `GRAPH.md` in the
+same commit (the hook's input scope includes it) and counts toward `dirty`.
 
 ---
 

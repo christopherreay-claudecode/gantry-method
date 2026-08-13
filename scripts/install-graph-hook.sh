@@ -58,7 +58,8 @@ command -v python3 >/dev/null 2>&1 || { note "python3 not found"; exit 0; }
 
 INPUTS=\$(python3 -c 'import json,sys
 a = json.load(open(sys.argv[1]))
-print(a["tracker_dir"], a["plan"], a["kickoff"])' "\$ADAPTER" 2>/dev/null) \\
+print(" ".join([a["tracker_dir"], a["plan"], a["kickoff"]] +
+               ([a["proposals"]] if a.get("proposals") else [])))' "\$ADAPTER" 2>/dev/null) \\
   || { note "adapter unreadable: \$ADAPTER"; exit 0; }
 
 # only act when the staged changes touch the process inputs

@@ -14,7 +14,9 @@ its own GRAPH.md builder and tracker law — no gantry repo required.
 | `lint_commit.py` | enforces the commit law: every commit refs an issue; `closes` never targets a human-gated type | automatically, via the `commit-msg` hook |
 
 Config lives at `.gantry/adapter.json` (paths + slug maps); generated state lands in
-`.gantry/out/`.
+`.gantry/out/`. If the adapter names a `proposals` file, its drafts render in
+`GRAPH.md`'s `## proposed` annex — on the table, not in the graph; accept one by
+copying it into `plan.md` / `seams.md` / `issues/` (SPEC §6).
 
 ## The ritual (the developer LLM's session start)
 
