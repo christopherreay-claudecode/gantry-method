@@ -1,0 +1,22 @@
+{
+  "client": "gantry",
+  "tracker_dir": "issues",
+  "issue_min": 1,
+  "issue_max": 999,
+  "lineage": {
+    "level": 0,
+    "kind": "root"
+  },
+  "plan": "plan.md",
+  "plan_source": "plan-v1",
+  "kickoff": "seams.md",
+  "proposals": "proposals.md",
+  "seam_slugs": {
+    "S1": "fork-copy-rule"
+  },
+  "q_holds": {
+    "Q1": "stream-band-size"
+  },
+  "constraint_slug_overrides": {},
+  "parts": []
+}

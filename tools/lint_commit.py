@@ -1,0 +1,1 @@
+../scripts/lint_commit.py
