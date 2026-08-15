@@ -21,7 +21,7 @@ import sys
 import unicodedata
 from pathlib import Path
 
-EXTRACTOR_VERSION = "0.5.0"
+EXTRACTOR_VERSION = "0.5.1"
 SCHEMA_VERSION = "0.2"
 DEP_TYPES = {"blocks", "awaits-stamp", "defers-to", "informs"}
 
@@ -707,6 +707,7 @@ def main():
         return any(lo <= n <= hi for lo, hi in stream_bands)
 
     issues = []
+    below = []
     for path in sorted(tracker.glob("[0-9][0-9][0-9][0-9]-*.md")):
         issue, err = parse_issue(path)
         if err:
@@ -714,15 +715,20 @@ def main():
             continue
         n = int(issue["number"])
         if issue_min and n < issue_min:
-            warnings.append(f"#{issue['number']}: below issue_min {issue_min:04d} — "
-                            f"this repo's issues are numbered from {issue_min:04d} "
-                            f"(copied-in history is fine; new issues must stay at or above it)")
+            below.append(n)
         elif issue_max and n > issue_max and not in_stream_band(n):
             warnings.append(f"#{issue['number']}: above issue_max {issue_max:04d} and in no "
                             f"registered stream band — this repo's band is "
                             f"#{issue_min:04d}–#{issue_max:04d}; numbers above it belong to a "
                             f"sub-project (gantry fork / gantry stream), never to this repo")
         issues.append(issue)
+    if below:
+        # one line, not one per inherited issue: a fork legitimately carries its
+        # base's whole closed reference set below the floor
+        warnings.append(f"{len(below)} issue(s) below issue_min {issue_min:04d} "
+                        f"(#{min(below):04d}–#{max(below):04d}) — this repo's issues are numbered "
+                        f"from {issue_min:04d}; copied-in history is fine, new issues must stay at "
+                        f"or above the floor")
 
     frozen_seams = set()
     issue_selfids = []
