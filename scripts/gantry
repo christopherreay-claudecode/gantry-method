@@ -5,10 +5,13 @@
     gantry adopt  [<repo>] [--name N] [--core-prefix P]... [--link-tools] [--no-seed] [--no-commit]
     gantry fork   <base> <new-dir> [--name N] [--level L | --issue-min N] [--keep-open]
                                    [--exclude PATH]... [--no-commit]
-    gantry stream new   --issue NNNN --slug S [--repo R]
-    gantry stream list  [--repo R]
-    gantry stream merge <slug> [--repo R] [--keep-worktree] [--delete-branch]
-    gantry stream drop  <slug> [--repo R] [--keep-branch]
+    gantry stream new    --issue NNNN --slug S [--brief FILE|-] [--prefix P] [--repo R]
+    gantry stream list   [--repo R]
+    gantry stream report [<prefix|slug>] [--all] [--repo R]
+    gantry stream merge  <prefix|slug> [--repo R] [--keep-worktree] [--delete-branch] [--finish]
+    gantry stream drop   <prefix|slug> [--repo R] [--keep-branch]
+    gantry issue  new    --title T --refs A [A…] [--type T] [--deps "…"] [--repo R]
+    gantry issue  close  <id> --by <sha|sentence> [--repo R]
     gantry check  [<repo>]
 
 Which one, in one line each (docs/00-llm-playbook.md has the long form):
@@ -28,18 +31,24 @@ Which one, in one line each (docs/00-llm-playbook.md has the long form):
           adopt, mint. Generic: any base; the SvelteKit-specific manifest fork
           stays in fork-app.sh.
   stream  a WORKTREE on a branch of the SAME repo, for an orchestrating agent:
-          test workorders and parallel development streams. Each stream gets a
-          sub-band of 100 issue numbers inside the next level's thousand
-          (10 concurrent streams per level), recorded in .gantry/streams.json
-          (committed by the parent). merge = merge back, keep the parent's
-          adapter, regenerate derived files; drop = discard.
+          test workorders and parallel development streams. Spawned BY an
+          issue; lives beside the repo (../.gantry.<repo>.streams.<prefix>);
+          owns an issue NAMESPACE by stable prefix (#a42-0001 …) so parallel
+          streams merge back without collision; seeded with #<prefix>-0001 —
+          the brief (constraints / workorders to fulfil). Registered in
+          .gantry/streams.json (committed by the parent). report = read each
+          stream's GRAPH.md (the orchestrator's check); merge = fold back,
+          parent adapter kept, derived files regenerated; drop = discard.
+  issue   write a correctly-formed issue (exact header grammar; a mistake
+          there floats silently) — body = constraints · depends on ·
+          approaches · exit; close it by its type's authority.
   check   the CI gate: extract --check + gen_index --check + lineage sanity.
 
 Numbering law (SPEC §8): a repo at lineage level L owns issue band
-[L*1000, L*1000+999] (level 0 owns #0001–#0999). Every sub-project — fork or
-stream — is one level down; level 9 (#9000–#9999) is the deepest. A stream
-takes a sub-band of one hundred: level-1 streams are #1000–#1099, #1100–#1199,
-… #1900–#1999. Numbers outside your band are never yours to file.
+[L*1000, L*1000+999] (level 0 owns #0001–#0999); a FORK is one level down
+(level 9, #9000–#9999, is the deepest). A STREAM does not take a band: it takes
+a prefix — <parentPrefix><letter><parentIssueSeq> — and numbers #<prefix>-0001
+onward. Numbers outside your band/namespace are never yours to file.
 
 stdlib only. Shells out to git and to the sibling scripts (adopt.sh,
 install-*.sh, gantry_extract.py, gen_index.py) — run it from anywhere.
@@ -191,10 +200,10 @@ def ensure_gitignore(repo):
     return "appended" if cur else "created"
 
 
-def ensure_claude_md(repo, name, level, lo, hi):
+def ensure_claude_md(repo, name, level, lo=0, hi=0, band=None):
     p = Path(repo) / "CLAUDE.md"
     section = render("CLAUDE.md", name=name, level=level,
-                     issue_min_padded=f"{lo:04d}", issue_max_padded=f"{hi:04d}")
+                     band=band or f"#{lo:04d}–#{hi:04d}")
     if not p.exists():
         p.write_text(section, encoding="utf-8")
         return "created"
@@ -516,6 +525,19 @@ def cmd_fork(a):
 
 
 # ----------------------------------------------------------------- stream ----
+#
+# A stream is a worktree on a branch of the SAME repo, spawned BY an issue, with
+# its own issue NAMESPACE: a stable prefix (identity, not position), so any set
+# of parallel streams can merge back without a collision. Prefix rule:
+#     <parent's own prefix><letter><parent issue seq>
+# stream a of #0042 in a root repo -> "a42"; its issues are #a42-0001, #a42-0002 …
+# a stream b spawned inside it from #a42-0003 -> "a42b3". Letters are allocated
+# per parent issue and never re-used (streams.json is the ledger).
+# The worktree lives BESIDE the repo: ../.gantry.<repoDirName>.streams.<prefix>
+
+ISSUE_PREFIX_RE = re.compile(r"^[a-z][a-z0-9]{0,11}$")
+ISSUE_ID_RE = re.compile(r"^(?:([a-z][a-z0-9]{0,11})-)?(\d{4})$")
+
 
 def streams_path(repo):
     return Path(repo) / ".gantry" / "streams.json"
@@ -530,15 +552,48 @@ def save_streams(repo, data):
     save_json(streams_path(repo), data)
 
 
-def find_stream(data, slug):
+def find_stream(data, key):
     for s in data["streams"]:
-        if s["slug"] == slug:
+        if key in (s["slug"], s["prefix"]):
             return s
-    die(f"no stream '{slug}' in .gantry/streams.json")
+    die(f"no stream '{key}' (slug or prefix) in .gantry/streams.json")
 
 
-def stream_worktree(repo, slug):
-    return Path(repo) / ".gantry" / "streams" / slug
+def stream_worktree(repo, prefix):
+    """../.gantry.<repoDirName>.streams.<prefix> — beside the repo. A stream of a
+    stream keeps the ROOT repo's name (so nesting does not nest the dir name)."""
+    repo = Path(repo)
+    m = re.match(r"^\.gantry\.(.+)\.streams\.[a-z0-9]+$", repo.name)
+    base = m.group(1) if m else repo.name
+    return repo.parent / f".gantry.{base}.streams.{prefix}"
+
+
+def parse_issue_header(path):
+    """(id, title, type, status, refs-line) from an issue file's first 6 lines."""
+    lines = Path(path).read_text(encoding="utf-8").splitlines()[:6]
+    iid = title = typ = st = refs = None
+    for l in lines:
+        m = re.match(r"^#\s+#((?:[a-z][a-z0-9]{0,11}-)?\d{4})\s+—\s+(.+)$", l)
+        if m:
+            iid, title = m.group(1), m.group(2).strip()
+        m = re.match(r"^type:\s*(\S+)\s+status:\s*(\S+)", l)
+        if m:
+            typ, st = m.group(1), m.group(2)
+        m = re.match(r"^refs:\s*(.*?)\s+opened:", l)
+        if m:
+            refs = m.group(1).strip()
+    return iid, title, typ, st, refs
+
+
+def tracker_issue(tracker, iid):
+    """Path of issue <iid> ('0042' or 'a42-0003') or None."""
+    hits = list(Path(tracker).glob(f"{iid}-*.md"))
+    return hits[0] if hits else None
+
+
+def next_free_prefixed(tracker, prefix):
+    seqs = [int(f.name[len(prefix) + 1:len(prefix) + 5]) for f in Path(tracker).glob(f"{prefix}-[0-9][0-9][0-9][0-9]-*.md")]
+    return max(seqs, default=0) + 1
 
 
 def cmd_stream_new(a):
@@ -546,97 +601,128 @@ def cmd_stream_new(a):
     ad = load_adapter(repo)
     if not has_head(repo):
         die("no commits yet — a stream branches from HEAD")
-    issue = f"{int(a.issue):04d}"
     tracker = repo / ad.get("tracker_dir", "issues")
-    if not list(tracker.glob(f"{issue}-*.md")):
+    # the spawning issue: '42', '0042', or 'a42-3' / 'a42-0003'
+    raw = a.issue.lstrip("#")
+    ipfx, _, seq = raw.rpartition("-")
+    if not seq.isdigit() or (ipfx and not ISSUE_PREFIX_RE.match(ipfx)):
+        die(f"--issue must be NNNN or <prefix>-NNNN, got '{a.issue}'")
+    iseq = int(seq)
+    issue = f"{ipfx}-{iseq:04d}" if ipfx else f"{iseq:04d}"
+    ipath = tracker_issue(tracker, issue)
+    if not ipath:
         die(f"parent issue #{issue} not found in {tracker} — file the workorder first; a stream is "
             f"always spawned BY an issue")
+    _, ititle, _, _, irefs = parse_issue_header(ipath)
     slug = re.sub(r"[^a-z0-9-]+", "-", a.slug.lower()).strip("-")
     full = f"{issue}-{slug}"
     data = load_streams(repo)
     if any(s["slug"] == full for s in data["streams"]):
         die(f"stream {full} already exists")
+    own = ad.get("issue_prefix") or ""
+    if a.prefix:
+        prefix = a.prefix
+        if not ISSUE_PREFIX_RE.match(prefix):
+            die(f"--prefix must match [a-z][a-z0-9]{{0,11}}, got '{prefix}'")
+    else:
+        used = {s["prefix"] for s in data["streams"]}
+        prefix = next((f"{own}{c}{iseq}" for c in "abcdefghijklmnopqrstuvwxyz"
+                       if f"{own}{c}{iseq}" not in used), None)
+        if prefix is None:
+            die(f"26 streams already spawned from #{issue} — pass --prefix explicitly")
+    if any(s["prefix"] == prefix for s in data["streams"]):
+        die(f"prefix '{prefix}' already registered")
     level = int((ad.get("lineage") or {}).get("level", 0)) + 1
-    if level > MAX_LEVEL:
-        die(f"this repo is at level {level-1}; a stream would be level {level} > {MAX_LEVEL}")
-    base_lo = level * 1000
-    taken = {int(s["band"][0]) for s in data["streams"]}
-    k = next((k for k in range(10) if base_lo + k * 100 not in taken), None)
-    if k is None:
-        die(f"all 10 stream sub-bands at level {level} are allocated — drop or merge one first "
-            f"(bands are never re-used while a stream is registered)")
-    lo, hi = base_lo + k * 100, base_lo + k * 100 + 99
     branch = f"stream/{full}"
-    wt = stream_worktree(repo, full)
+    wt = stream_worktree(repo, prefix)
     if wt.exists():
         die(f"{wt} exists")
     from_sha = git(repo, "rev-parse", "HEAD").stdout.strip()
     from_branch = git(repo, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+    issue_high = max(issue_numbers(tracker), default=0)
+    brief = ""
+    if a.brief:
+        brief = sys.stdin.read() if a.brief == "-" else Path(a.brief).read_text(encoding="utf-8")
 
-    say(f"== gantry stream new: {full}  (level {level}, band #{lo:04d}–#{hi:04d}, branch {branch})")
-    wt.parent.mkdir(parents=True, exist_ok=True)
+    say(f"== gantry stream new: {full}  (prefix {prefix}, level {level}, branch {branch})")
     git(repo, "worktree", "add", "-q", "-b", branch, str(wt), "HEAD")
     say(f"   worktree: {wt}")
 
-    # the stream's own adapter (on ITS branch): band + lineage. On merge, the
+    # the stream's own adapter (on ITS branch): prefix + lineage. On merge the
     # parent keeps its own adapter (gantry stream merge restores it).
     wad = load_json(adapter_path(wt))
-    wad["issue_min"], wad["issue_max"] = lo, hi
+    wad["issue_prefix"] = prefix
     wad["lineage"] = {"level": level, "kind": "stream",
                       "parent": {"repo": ad.get("client", repo.name), "issue": issue,
-                                 "branch": from_branch, "commit": from_sha}}
-    ordered = {k: wad[k] for k in ("client", "tracker_dir", "issue_min", "issue_max", "lineage") if k in wad}
+                                 "branch": from_branch, "commit": from_sha, "issue_high": issue_high}}
+    ordered = {k: wad[k] for k in ("client", "tracker_dir", "issue_min", "issue_max", "issue_prefix", "lineage") if k in wad}
     ordered.update({k: v for k, v in wad.items() if k not in ordered})
     save_json(adapter_path(wt), ordered)
-    # a stream is not the place to spawn further streams from the parent's table
-    sp = streams_path(wt)
-    if sp.exists():
-        sp.unlink()
+    # a fresh ledger for the stream's own sub-streams (the parent's is the parent's)
+    save_streams(wt, {"streams": []})
     cl = wt / "CLAUDE.md"
     if cl.exists():
         cl.unlink()
-    ensure_claude_md(wt, f"{ad.get('client', repo.name)} · stream {full}", level, lo, hi)
+    ensure_claude_md(wt, f"{ad.get('client', repo.name)} · stream {full}", level,
+                     band=f"#{prefix}-0001…  (your namespace: every issue you file is #{prefix}-NNNN)")
     with cl.open("a", encoding="utf-8") as fh:
-        fh.write(f"\nThis is **stream `{full}`** — a worktree on branch `{branch}`, spawned by parent "
-                 f"issue **#{issue}**. Work the workorder; file this stream's own issues in "
-                 f"#{lo:04d}–#{hi:04d} (each refs a constraint of the shared plan); leave a closing "
-                 f"note in the parent issue's body when done. The orchestrator merges or drops the "
-                 f"stream (`gantry stream merge|drop {full}`).\n")
-    # hooks: worktrees share .git/hooks with the main repo — the shims resolve
-    # the worktree root at runtime, so nothing to install here.
+        fh.write(f"\nThis is **stream `{full}`** (prefix `{prefix}`) — a worktree on branch `{branch}`, "
+                 f"spawned by parent issue **#{issue}** ({ititle}). Start from `#{prefix}-0001`: it "
+                 f"states the constraints this stream must make true. Work them; file every further "
+                 f"issue as `#{prefix}-NNNN` (`python3 <gantry>/scripts/gantry issue new --repo . …`), "
+                 f"each refs a constraint of the shared plan; commit against them. **Everything you do "
+                 f"must show in `GRAPH.md`** — that is what the orchestrator reads "
+                 f"(`gantry stream report {prefix}`). Do not file bare `#NNNN` numbers (they collide "
+                 f"on merge). When done, close your issues by their type's authority and say so in "
+                 f"the last commit; the orchestrator merges or drops the stream.\n")
+    # seed: the stream's brief — its own first workorder, pointing at the
+    # parent's constraints (refs copied), carrying the orchestrator's brief.
+    seed = tracker_issue(wt / ad.get("tracker_dir", "issues"), f"{prefix}-0001")
+    seed_path = wt / ad.get("tracker_dir", "issues") / f"{prefix}-0001-{slug}.md"
+    refs_line = irefs if irefs else "[m0]"
+    body = brief.strip() or (f"Fulfil the constraints of #{issue} ({ititle}). Read that issue for the "
+                             f"constraints and its dependencies; this stream's job is the technical "
+                             f"solution — express each piece of work as its own issue "
+                             f"(#{prefix}-NNNN) stating the constraints it makes true, what it depends "
+                             f"on, and the approach chosen.")
+    seed_path.write_text(
+        f"# #{prefix}-0001 — {slug}: workorder from #{issue}\n"
+        f"type: workorder        status: open\n"
+        f"refs: {refs_line}   opened: stream   closed-by: <sha>\n"
+        f"deps: informs #{issue}\n\n"
+        f"**Constraints to make true (from #{issue} — {ititle}):** see the parent workorder; the "
+        f"anchors above are its anchors.\n\n"
+        f"**Brief from the orchestrator:**\n\n{body}\n\n"
+        f"**Exit:** every issue this stream files is closed by its type's authority; `GRAPH.md` on "
+        f"branch `{branch}` shows the result; the orchestrator reads it and merges or drops.\n",
+        encoding="utf-8")
+    say(f"   seeded: {seed_path.relative_to(wt)}  (the stream's brief; refs = #{issue}'s anchors)")
     git(wt, "add", "-A")
-    git(wt, "commit", "-q", "-m", f"stream {full} opened (#{issue})",
-        "-m", f"gantry stream: level {level}, issue band {lo:04d}-{hi:04d}, from {from_branch} @ {from_sha[:7]}.")
-    say(f"   committed on {branch}: adapter band + lineage, CLAUDE.md briefing")
+    r = git(wt, "commit", "-q", "-m", f"stream {full} opened (#{issue}, #{prefix}-0001)",
+            "-m", f"gantry stream: prefix {prefix}, level {level}, from {from_branch} @ {from_sha[:7]}.",
+            check=False)
+    if r.returncode != 0:
+        die(f"stream commit failed:\n{(r.stderr or r.stdout).strip()}")
+    say(f"   committed on {branch}: adapter (prefix + lineage), CLAUDE.md briefing, seed #{prefix}-0001")
 
-    data["streams"].append({"slug": full, "issue": issue, "band": [lo, hi], "branch": branch,
-                            "worktree": str(wt.relative_to(repo)), "from": from_sha, "status": "open"})
+    data["streams"].append({"slug": full, "prefix": prefix, "issue": issue, "branch": branch,
+                            "worktree": str(wt), "from": from_sha, "status": "open"})
     save_streams(repo, data)
     say(f"   registered: .gantry/streams.json (commit it in the parent, refs #{issue})")
     say("")
     say("NEXT (the orchestrator):")
-    say(f"   - commit the registration: git -C {repo} add .gantry/streams.json && git commit -m 'stream {full} opened (#{issue})'")
-    say(f"   - run the stream's agent in {wt} (it reads CLAUDE.md → GRAPH.md)")
-    say(f"   - then: gantry stream merge {full}   or   gantry stream drop {full}")
+    say(f"   - git -C {repo} add .gantry/streams.json && git -C {repo} commit -m 'stream {full} opened (#{issue})'")
+    say(f"   - run the stream's agent in {wt}  (it reads CLAUDE.md → GRAPH.md → #{prefix}-0001)")
+    say(f"   - watch: gantry stream report {prefix} --repo {repo}")
+    say(f"   - then: gantry stream merge {prefix} --repo {repo}   or   gantry stream drop {prefix} --repo {repo}")
 
 
-def stream_counts(wt, lo, hi):
-    tracker = Path(wt) / "issues"
-    o = c = 0
-    for f in tracker.glob(ISSUE_GLOB):
-        try:
-            n = int(f.name[:4])
-        except ValueError:
-            continue
-        if lo <= n <= hi:
-            txt = f.read_text(encoding="utf-8").splitlines()[:6]
-            st = next((re.match(r"^type:\s*\S+\s+status:\s*(\S+)", l).group(1)
-                       for l in txt if re.match(r"^type:\s*\S+\s+status:\s*(\S+)", l)), "?")
-            if st == "open":
-                o += 1
-            else:
-                c += 1
-    return o, c
+def stream_issue_rows(tracker, prefix):
+    rows = []
+    for f in sorted(Path(tracker).glob(f"{prefix}-[0-9][0-9][0-9][0-9]-*.md")):
+        iid, title, typ, st, _ = parse_issue_header(f)
+        rows.append((iid, title, typ, st))
+    return rows
 
 
 def cmd_stream_list(a):
@@ -645,29 +731,74 @@ def cmd_stream_list(a):
     if not data["streams"]:
         say("no streams registered (.gantry/streams.json absent or empty)")
         return
-    say(f"{'band':<12} {'status':<7} {'issue':<6} {'open/closed':<12} {'branch':<32} worktree")
-    for s in sorted(data["streams"], key=lambda s: s["band"][0]):
-        wt = repo / s["worktree"]
-        oc = "%d/%d" % stream_counts(wt, *s["band"]) if wt.exists() else "—"
-        say(f"#{s['band'][0]:04d}–#{s['band'][1]:04d} {s['status']:<7} #{s['issue']:<5} {oc:<12} "
-            f"{s['branch']:<32} {s['worktree'] if wt.exists() else '(removed)'}")
+    say(f"{'prefix':<10} {'status':<8} {'issue':<10} {'open/closed':<12} {'branch':<34} worktree")
+    for s in sorted(data["streams"], key=lambda s: s["prefix"]):
+        wt = Path(s["worktree"])
+        if wt.exists():
+            rows = stream_issue_rows(wt / "issues", s["prefix"])
+            oc = "%d/%d" % (sum(1 for r in rows if r[3] == "open"), sum(1 for r in rows if r[3] != "open"))
+        else:
+            oc = "—"
+        say(f"{s['prefix']:<10} {s['status']:<8} #{s['issue']:<9} {oc:<12} {s['branch']:<34} "
+            f"{s['worktree'] if wt.exists() else '(removed)'}")
+
+
+def cmd_stream_report(a):
+    """The orchestrator's check: what each stream's GRAPH.md says now."""
+    repo = repo_root(a.repo)
+    data = load_streams(repo)
+    targets = [find_stream(data, a.stream)] if a.stream else \
+        [s for s in data["streams"] if s["status"] == "open" or a.all]
+    if not targets:
+        say("no open streams")
+        return
+    for s in targets:
+        wt = Path(s["worktree"])
+        head = git(repo, "rev-parse", "--short", s["branch"], check=False).stdout.strip() or "?"
+        last = git(repo, "log", "-1", "--format=%h %s", s["branch"], check=False).stdout.strip()
+        ahead = git(repo, "rev-list", "--count", f"{s['from']}..{s['branch']}", check=False).stdout.strip()
+        say(f"== stream {s['slug']}  prefix {s['prefix']}  [{s['status']}]  branch {s['branch']} @ {head}"
+            f"  ({ahead} commits since spawn)")
+        say(f"   last: {last}")
+        if wt.exists():
+            graph = (wt / "GRAPH.md").read_text(encoding="utf-8") if (wt / "GRAPH.md").exists() else ""
+            src = str(wt / "GRAPH.md")
+        else:
+            r = git(repo, "show", f"{s['branch']}:GRAPH.md", check=False)
+            graph = r.stdout if r.returncode == 0 else ""
+            src = f"git show {s['branch']}:GRAPH.md"
+        if not graph:
+            say("   (no GRAPH.md on the stream yet)")
+            continue
+        say(f"   GRAPH.md ({src}):")
+        keep = ("lineage:", "gates latched:", "seams ", "open items", "  #", "closed/resolved:",
+                "dependency edges", "streams open", "streams closed")
+        for line in graph.splitlines():
+            if line.startswith("sources —") or line.startswith("## proposed"):
+                break
+            if line.startswith(keep) or (line.startswith("  ") and line.strip()):
+                say("     " + line)
+        rows = stream_issue_rows(wt / "issues", s["prefix"]) if wt.exists() else []
+        if rows:
+            say(f"   {s['prefix']}-issues: " + " · ".join(f"#{iid} {st}" for iid, _, _, st in rows))
+        say("")
 
 
 def cmd_stream_merge(a):
     repo = repo_root(a.repo)
     data = load_streams(repo)
-    s = find_stream(data, a.slug)
+    s = find_stream(data, a.stream)
     if s["status"] != "open":
-        die(f"stream {a.slug} is {s['status']}")
+        die(f"stream {s['slug']} is {s['status']}")
     if not a.finish:
         if git(repo, "status", "--porcelain", "--untracked-files=no", check=False).stdout.strip():
             die("parent has uncommitted changes — commit or stash before merging a stream")
-        say(f"== gantry stream merge: {a.slug} ({s['branch']}) -> "
+        say(f"== gantry stream merge: {s['slug']} ({s['branch']}) -> "
             f"{git(repo, 'rev-parse', '--abbrev-ref', 'HEAD').stdout.strip()}")
         git(repo, "merge", "--no-ff", "--no-commit", s["branch"], check=False)
         conflicts = git(repo, "diff", "--name-only", "--diff-filter=U", check=False).stdout.split()
         # derived / per-branch files: the parent's version wins, then regenerates
-        derived = {".gantry/adapter.json", "GRAPH.md", "issues/INDEX.md", "CLAUDE.md"}
+        derived = {".gantry/adapter.json", ".gantry/streams.json", "GRAPH.md", "issues/INDEX.md", "CLAUDE.md"}
         for f in list(conflicts):
             if f in derived:
                 git(repo, "checkout", "--ours", "--", f)
@@ -678,33 +809,33 @@ def cmd_stream_merge(a):
             for f in conflicts:
                 say(f"     {f}")
             die(f"resolve them and `git add` each file, then run:\n"
-                f"       gantry stream merge {a.slug} --finish\n"
+                f"       gantry stream merge {s['prefix']} --finish\n"
                 f"   (which restores the parent's adapter, regenerates GRAPH.md/INDEX.md, records the "
                 f"stream as merged and makes the merge commit)")
     else:
-        say(f"== gantry stream merge --finish: {a.slug}")
-        if not (repo / ".git" / "MERGE_HEAD").exists() and not (repo / ".git").is_file():
-            say("   note: no merge in progress — finishing bookkeeping only")
-    # the parent keeps ITS adapter and briefing; derived files regenerate
-    for f in (".gantry/adapter.json", "CLAUDE.md"):
+        say(f"== gantry stream merge --finish: {s['slug']}")
+    # the parent keeps ITS adapter, ledger and briefing; derived files regenerate
+    for f in (".gantry/adapter.json", ".gantry/streams.json", "CLAUDE.md"):
         git(repo, "checkout", "HEAD", "--", f, check=False)
+    data = load_streams(repo)
+    s = find_stream(data, a.stream)
     s["status"] = "merged"
     s["merged_from"] = git(repo, "rev-parse", s["branch"]).stdout.strip()
     save_streams(repo, data)
     run_extract(repo, quiet=True)
     run_gen_index(repo, quiet=True)
     git(repo, "add", "-A")
-    r = git(repo, "commit", "-q", "-m", f"merge stream {a.slug} (#{s['issue']})",
-            "-m", f"gantry stream merge: band {s['band'][0]:04d}-{s['band'][1]:04d} folded into the "
-                  f"parent; parent adapter kept; GRAPH.md + INDEX.md regenerated.", check=False)
+    r = git(repo, "commit", "-q", "-m", f"merge stream {s['slug']} (#{s['issue']})",
+            "-m", f"gantry stream merge: prefix {s['prefix']} folded into the parent; parent adapter "
+                  f"kept; GRAPH.md + INDEX.md regenerated.", check=False)
     if r.returncode != 0:
         die(f"merge commit failed:\n{(r.stderr or r.stdout).strip()}")
-    say(f"   merged + committed: merge stream {a.slug} (#{s['issue']})")
+    say(f"   merged + committed: merge stream {s['slug']} (#{s['issue']})")
     if not a.keep_worktree:
-        wt = repo / s["worktree"]
+        wt = Path(s["worktree"])
         if wt.exists():
             git(repo, "worktree", "remove", "--force", str(wt))
-            say(f"   worktree removed: {s['worktree']}")
+            say(f"   worktree removed: {wt}")
     if a.delete_branch:
         git(repo, "branch", "-D", s["branch"])
         say(f"   branch deleted: {s['branch']}")
@@ -715,18 +846,89 @@ def cmd_stream_merge(a):
 def cmd_stream_drop(a):
     repo = repo_root(a.repo)
     data = load_streams(repo)
-    s = find_stream(data, a.slug)
-    say(f"== gantry stream drop: {a.slug}")
-    wt = repo / s["worktree"]
+    s = find_stream(data, a.stream)
+    say(f"== gantry stream drop: {s['slug']} (prefix {s['prefix']})")
+    wt = Path(s["worktree"])
     if wt.exists():
         git(repo, "worktree", "remove", "--force", str(wt))
-        say(f"   worktree removed: {s['worktree']}")
+        say(f"   worktree removed: {wt}")
     if not a.keep_branch:
         git(repo, "branch", "-D", s["branch"], check=False)
         say(f"   branch deleted: {s['branch']}")
     s["status"] = "dropped"
     save_streams(repo, data)
-    say(f"   .gantry/streams.json: {a.slug} → dropped (band stays reserved; commit it, refs #{s['issue']})")
+    say(f"   .gantry/streams.json: {s['slug']} → dropped (prefix stays reserved; commit it, refs #{s['issue']})")
+
+
+# ------------------------------------------------------------------ issue ----
+
+def cmd_issue_new(a):
+    """Write a correctly-formed issue file: the header grammar is exact and a
+    mistake there is silent (the issue floats) — so a tool writes it."""
+    repo = repo_root(a.repo)
+    ad = load_adapter(repo)
+    tracker = repo / ad.get("tracker_dir", "issues")
+    tracker.mkdir(exist_ok=True)
+    prefix = ad.get("issue_prefix")
+    if prefix:
+        iid = f"{prefix}-{next_free_prefixed(tracker, prefix):04d}"
+    else:
+        lo, hi = ad.get("issue_min", 1) or 1, ad.get("issue_max", 9999) or 9999
+        iid = f"{next_free_issue(tracker, lo, hi):04d}"
+    if a.number:
+        iid = a.number
+        if tracker_issue(tracker, iid):
+            die(f"#{iid} exists")
+    slug = re.sub(r"[^a-z0-9-]+", "-", (a.slug or a.title).lower()).strip("-")[:48]
+    if a.type == "ambiguity" and not slug.startswith("ambiguity-"):
+        slug = "ambiguity-" + slug
+    refs = " ".join(t if t.startswith("[") else f"[{t}]" for t in a.refs)
+    if not refs:
+        die("--refs is required (≥1 upstream anchor: a constraint number, S#, gate, Phase, Q#) — "
+            "an issue with no resolvable ref is floating scaffold (SPEC §5 invariant 1)")
+    closed_by = "<a human sentence>" if a.type in HUMAN_GATED else "<sha>"
+    head = [f"# #{iid} — {a.title}",
+            f"type: {a.type}        status: open",
+            f"refs: {refs}   opened: {a.opened}   closed-by: {closed_by}"]
+    if a.deps:
+        head.append(f"deps: {a.deps}")
+    body = render("issue-workorder.md", constraints=a.constraints or "<what must be true when this closes — one testable sentence per constraint; each traces to a plan constraint above>",
+                  depends="<the issues this needs first — mirror them on the deps: line as blocks/awaits-stamp/defers-to/informs>",
+                  approaches="<the technical ways considered; the one chosen and why; what a seam would let you swap later>",
+                  exit="<the test / observation that latches this>")
+    path = tracker / f"{iid}-{slug}.md"
+    path.write_text("\n".join(head) + "\n\n" + body, encoding="utf-8")
+    say(f"   created: {path.relative_to(repo)}")
+    say(f"   fill the body (constraints · depends on · approaches · exit); commit with '(#{iid})'")
+
+
+def cmd_issue_close(a):
+    repo = repo_root(a.repo)
+    ad = load_adapter(repo)
+    tracker = repo / ad.get("tracker_dir", "issues")
+    iid = a.id.lstrip("#")
+    pfx, _, seq = iid.rpartition("-")
+    iid = f"{pfx}-{int(seq):04d}" if pfx else f"{int(seq):04d}"
+    p = tracker_issue(tracker, iid)
+    if not p:
+        die(f"#{iid} not found in {tracker}")
+    _, _, typ, st, _ = parse_issue_header(p)
+    if st != "open":
+        die(f"#{iid} is already {st}")
+    sha_like = re.match(r"^[0-9a-f]{7,40}$", a.by) is not None
+    if typ in HUMAN_GATED and sha_like:
+        die(f"#{iid} is type '{typ}' — human-gated: --by must be a human sentence (who decided, what), "
+            f"never a sha (SPEC §3)")
+    if typ not in HUMAN_GATED and not sha_like:
+        say(f"   note: '{typ}' is commit-closable; --by is usually the landing sha")
+    lines = p.read_text(encoding="utf-8").splitlines()
+    for i, l in enumerate(lines[:6]):
+        if re.match(r"^type:\s*\S+\s+status:\s*open", l):
+            lines[i] = re.sub(r"status:\s*open", "status: closed", l, count=1)
+        if l.startswith("refs:"):
+            lines[i] = re.sub(r"closed-by:\s*.*$", f"closed-by: {a.by}", l)
+    p.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    say(f"   closed: #{iid} — closed-by: {a.by}   (commit it: 'close #{iid} …')")
 
 
 # ------------------------------------------------------------------ check ----
@@ -744,13 +946,13 @@ def cmd_check(a):
     lin = ad.get("lineage") or {}
     level = int(lin.get("level", 0))
     exp = band_for_level(level)
-    if (lo, hi) != exp and lin.get("kind") != "stream":
+    if (lo, hi) != exp and not ad.get("issue_prefix"):
         say(f"   lineage: level {level} expects band #{exp[0]:04d}–#{exp[1]:04d}, adapter says "
             f"#{lo:04d}–#{hi:04d}")
         ok = False
     data = load_streams(repo)
     for s in data["streams"]:
-        wt = repo / s["worktree"]
+        wt = Path(s["worktree"])
         if s["status"] == "open" and not wt.exists():
             say(f"   stream {s['slug']}: open but worktree missing ({s['worktree']})")
             ok = False
@@ -794,17 +996,38 @@ def main():
     p.add_argument("--no-commit", action="store_true")
     p.set_defaults(fn=cmd_fork)
 
-    p = sub.add_parser("stream", help="worktree streams for an orchestrating agent")
+    p = sub.add_parser("stream", help="worktree streams for an orchestrating agent (prefix namespaces)")
     ss = p.add_subparsers(dest="scmd", required=True)
-    q = ss.add_parser("new"); q.add_argument("--issue", required=True); q.add_argument("--slug", required=True)
+    q = ss.add_parser("new", help="spawn a stream from an issue: worktree beside the repo, own prefix, seeded brief")
+    q.add_argument("--issue", required=True, help="the spawning workorder: NNNN or <prefix>-NNNN")
+    q.add_argument("--slug", required=True)
+    q.add_argument("--brief", help="markdown file (or - for stdin) with the constraints/workorders to fulfil; becomes #<prefix>-0001's body")
+    q.add_argument("--prefix", help="override the allocated prefix ([a-z][a-z0-9]{0,11})")
     q.add_argument("--repo", default="."); q.set_defaults(fn=cmd_stream_new)
     q = ss.add_parser("list"); q.add_argument("--repo", default="."); q.set_defaults(fn=cmd_stream_list)
-    q = ss.add_parser("merge"); q.add_argument("slug"); q.add_argument("--repo", default=".")
+    q = ss.add_parser("report", help="what each stream's GRAPH.md says now — the orchestrator's check")
+    q.add_argument("stream", nargs="?", help="prefix or slug (default: all open)")
+    q.add_argument("--all", action="store_true", help="include merged/dropped")
+    q.add_argument("--repo", default="."); q.set_defaults(fn=cmd_stream_report)
+    q = ss.add_parser("merge"); q.add_argument("stream", help="prefix or slug"); q.add_argument("--repo", default=".")
     q.add_argument("--keep-worktree", action="store_true"); q.add_argument("--delete-branch", action="store_true")
     q.add_argument("--finish", action="store_true", help="after resolving conflicts by hand: bookkeeping + merge commit")
     q.set_defaults(fn=cmd_stream_merge)
-    q = ss.add_parser("drop"); q.add_argument("slug"); q.add_argument("--repo", default=".")
+    q = ss.add_parser("drop"); q.add_argument("stream", help="prefix or slug"); q.add_argument("--repo", default=".")
     q.add_argument("--keep-branch", action="store_true"); q.set_defaults(fn=cmd_stream_drop)
+
+    p = sub.add_parser("issue", help="write / close a correctly-formed issue (the header grammar is exact)")
+    ss = p.add_subparsers(dest="icmd", required=True)
+    q = ss.add_parser("new")
+    q.add_argument("--title", required=True)
+    q.add_argument("--type", default="workorder", help="milestone|workorder|bug|ambiguity|freeze-request|amendment-proposal|…")
+    q.add_argument("--refs", nargs="+", default=[], help="upstream anchors: 3 S1 m1 PhaseB Q1 (≥1 required)")
+    q.add_argument("--deps", help='e.g. "blocks #0004; informs #0003"')
+    q.add_argument("--slug"); q.add_argument("--number", help="force an id (default: next free in this repo's namespace)")
+    q.add_argument("--opened", default="seed"); q.add_argument("--constraints", help="the constraints this issue makes true (body)")
+    q.add_argument("--repo", default="."); q.set_defaults(fn=cmd_issue_new)
+    q = ss.add_parser("close"); q.add_argument("id"); q.add_argument("--by", required=True, help="landing sha, or a human sentence for human-gated types")
+    q.add_argument("--repo", default="."); q.set_defaults(fn=cmd_issue_close)
 
     p = sub.add_parser("check", help="CI gate: extract --check, gen_index --check, lineage sanity")
     p.add_argument("repo", nargs="?", default=".")

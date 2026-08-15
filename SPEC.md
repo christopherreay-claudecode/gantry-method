@@ -47,6 +47,29 @@ its component constraint *and* trace it to the lived-experience beat — "this e
 user must feel X." Citing a plan-constraint number is necessary but not sufficient; the number
 is a handle, the felt outcome is the reason.
 
+### Constraints are the first-order language; work is how they are solved
+
+Everything in the method is *spoken* in constraints, and *done* as work against them:
+
+- **The highest constraints are the lived experience of the users / roles** of what is being
+  built. They may be very specific ("a committed stroke lands identically every time") or
+  deliberately vague ("an operator trusts the machine") — vagueness at the top is allowed; it is
+  refined downward, never ignored.
+- **Beneath them, networks of technical constraints solve them.** A technical constraint exists
+  only because it helps make a higher one true; it names which. The plan is this network,
+  numbered.
+- **Seams are how you build.** A seam is a planned substitution point; you use seams to build and
+  test the *lowest* levels of the tool first — a stub behind the seam, a real implementation
+  later — and then reach *up* toward the highest constraints, level by level, each level tested
+  against its own constraints before the next depends on it.
+- **Every workorder is expressed as its own constraints** — the ones *it* makes true when it
+  closes — plus the issues it depends on (declared on `deps:`), and only then the technical
+  ways of solving them (approaches weighed, one taken). `gantry issue new` writes that shape;
+  a workorder that cannot state its constraints is not yet a workorder.
+- **A stream is a workorder given a worktree**: an orchestrator spawns it with a brief — the
+  constraints (or the workorders derived from them) to fulfil — and reads the result off the
+  stream's `GRAPH.md` (§8).
+
 A worked instance: in the reference project the Tier-1 source is a **prose narrative of the
 user's experience** (a pilot learning to move under a fixed control delay). "The control delay is
 fixed, therefore learnable" is a lived-experience constraint. It formalizes into plan constraints
@@ -156,7 +179,10 @@ overrides it to **open** and emits a warning. Design decisions cannot be closed 
 ## §4 The issue file — structure and grammar
 
 Files live in the tracker directory (conventionally `issues/`), named `NNNN-short-slug.md`,
-sequentially numbered. The **header block is the first lines of the file** (the parser reads only
+sequentially numbered. An issue filed **inside a stream** carries the stream's prefix in its id
+and file name — `#a42-0003`, `a42-0003-short-slug.md` (`prefix` = `[a-z][a-z0-9]{0,11}`, §8) — so
+issues from parallel streams never collide when they merge back; everywhere below, "`#NNNN`"
+means "`#NNNN` or `#<prefix>-NNNN`". The **header block is the first lines of the file** (the parser reads only
 the first 6 lines for header fields) and is exact:
 
 ```
@@ -168,8 +194,9 @@ deps: defers-to #0004; informs #0003
 
 Line by line, each rule is precisely what the parser matches:
 
-- **Title** — `# #NNNN — Title`. A literal `#`, space, `#NNNN` (four digits), space, an
-  **em-dash `—`**, space, then the title. (A hyphen will not match; it must be the em-dash.)
+- **Title** — `# #NNNN — Title`. A literal `#`, space, `#NNNN` (four digits, optionally
+  `<prefix>-` before them), space, an **em-dash `—`**, space, then the title. (A hyphen will not
+  match; it must be the em-dash. `gantry issue new` writes this line so you never have to.)
   Numbering need not start at `0001`: the adapter's `issue_min` (SPEC §6) sets this repo's
   floor. A repo forked from a base keeps the base's issues (`#0001`–`#0013`, a *closed
   reference set*) below the floor and numbers its own work from `#1000` — the extractor
@@ -509,7 +536,8 @@ the law those commands implement.
 | empty/absent directory | `gantry new <dir>` | mkdir, `git init`, then `adopt` |
 | existing repo — empty or with content | `gantry adopt [<repo>]` | scaffold **only what is missing** (`plan.md`, `seams.md`, `issues/`, `.gantry/adapter.json`, a gantry section in `CLAUDE.md`, `.gitignore` lines), copy tools + wire both hooks (`adopt.sh`), seed `#<floor> — M0`, commit `gantry adopted (#<floor>)`. Idempotent; never overwrites client content; re-run is a no-op |
 | new separate repo from a gantry-adopted base | `gantry fork <base> <new>` | see *Forking* below; level = base + 1 |
-| worktree stream of the same repo | `gantry stream new --issue N --slug S` · `list` · `merge` · `drop` | see *Streams* below; level = repo + 1, sub-band of one hundred |
+| worktree stream of the same repo | `gantry stream new --issue N --slug S [--brief F]` · `list` · `report` · `merge` · `drop` | see *Streams* below; level = repo + 1, own prefix namespace |
+| a new issue, correctly formed | `gantry issue new --title T --refs …` · `issue close <id> --by …` | writes the exact header + the workorder body (constraints · depends on · approaches · exit); closes by the type's authority |
 | CI / honesty gate | `gantry check [<repo>]` | `extract --check` + `gen_index --check` + lineage sanity; exit 1 on drift |
 
 **The adoption commit obeys the commit law.** `adopt` seeds one milestone issue —
@@ -546,32 +574,38 @@ entire adoption is three points:
 5. **Onboard extract** — the adapter is written; the hooks are wired; run `gantry check` in CI so
    `GRAPH.md` and `INDEX.md` stay fresh.
 
-### The lineage law — levels are thousands
+### The lineage law — forks take a level, streams take a prefix
 
 A gantry repo may have **sub-projects**: a *fork* (a separate repo born from it) or a *stream*
-(a worktree on a branch of it). Both sit **one level below** their parent, and level decides
-the issue band:
+(a worktree on a branch of it). Both sit **one level below** their parent. Numbering is by
+identity where collisions can happen and by level where they cannot:
 
 ```
-level 0  root                  #0001–#0999
-level L  (1 ≤ L ≤ 9)           #L000–#L999        (fork: the whole thousand)
-         streams at level L    #L000–#L099, #L100–#L199, … #L900–#L999   (ten per level, one hundred each)
-level 9  the deepest           #9000–#9999
+level 0  root                          #0001–#0999
+level L  FORK  (1 ≤ L ≤ 9)             #L000–#L999   — a separate repo: the whole next thousand
+         STREAM of any repo            #<prefix>-0001, #<prefix>-0002 …   — its own namespace
+         prefix = <parent's own prefix><letter><parent issue seq>
+                  stream a of #0042 → a42;  its sub-stream b from #a42-0003 → a42b3
+level 9  the deepest fork              #9000–#9999
 ```
 
-- **Numbers outside a repo's band are never its to file.** Below the floor is inherited history
-  (a fork keeps the base's issues, closed); above the ceiling belongs to a sub-project. Extract
-  warns; `gantry check` fails on a band that contradicts the level.
-- **The band is enforced by the extractor**, and streams are the only sanctioned way for a
-  repo's tracker to hold numbers above its ceiling: `.gantry/streams.json` (committed by the
-  parent) registers each stream's band, so issues that merged back are explained, not warned.
+- **Numbers outside a repo's band or namespace are never its to file.** Below the floor is
+  inherited history (a fork keeps the base's issues, closed); above the ceiling belongs to a fork;
+  a bare number filed *inside* a stream is a collision waiting for the merge. Extract warns on all
+  three; `gantry check` fails on a band that contradicts the level.
+- **Streams are identity, not position.** Two parallel streams of `#0042` are `a42` and `b42`;
+  letters are allocated per parent issue and never re-used (`.gantry/streams.json`, committed by
+  the parent, is the ledger). Any subset merges back with no renumbering.
+- **The extractor enforces it.** A prefixed issue whose prefix is neither the repo's own
+  `issue_prefix` nor a registered stream warns; a stream (adapter has `issue_prefix`) filing an
+  unprefixed number above the parent's `issue_high` at spawn time warns.
 - **Lineage is visible.** `GRAPH.md` opens with `lineage: level L · kind of parent @ sha ·
-  issues #lo–#hi` and the open streams. From the adapter and `streams.json` only — never
-  `state.json`, never the REV: where a repo sits is operational, not structural.
+  issues …` and the open streams (`prefix · slug · parent issue · branch`). From the adapter and
+  `streams.json` only — never `state.json`, never the REV: where a repo sits is operational, not
+  structural.
 - **A stream's issues ref the shared plan.** Same `plan.md`, same constraints; the stream's
-  `refs:` resolve exactly as the parent's do.
-- The stream sub-band width (100 × 10) is a deliberately open decision in the gantry repo's own
-  tracker (hold `#0006`); the code takes 10 × 100 and refuses an eleventh open stream at a level.
+  `refs:` resolve exactly as the parent's do; its entity ids carry the prefix
+  (`workorder:a42-<slug>`) so they never collide with the parent's.
 
 ### Forking an app out of a base (the copy, not the link)
 
@@ -596,23 +630,36 @@ machinery* into a completely separate repo — no links, no submodules, no share
 
 ### Streams — worktrees for an orchestrating agent
 
-`gantry stream new --repo <repo> --issue N --slug S` is how an orchestrator runs **test
-workorders** and **parallel development streams** without leaving the method:
+`gantry stream new --repo <repo> --issue N --slug S [--brief FILE|-]` is how an orchestrator runs
+**test workorders** and **parallel development streams** without leaving the method:
 
-1. a stream is always **spawned by an issue** in the parent (`#N` must exist — the workorder);
-2. it is a **git worktree** at `<repo>/.gantry/streams/N-S` (gitignored) on branch `stream/N-S`,
-   sharing the parent's `.git/hooks` (the shims resolve every path from the worktree root);
-3. it gets the **lowest free hundred** at level + 1, written into *its own* adapter on *its*
-   branch (`issue_min`, `issue_max`, `lineage: {kind: stream, parent: {issue, branch, commit}}`)
-   together with a `CLAUDE.md` that names the stream, its band, and its workorder;
-4. the parent's **`.gantry/streams.json`** records `{slug, issue, band, branch, worktree, from,
+1. a stream is always **spawned by an issue** in the parent (`#N` must exist — the workorder
+   whose constraints the stream is to fulfil);
+2. it is a **git worktree beside the repo** — `../.gantry.<repoDirName>.streams.<prefix>` — on
+   branch `stream/N-S`, sharing the parent's `.git/hooks` (the shims resolve every path from the
+   worktree root). Beside, not inside: an agent's glob over the parent tree must not see N copies
+   of the repo;
+3. it gets its **prefix** (`<parent prefix><letter><N's seq>`), written into *its own* adapter on
+   *its* branch (`issue_prefix`, `lineage: {kind: stream, parent: {issue, branch, commit,
+   issue_high}}`) with a `CLAUDE.md` that names the stream, its namespace, its workorder, and the
+   rule *everything you do must show in `GRAPH.md`*;
+4. it is **seeded with `#<prefix>-0001`** — a `workorder` whose `refs:` are the spawning issue's
+   anchors and whose body is the orchestrator's **brief**: the constraints to make true, or the
+   workorders derived from them (`--brief`; default text points at the parent issue). The stream's
+   agent starts from constraints, never from nothing;
+5. the parent's **`.gantry/streams.json`** records `{slug, prefix, issue, branch, worktree, from,
    status}` — the orchestrator commits it (`refs #N`);
-5. `gantry stream merge N-S` merges `--no-ff` back into the parent branch, keeps the **parent's**
-   adapter and briefing, regenerates `GRAPH.md` / `INDEX.md`, marks the stream `merged`, removes
-   the worktree (branch kept unless `--delete-branch`); real-content conflicts stop the tool
-   (`--finish` completes the bookkeeping after you resolve them);
-6. `gantry stream drop N-S` removes worktree and branch and marks it `dropped`; the band stays
-   reserved (a dropped stream's numbers are never reissued while it is registered).
+6. **the orchestrator's check is `GRAPH.md`**: `gantry stream report [prefix]` reads each open
+   stream's map (from the worktree, or `git show stream/…:GRAPH.md` once removed) — lineage,
+   gates, open items, closed items, the prefixed issues and their status, commits since spawn.
+   All work in a stream must surface there: an issue per piece of work, closed by its type's
+   authority. If the orchestrator gets no direct output from the sub-model, this is what it reads;
+7. `gantry stream merge <prefix>` merges `--no-ff` back into the parent branch, keeps the
+   **parent's** adapter, ledger and briefing, regenerates `GRAPH.md` / `INDEX.md`, marks the stream
+   `merged`, removes the worktree (branch kept unless `--delete-branch`); real-content conflicts
+   stop the tool (`--finish` completes the bookkeeping after you resolve them);
+8. `gantry stream drop <prefix>` removes worktree and branch and marks it `dropped`; the prefix
+   stays reserved.
 
 The stream's closing note belongs in the parent issue's body; the parent issue closes by its own
 type's authority (the merge sha, or a sentence).
@@ -625,8 +672,8 @@ Everything named above ships in `scripts/`, each runnable and self-documented:
 
 | Script | Role | Typical invocation |
 |---|---|---|
-| `gantry` | **the entry point** (§8): `new` · `adopt` · `fork` · `stream new/list/merge/drop` · `check` — the only thing an LLM needs to run | `python3 scripts/gantry <cmd> …` |
-| `templates/` | what `new`/`adopt` scaffold: `plan.md`, `seams.md`, `adapter.json`, `issue-seed.md`, `CLAUDE.md`, `gitignore.snippet` | — |
+| `gantry` | **the entry point** (§8): `new` · `adopt` · `fork` · `stream new/list/report/merge/drop` · `issue new/close` · `check` — the only thing an LLM needs to run | `python3 scripts/gantry <cmd> …` |
+| `templates/` | what `new`/`adopt`/`issue new` scaffold: `plan.md`, `seams.md`, `adapter.json`, `issue-seed.md`, `issue-workorder.md`, `CLAUDE.md`, `gitignore.snippet` | — |
 | `adopt.sh` | tools + both hooks + GRAPH.md mint into a client (§7); called by `gantry adopt`, usable alone | `sh adopt.sh <repo> [--core-prefix P]` |
 | `fork-app.sh` | fork a new app repo out of a gantry-adopted base: manifest copy, identity edits, inherited issues closed as a reference set, fresh init + birth commit, adopt, verify (§8) | `sh fork-app.sh <base> <app> --issue-min N [--name N] [--fresh-tools] [--local-stack]` |
 | `gantry_extract.py` | truth → `state.json` + `GRAPH.md` + `bodies.json` (§6); copied into adopting clients as `tools/gantry_extract.py` | `python3 gantry_extract.py --client A.json --root R --out S.json [--deps D.json]` |

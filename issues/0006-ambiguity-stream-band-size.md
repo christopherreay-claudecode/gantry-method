@@ -1,6 +1,6 @@
 # #0006 — hold: stream sub-band size — 100 issues × 10 concurrent streams per level?
-type: ambiguity        status: open
-refs: [5] [Q1]   opened: M0   closed-by: <a human sentence>
+type: ambiguity        status: closed
+refs: [5] [Q1]   opened: M0   closed-by: Christopher 2026-08-15: 'repo-id prefix is good, have that built in to the stream script' — streams namespace by prefix; sub-bands withdrawn
 deps: informs #0004
 
 **The decision deliberately deferred:** a level's thousand is split into ten hundreds, one

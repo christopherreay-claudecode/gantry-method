@@ -20,7 +20,14 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 
-HEADER_RE = re.compile(r"^#\s*#(\d+)\s*[—-]\s*(.+?)\s*$")
+ISSUE_ID = r"(?:[a-z][a-z0-9]{0,11}-)?\d{4}"   # NNNN, or <stream-prefix>-NNNN (SPEC §8)
+HEADER_RE = re.compile(rf"^#\s*#({ISSUE_ID})\s*[—-]\s*(.+?)\s*$")
+FILE_RE = re.compile(rf"^{ISSUE_ID}-.+\.md$")
+
+
+def sort_key(iid: str):
+    pfx, _, seq = iid.rpartition("-")
+    return (pfx, int(seq))
 FIELD_RE = re.compile(r"^type:\s*(\S+)\s+status:\s*(\S+)")
 
 
@@ -31,7 +38,7 @@ def parse_issue(path: Path):
             if num is None:
                 m = HEADER_RE.match(line)
                 if m:
-                    num, title = int(m.group(1)), m.group(2)
+                    num, title = m.group(1), m.group(2)
                     continue
             if itype is None:
                 m = FIELD_RE.match(line.strip())
@@ -56,15 +63,16 @@ def main():
 
     issues_dir = (Path(args.root) if args.root else REPO) / "issues"
     rows = []
-    for path in sorted(issues_dir.glob("[0-9][0-9][0-9][0-9]-*.md")):
-        rows.append(parse_issue(path))
-    rows.sort(key=lambda r: r[0])
+    for path in sorted(issues_dir.iterdir()):
+        if FILE_RE.match(path.name):
+            rows.append(parse_issue(path))
+    rows.sort(key=lambda r: sort_key(r[0]))
 
     out = ["# Issue Index (generated — do not hand-edit; run tools/gen_index.py)", ""]
     out.append("| # | Title | Type | Status | File |")
     out.append("|---|-------|------|--------|------|")
     for num, title, itype, status, fname in rows:
-        out.append(f"| #{num:04d} | {title} | {itype} | {status} | [{fname}]({fname}) |")
+        out.append(f"| #{num} | {title} | {itype} | {status} | [{fname}]({fname}) |")
     out.append("")
     text = "\n".join(out)
 

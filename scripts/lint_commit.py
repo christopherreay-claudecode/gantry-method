@@ -29,16 +29,20 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 
 HUMAN_GATED = {"ambiguity", "freeze-request", "amendment-proposal"}
-REF_RE = re.compile(r"#(\d{1,4})\b")
-CLOSES_RE = re.compile(r"\b(?:closes|closed|fixes|resolves)\s+#(\d{1,4})\b", re.I)
+# an issue ref is #NNNN, or #<prefix>-NNNN for a stream's issue (SPEC §8)
+ISSUE_ID = r"(?:[a-z][a-z0-9]{0,11}-)?\d{1,4}"
+REF_RE = re.compile(rf"#({ISSUE_ID})\b")
+CLOSES_RE = re.compile(rf"\b(?:closes|closed|fixes|resolves)\s+#({ISSUE_ID})\b", re.I)
 
 
-def issue_path(tracker: Path, num: int):
-    hits = list(tracker.glob(f"{num:04d}-*.md"))
+def issue_path(tracker: Path, ref: str):
+    pfx, _, seq = ref.rpartition("-")
+    name = f"{pfx}-{int(seq):04d}" if pfx else f"{int(seq):04d}"
+    hits = list(tracker.glob(f"{name}-*.md"))
     return hits[0] if hits else None
 
 
-def issue_type(tracker: Path, num: int):
+def issue_type(tracker: Path, num: str):
     p = issue_path(tracker, num)
     if not p:
         return None
@@ -51,8 +55,11 @@ def issue_type(tracker: Path, num: int):
 
 def lint(message: str, files, tracker: Path, core_prefixes):
     errors = []
-    refs = [int(n) for n in REF_RE.findall(message)]
-    closes = [int(n) for n in CLOSES_RE.findall(message)]
+    def canon(ref):  # '#42' -> '0042', 'a42-3' -> 'a42-0003'
+        pfx, _, seq = ref.rpartition("-")
+        return f"{pfx}-{int(seq):04d}" if pfx else f"{int(seq):04d}"
+    refs = [canon(n) for n in REF_RE.findall(message)]
+    closes = [canon(n) for n in CLOSES_RE.findall(message)]
 
     touches_core = any(f.startswith(p) for f in files for p in core_prefixes)
 
@@ -64,15 +71,15 @@ def lint(message: str, files, tracker: Path, core_prefixes):
 
     for n in refs:
         if issue_path(tracker, n) is None:
-            errors.append(f"referenced issue #{n:04d} does not exist")
+            errors.append(f"referenced issue #{n} does not exist")
 
     for n in closes:
         t = issue_type(tracker, n)
         if t is None:
-            errors.append(f"closes #{n:04d}: issue does not exist")
+            errors.append(f"closes #{n}: issue does not exist")
         elif t in HUMAN_GATED:
             errors.append(
-                f"closes #{n:04d}: type '{t}' is human-gated and may not be closed by commit"
+                f"closes #{n}: type '{t}' is human-gated and may not be closed by commit"
             )
     return errors
 

@@ -15,6 +15,12 @@ a set of numbered constraints; issues point at them; `GRAPH.md` is the derived m
 5. Never hand-edit `GRAPH.md`, `issues/INDEX.md`, `.gantry/out/*` — edit the truth
    (`plan.md`, `seams.md`, `issues/*.md`) and regenerate (the pre-commit hook does it).
 
-Issue numbering: this repo's issues live in **#{{issue_min_padded}}–#{{issue_max_padded}}**
-(lineage level {{level}}). Numbers outside the band belong to a parent or a stream — never
-file there. Sub-projects (`gantry fork`, `gantry stream`) get the next thousand.
+Issue numbering: this repo's issues live in **{{band}}** (lineage level {{level}}).
+Numbers outside that belong to a parent, a fork, or a stream — never file there. Write
+issues with `gantry issue new` (exact header grammar); a fork gets the next thousand, a
+stream gets its own prefix namespace (`#<prefix>-NNNN`).
+
+**Constraints first.** The plan's constraints descend from the lived experience of the
+users/roles; each issue is a workorder that states the constraints *it* makes true, what it
+depends on, and the technical approach — and seams let you build and test the lowest levels
+first, then reach up.

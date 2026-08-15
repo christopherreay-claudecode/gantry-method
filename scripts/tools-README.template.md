@@ -36,13 +36,15 @@ copying it into `plan.md` / `seams.md` / `issues/` (SPEC §6).
 
 ## Where this repo sits (lineage — SPEC §8)
 
-`.gantry/adapter.json` carries `issue_min` / `issue_max` / `lineage`: this repo's issue band
-and its parent (a root repo owns `#0001–#0999`; a fork or stream sits one level down and
-owns the next thousand — or a hundred of it, for a stream). `GRAPH.md` opens with a
-`lineage:` line. **Never file an issue outside the band**; the extractor warns and
-`gantry check` fails. Sub-projects: `python3 <gantry-repo>/scripts/gantry fork <this> <new>`
-or `… stream new --repo <this> --issue N --slug S` (worktree at `.gantry/streams/N-S`,
-registered in `.gantry/streams.json`).
+`.gantry/adapter.json` carries `issue_min` / `issue_max` / `issue_prefix` / `lineage`: this
+repo's issue band or namespace and its parent (a root repo owns `#0001–#0999`; a fork sits one
+level down and owns the next thousand; a stream owns a prefix namespace `#<prefix>-NNNN`).
+`GRAPH.md` opens with a `lineage:` line. **Never file an issue outside it** — write issues with
+`python3 <gantry-repo>/scripts/gantry issue new --repo . --title … --refs …` and the id is right
+by construction; the extractor warns and `gantry check` fails otherwise. Sub-projects:
+`… gantry fork <this> <new>` or `… gantry stream new --repo <this> --issue N --slug S --brief F`
+(worktree beside this repo, registered in `.gantry/streams.json`; the orchestrator reads
+`gantry stream report`).
 
 ## CI
 

@@ -5,7 +5,7 @@ only, no network, no model); the three shell scripts wire git hooks.
 
 | Script | What it is | Home (SPEC §7) |
 |---|---|---|
-| **`gantry`** | **the entry point** (SPEC §8, `docs/00-llm-playbook.md`): `new <dir>` · `adopt [<repo>]` · `fork <base> <new>` · `stream new/list/merge/drop` · `check`. Python, stdlib; shells out to git and the scripts below. Start here. | observer — run from anywhere |
+| **`gantry`** | **the entry point** (SPEC §8, `docs/00-llm-playbook.md`): `new <dir>` · `adopt [<repo>]` · `fork <base> <new>` · `stream new/list/report/merge/drop` · `issue new/close` · `check`. Python, stdlib; shells out to git and the scripts below. Start here. | observer — run from anywhere |
 | `templates/` | what `new`/`adopt` scaffold into a repo (only what is missing): `plan.md`, `seams.md`, `adapter.json`, `issue-seed.md`, `CLAUDE.md`, `gitignore.snippet` | copied into the client |
 | `adopt.sh` | **one-command adoption**: copies the client tools (incl. the GRAPH.md builder), writes the ritual (`tools/README.md`), wires both hooks, mints GRAPH.md (after the adapter is filled). Idempotent. | both |
 | `fork-app.sh` | **fork a new app repo out of a gantry-adopted base**: manifest copy (truth + machinery), identity edits, inherited issues closed as a reference set, fresh git init + birth commit (lint-exempt: no issue exists yet), adopt + verify + mint. SPEC §8. | observer — run from the gantry repo |
@@ -37,7 +37,8 @@ but not a dependency of the adopted project.
 ```sh
 # THE ENTRY POINT (everything below is what it calls):
 python3 gantry new <dir> | adopt [<repo>] [--core-prefix P] [--link-tools] | fork <base> <new> | \
-        stream new --issue N --slug S [--repo R] | stream list|merge|drop … | check [<repo>]
+        stream new --issue N --slug S [--brief F] [--repo R] | stream list|report|merge|drop … | \
+        issue new --title T --refs … | issue close <id> --by … | check [<repo>]
 sh ../tests/run.sh          # every subcommand end to end, in scratch repos
 
 # extract (the core — from EITHER home; produces the map + graph state + prose sidecar):

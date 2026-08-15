@@ -13,7 +13,7 @@ over.
 
 > **If you are an LLM and want a repo on the method: read `docs/00-llm-playbook.md`
 > and run one command.** `python3 scripts/gantry new <dir>` · `adopt <repo>` ·
-> `fork <base> <new>` · `stream new --issue N --slug S` · `check`. Every situation —
+> `fork <base> <new>` · `stream new --issue N --slug S` · `issue new` · `check`. Every situation —
 > new directory, empty repo, repo with content, fork of a base, worktree stream for
 > an orchestrator — is one subcommand, and it prints what to do next. This repo runs
 > on the method itself: its own `GRAPH.md`, `plan.md`, `issues/` are the toolbox's tracker.
@@ -48,7 +48,8 @@ product every agent actually reads.
    walks the loop end to end.
 3. **`scripts/`** — the programs, each runnable and documented in its own header.
 4. **`docs/00-llm-playbook.md`** — your situation → the exact `scripts/gantry` command; the
-   lineage law (levels are thousands; streams sub-band) in one page.
+   lineage law (forks take a level; streams take a prefix) in one page; `docs/01-constraint-interview.md`
+   is the protocol for deriving a plan from an existing code base with its human.
 5. **`docs/02-projection-3d.md`, `docs/03-pipeline.md`, `docs/04-operator-runbook.md`** — the
    3D-representation goal this method feeds: the metaphor-first projection, the full
    pipeline, and the operator LLM's briefing for generating a scene from an adopted client.
@@ -60,7 +61,9 @@ product every agent actually reads.
 python3 scripts/gantry new   ~/code/my-project            # empty/absent dir → adopted repo, one commit
 python3 scripts/gantry adopt ~/code/existing --core-prefix src/   # existing repo, content kept
 python3 scripts/gantry fork  ~/code/base ~/code/my-app    # separate repo, next level: issues from #1000
-python3 scripts/gantry stream new --repo . --issue 42 --slug try-a   # worktree, band #1000–#1099
+python3 scripts/gantry stream new --repo . --issue 42 --slug try-a --brief b.md  # worktree beside repo, namespace #a42-…
+python3 scripts/gantry stream report a42 --repo .             # the orchestrator's check: the stream's GRAPH.md
+python3 scripts/gantry issue new --title "M1: …" --refs 3 S1 --type milestone   # exact header + workorder body
 python3 scripts/gantry check .                            # CI gate: drift + lineage
 sh tests/run.sh                                           # exercise all of the above in scratch repos
 ```

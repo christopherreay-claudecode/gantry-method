@@ -21,7 +21,7 @@ import sys
 import unicodedata
 from pathlib import Path
 
-EXTRACTOR_VERSION = "0.5.1"
+EXTRACTOR_VERSION = "0.6.0"
 SCHEMA_VERSION = "0.2"
 DEP_TYPES = {"blocks", "awaits-stamp", "defers-to", "informs"}
 
@@ -44,7 +44,31 @@ def slugify(text: str, max_len: int = 48) -> str:
 
 # ---------------------------------------------------------------- tracker ----
 
-ISSUE_H1_RE = re.compile(r"^#\s+#(\d{4})\s+—\s+(.+)$")
+# issue ids: `NNNN` (this repo's own sequence) or `<prefix>-NNNN` — a STREAM's
+# namespace (SPEC §8): the prefix is the stream's stable identity, so issues from
+# parallel streams never collide when they merge back into the parent tracker.
+ISSUE_PREFIX = r"[a-z][a-z0-9]{0,11}"
+ISSUE_ID = rf"(?:{ISSUE_PREFIX}-)?\d{{4}}"
+ISSUE_ID_RE = re.compile(rf"^(?:({ISSUE_PREFIX})-)?(\d{{4}})$")
+ISSUE_FILE_RE = re.compile(rf"^({ISSUE_ID})-(.+)\.md$")
+ISSUE_H1_RE = re.compile(rf"^#\s+#({ISSUE_ID})\s+—\s+(.+)$")
+
+
+def split_issue_id(iid: str):
+    """'a42-0003' -> ('a42', 3); '0003' -> (None, 3)."""
+    m = ISSUE_ID_RE.match(iid)
+    return (m.group(1), int(m.group(2))) if m else (None, None)
+
+
+def issue_files(tracker: Path) -> list:
+    """Every issue file in the tracker, unprefixed first, then by prefix — deterministic."""
+    found = []
+    for path in tracker.iterdir():
+        m = ISSUE_FILE_RE.match(path.name)
+        if m:
+            pfx, seq = split_issue_id(m.group(1))
+            found.append(((pfx or "", seq, path.name), path))
+    return [p for _, p in sorted(found)]
 ISSUE_META_RE = re.compile(r"^type:\s*(\S+)\s+status:\s*(\S+)")
 ISSUE_REFS_RE = re.compile(r"^refs:\s*(.*?)\s+opened:\s*(.+?)\s+closed-by:\s*(.+)$")
 ISSUE_DEPS_RE = re.compile(r"^deps:\s*(.+)$")
@@ -80,10 +104,13 @@ def parse_issue(path: Path):
         return None, f"{path.name}: unparsable header (missing {sorted(missing)})"
     issue.setdefault("refs", [])
     issue.setdefault("closed_by", "")
-    slug = re.sub(r"^\d{4}-", "", path.stem)
+    issue["prefix"], issue["seq"] = split_issue_id(issue["number"])
+    slug = re.sub(rf"^{ISSUE_ID}-", "", path.stem)
     if issue["type"] == "ambiguity":
         slug = re.sub(r"^ambiguity-", "", slug)
     issue["slug"] = slug
+    if issue["prefix"] and not path.name.startswith(issue["number"] + "-"):
+        return None, f"{path.name}: file id and header id disagree (#{issue['number']})"
     return issue, None
 
 
@@ -324,9 +351,9 @@ def load_streams(root: Path, warnings: list) -> list:
         return []
     out = []
     for s in data.get("streams", []):
-        band = s.get("band")
-        if not (isinstance(band, list) and len(band) == 2):
-            warnings.append(f"streams: entry {s.get('slug', '?')} has no [lo, hi] band — skipped")
+        pfx = s.get("prefix")
+        if not (isinstance(pfx, str) and re.match(rf"^{ISSUE_PREFIX}$", pfx)):
+            warnings.append(f"streams: entry {s.get('slug', '?')} has no valid prefix — skipped")
             continue
         out.append(s)
     return out
@@ -339,7 +366,11 @@ def render_lineage(adapter: dict, streams: list) -> list:
     lines = []
     lin = adapter.get("lineage") or {}
     lo, hi = adapter.get("issue_min", 0) or 0, adapter.get("issue_max", 0) or 0
-    band = f"issues #{lo:04d}–#{hi:04d}" if hi else (f"issues from #{lo:04d}" if lo else "issues unbanded")
+    pfx = adapter.get("issue_prefix")
+    if pfx:
+        band = f"issues #{pfx}-0001… (stream namespace; unprefixed = inherited)"
+    else:
+        band = f"issues #{lo:04d}–#{hi:04d}" if hi else (f"issues from #{lo:04d}" if lo else "issues unbanded")
     if lin:
         head = f"lineage: level {lin.get('level', 0)} · {lin.get('kind', 'root')}"
         par = lin.get("parent") or {}
@@ -354,14 +385,14 @@ def render_lineage(adapter: dict, streams: list) -> list:
         lines.append(f"lineage: {band}")
     live = [s for s in streams if s.get("status", "open") == "open"]
     if live:
-        lines.append("streams open (band · slug · parent issue · branch):")
-        for s in sorted(live, key=lambda s: int(s["band"][0])):
-            lines.append(f"  #{int(s['band'][0]):04d}–#{int(s['band'][1]):04d} {s.get('slug', '?')}"
+        lines.append("streams open (prefix · slug · parent issue · branch):")
+        for s in sorted(live, key=lambda s: s["prefix"]):
+            lines.append(f"  {s['prefix']} · {s.get('slug', '?')}"
                          f" · #{s.get('issue', '?')} · {s.get('branch', '?')}")
     done = [s for s in streams if s.get("status", "open") != "open"]
     if done:
         lines.append("streams closed: " + " ".join(
-            f"{s.get('slug', '?')}[{s.get('status')}]" for s in sorted(done, key=lambda s: int(s["band"][0]))))
+            f"{s['prefix']}[{s.get('status')}]" for s in sorted(done, key=lambda s: s["prefix"])))
     return lines
 
 
@@ -701,26 +732,38 @@ def main():
     # Issues merged back from a stream sit above this repo's issue_max but inside
     # a registered band — legitimate, not a numbering mistake.
     streams = load_streams(root, warnings)
-    stream_bands = [(int(s["band"][0]), int(s["band"][1])) for s in streams]
-
-    def in_stream_band(n):
-        return any(lo <= n <= hi for lo, hi in stream_bands)
+    known_prefixes = {s["prefix"] for s in streams}
+    own_prefix = adapter.get("issue_prefix")
+    lineage = adapter.get("lineage") or {}
+    # a stream inherits the parent's unprefixed issues up to issue_high; any
+    # unprefixed number above that was filed IN the stream — a collision waiting
+    # to happen at merge time
+    issue_high = int((lineage.get("parent") or {}).get("issue_high") or 0) if own_prefix else 0
 
     issues = []
     below = []
-    for path in sorted(tracker.glob("[0-9][0-9][0-9][0-9]-*.md")):
+    for path in issue_files(tracker):
         issue, err = parse_issue(path)
         if err:
             warnings.append(err)
             continue
-        n = int(issue["number"])
-        if issue_min and n < issue_min:
-            below.append(n)
-        elif issue_max and n > issue_max and not in_stream_band(n):
-            warnings.append(f"#{issue['number']}: above issue_max {issue_max:04d} and in no "
-                            f"registered stream band — this repo's band is "
-                            f"#{issue_min:04d}–#{issue_max:04d}; numbers above it belong to a "
-                            f"sub-project (gantry fork / gantry stream), never to this repo")
+        pfx, n = issue["prefix"], issue["seq"]
+        if pfx:
+            if pfx != own_prefix and pfx not in known_prefixes:
+                warnings.append(f"#{issue['number']}: prefix '{pfx}' is neither this repo's own "
+                                f"issue_prefix nor a stream registered in .gantry/streams.json — "
+                                f"a stream's issues arrive with its prefix; register it or renumber")
+        else:
+            if issue_min and n < issue_min:
+                below.append(n)
+            elif issue_max and n > issue_max:
+                warnings.append(f"#{issue['number']}: above issue_max {issue_max:04d} — this repo's "
+                                f"band is #{issue_min:04d}–#{issue_max:04d}; numbers above it belong "
+                                f"to a fork (next level), and a stream's issues carry its prefix")
+            if own_prefix and n > issue_high:
+                warnings.append(f"#{issue['number']}: unprefixed issue filed in stream '{own_prefix}' "
+                                f"(parent had #{issue_high:04d} at spawn) — a stream files "
+                                f"#{own_prefix}-NNNN, never bare numbers (they collide on merge)")
         issues.append(issue)
     if below:
         # one line, not one per inherited issue: a fork legitimately carries its
@@ -751,7 +794,7 @@ def main():
             closed = False
 
         kind = "hold" if issue["type"] == "ambiguity" else "workorder"
-        self_id = f"{kind}:{issue['slug']}"
+        self_id = f"{kind}:{issue['prefix'] + '-' if issue['prefix'] else ''}{issue['slug']}"
         status = {"closure_authority": "human" if human else "mechanical"}
         if kind == "hold":
             status["decision"] = "resolved" if closed else "open"
@@ -816,7 +859,7 @@ def main():
     num_to_eid = {issue["number"]: sid for issue, sid in issue_selfids}
     for issue, sid in issue_selfids:
         have = {(r["type"], r["target"]) for r in entities[sid]["relations"]}
-        for num in sorted(set(re.findall(r"#(\d{4})", issue["body"]))):
+        for num in sorted(set(re.findall(rf"#({ISSUE_ID})\b", issue["body"]))):
             if num == issue["number"]:
                 continue
             target = num_to_eid.get(num)

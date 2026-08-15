@@ -31,9 +31,10 @@ ends up on the method correctly, without knowing anything the commands did not t
 4. **Levels are thousands.** A repo at lineage level L owns issues `#L000–#L999` (level 0:
    `#0001–#0999`); every sub-project — fork or stream — sits one level below its parent;
    level 9 (`#9000–#9999`) is the deepest. (Serves Tier-1: "never collides".)
-5. **Streams sub-band.** Parallel streams of one repo take disjoint hundreds inside the next
-   level's thousand (ten per level), so merging any subset back cannot collide.
-   (Serves Tier-1: an orchestrator can run streams in parallel and fold them in.)
+5. **Streams are identity, not position.** Parallel streams of one repo take disjoint prefix
+   namespaces (`#<prefix>-NNNN`, prefix = parent prefix + letter + spawning issue), so any subset
+   merges back with no renumbering. (Serves Tier-1: an orchestrator can run streams in parallel
+   and fold them in.)
 6. **The band is enforced.** Extract warns on any issue below the repo's floor or above its
    ceiling that no registered stream explains; `gantry check` fails on a band that
    contradicts the level. (Serves Tier-1: "the scaffold never lies".)
