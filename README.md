@@ -11,6 +11,13 @@ alone: the spec (`SPEC.md`) explains it from first principles, `scripts/` ships 
 program required, and `examples/` is a tiny project you can actually run the pipeline
 over.
 
+> **If you are an LLM and want a repo on the method: read `docs/00-llm-playbook.md`
+> and run one command.** `python3 scripts/gantry new <dir>` · `adopt <repo>` ·
+> `fork <base> <new>` · `stream new --issue N --slug S` · `check`. Every situation —
+> new directory, empty repo, repo with content, fork of a base, worktree stream for
+> an orchestrator — is one subcommand, and it prints what to do next. This repo runs
+> on the method itself: its own `GRAPH.md`, `plan.md`, `issues/` are the toolbox's tracker.
+
 ## What this repo is — and what it isn't
 
 **In scope** (gantry as the *method* machinery):
@@ -40,11 +47,25 @@ product every agent actually reads.
    and the exact `GRAPH.md` + `state.json` the pipeline emits from it. `examples/README.md`
    walks the loop end to end.
 3. **`scripts/`** — the programs, each runnable and documented in its own header.
-4. **`docs/02-projection-3d.md`, `docs/03-pipeline.md`, `docs/04-operator-runbook.md`** — the
+4. **`docs/00-llm-playbook.md`** — your situation → the exact `scripts/gantry` command; the
+   lineage law (levels are thousands; streams sub-band) in one page.
+5. **`docs/02-projection-3d.md`, `docs/03-pipeline.md`, `docs/04-operator-runbook.md`** — the
    3D-representation goal this method feeds: the metaphor-first projection, the full
    pipeline, and the operator LLM's briefing for generating a scene from an adopted client.
 
 ## 60-second quickstart
+
+```sh
+# put ANY repo on the method — one command per situation (docs/00-llm-playbook.md):
+python3 scripts/gantry new   ~/code/my-project            # empty/absent dir → adopted repo, one commit
+python3 scripts/gantry adopt ~/code/existing --core-prefix src/   # existing repo, content kept
+python3 scripts/gantry fork  ~/code/base ~/code/my-app    # separate repo, next level: issues from #1000
+python3 scripts/gantry stream new --repo . --issue 42 --slug try-a   # worktree, band #1000–#1099
+python3 scripts/gantry check .                            # CI gate: drift + lineage
+sh tests/run.sh                                           # exercise all of the above in scratch repos
+```
+
+The pieces underneath, for the curious:
 
 ```sh
 # 1. generate the map from a project's issues (deterministic; no network, no model):
@@ -77,7 +98,8 @@ This repo is a **toolbox**, not a library you import. Two of the six scripts are
 | `scripts/gen_index.py`, `scripts/lint_commit.py` | **your repo's `tools/`, committed** | the tracker ledger + commit law are *your* content; a clean clone must enforce itself with no gantry present |
 | `scripts/install-*.sh`, `graph-refresh.sh` | this repo; they install *wiring* | hooks live in `.git/hooks` (never versioned) and point back here or at your `tools/` copies |
 
-To adopt:
+To adopt (`python3 scripts/gantry adopt <repo>` does 1–2 and the seed issue + commit for you;
+the pieces:):
 
 1. **Run the one-command adoption**: `sh scripts/adopt.sh <repo> --core-prefix src/`.
    It copies the tools into your `tools/` — **including the GRAPH.md builder**

@@ -34,6 +34,16 @@ copying it into `plan.md` / `seams.md` / `issues/` (SPEC §6).
 4. **Never hand-edit `GRAPH.md`, `issues/INDEX.md`, `.gantry/out/*`** — they are
    derived data; edit the truth (issues, plan, seams) and regenerate.
 
+## Where this repo sits (lineage — SPEC §8)
+
+`.gantry/adapter.json` carries `issue_min` / `issue_max` / `lineage`: this repo's issue band
+and its parent (a root repo owns `#0001–#0999`; a fork or stream sits one level down and
+owns the next thousand — or a hundred of it, for a stream). `GRAPH.md` opens with a
+`lineage:` line. **Never file an issue outside the band**; the extractor warns and
+`gantry check` fails. Sub-projects: `python3 <gantry-repo>/scripts/gantry fork <this> <new>`
+or `… stream new --repo <this> --issue N --slug S` (worktree at `.gantry/streams/N-S`,
+registered in `.gantry/streams.json`).
+
 ## CI
 
 Add a drift gate: regenerate and fail on any diff — visualization/report drift is
