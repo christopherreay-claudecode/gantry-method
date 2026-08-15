@@ -21,7 +21,7 @@ import sys
 import unicodedata
 from pathlib import Path
 
-EXTRACTOR_VERSION = "0.4.3"
+EXTRACTOR_VERSION = "0.5.0"
 SCHEMA_VERSION = "0.2"
 DEP_TYPES = {"blocks", "awaits-stamp", "defers-to", "informs"}
 
@@ -309,7 +309,63 @@ def parse_proposals(path: Path, warnings: list) -> dict:
 STAMP_RE = re.compile(r"@ [0-9a-f]{7,40}(\+dirty)? · REV [0-9a-f]{12}")
 
 
-def render_digest(doc: dict) -> str:
+def load_streams(root: Path, warnings: list) -> list:
+    """`.gantry/streams.json` — the sub-bands this repo has handed to worktree
+    streams (written by `gantry stream`, committed by the parent). Operational
+    metadata, not graph state: read for the numbering guard and the digest's
+    lineage block only; never enters state.json or the REV."""
+    p = root / ".gantry" / "streams.json"
+    if not p.exists():
+        return []
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        warnings.append(f"streams: {p} unreadable ({exc}) — ignored")
+        return []
+    out = []
+    for s in data.get("streams", []):
+        band = s.get("band")
+        if not (isinstance(band, list) and len(band) == 2):
+            warnings.append(f"streams: entry {s.get('slug', '?')} has no [lo, hi] band — skipped")
+            continue
+        out.append(s)
+    return out
+
+
+def render_lineage(adapter: dict, streams: list) -> list:
+    """Digest-only lines describing where this repo sits in a gantry lineage
+    (SPEC §8): its level, its issue band, its parent, and the streams it has
+    open. From the adapter + streams.json — never from state.json."""
+    lines = []
+    lin = adapter.get("lineage") or {}
+    lo, hi = adapter.get("issue_min", 0) or 0, adapter.get("issue_max", 0) or 0
+    band = f"issues #{lo:04d}–#{hi:04d}" if hi else (f"issues from #{lo:04d}" if lo else "issues unbanded")
+    if lin:
+        head = f"lineage: level {lin.get('level', 0)} · {lin.get('kind', 'root')}"
+        par = lin.get("parent") or {}
+        if par:
+            head += f" of {par.get('repo', '?')}"
+            if par.get("commit"):
+                head += f" @ {str(par['commit'])[:7]}"
+            if par.get("issue"):
+                head += f" (parent issue #{par['issue']})"
+        lines.append(f"{head} · {band}")
+    elif lo or hi:
+        lines.append(f"lineage: {band}")
+    live = [s for s in streams if s.get("status", "open") == "open"]
+    if live:
+        lines.append("streams open (band · slug · parent issue · branch):")
+        for s in sorted(live, key=lambda s: int(s["band"][0])):
+            lines.append(f"  #{int(s['band'][0]):04d}–#{int(s['band'][1]):04d} {s.get('slug', '?')}"
+                         f" · #{s.get('issue', '?')} · {s.get('branch', '?')}")
+    done = [s for s in streams if s.get("status", "open") != "open"]
+    if done:
+        lines.append("streams closed: " + " ".join(
+            f"{s.get('slug', '?')}[{s.get('status')}]" for s in sorted(done, key=lambda s: int(s["band"][0]))))
+    return lines
+
+
+def render_digest(doc: dict, adapter: dict = None, streams: list = None) -> str:
     """GRAPH.md — a very concise graph digest for an LLM working on the client
     codebase. One line per open item; details live in the issue files. To change
     this file, change the issues and re-run extract."""
@@ -346,6 +402,10 @@ def render_digest(doc: dict) -> str:
     latched = [e["id"].split(":")[1] for e in gates if e["status"].get("gate") == "latched"]
     gopen = [e["id"].split(":")[1] for e in gates if e["status"].get("gate") != "latched"]
     phases = [e["id"].split(":")[1] for e in doc["entities"] if e["kind"] == "phase"]
+    lin_lines = render_lineage(adapter or {}, streams or [])
+    if lin_lines:
+        lines.extend(lin_lines)
+        lines.append("")
     lines.append(f"gates latched: {' '.join(sorted(latched))} · open: {' '.join(sorted(gopen))}"
                  f" · phases open: {' '.join(sorted(phases))}")
     for stab in ("provisional", "frozen"):
@@ -636,16 +696,32 @@ def main():
     # tracker
     tracker = root / adapter["tracker_dir"]
     issue_min = adapter.get("issue_min", 0) or 0
+    issue_max = adapter.get("issue_max", 0) or 0
+    # streams (SPEC §8): sub-bands this repo has allocated to worktree streams.
+    # Issues merged back from a stream sit above this repo's issue_max but inside
+    # a registered band — legitimate, not a numbering mistake.
+    streams = load_streams(root, warnings)
+    stream_bands = [(int(s["band"][0]), int(s["band"][1])) for s in streams]
+
+    def in_stream_band(n):
+        return any(lo <= n <= hi for lo, hi in stream_bands)
+
     issues = []
     for path in sorted(tracker.glob("[0-9][0-9][0-9][0-9]-*.md")):
         issue, err = parse_issue(path)
         if err:
             warnings.append(err)
             continue
-        if issue_min and int(issue["number"]) < issue_min:
+        n = int(issue["number"])
+        if issue_min and n < issue_min:
             warnings.append(f"#{issue['number']}: below issue_min {issue_min:04d} — "
                             f"this repo's issues are numbered from {issue_min:04d} "
                             f"(copied-in history is fine; new issues must stay at or above it)")
+        elif issue_max and n > issue_max and not in_stream_band(n):
+            warnings.append(f"#{issue['number']}: above issue_max {issue_max:04d} and in no "
+                            f"registered stream band — this repo's band is "
+                            f"#{issue_min:04d}–#{issue_max:04d}; numbers above it belong to a "
+                            f"sub-project (gantry fork / gantry stream), never to this repo")
         issues.append(issue)
 
     frozen_seams = set()
@@ -803,8 +879,12 @@ def main():
             if rel["target"] not in entities:
                 warnings.append(f"{ent['id']}: relation -> missing entity {rel['target']}")
 
-    commit = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"],
-                            capture_output=True, text=True, check=True).stdout.strip()
+    head = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"],
+                          capture_output=True, text=True)
+    # An unborn HEAD (fresh `git init`, birth commit in flight) is legitimate:
+    # the pre-commit shim mints GRAPH.md INTO the birth commit, and by the hook
+    # convention the stamp is the parent sha — here, none. Stamped 0000000+dirty.
+    commit = head.stdout.strip() if head.returncode == 0 else "0" * 40
     # dirty = uncommitted changes (staged, unstaged, or untracked) under the
     # extract INPUT paths only — other noise in the client tree doesn't count.
     input_paths = [adapter["tracker_dir"], adapter["plan"], adapter["kickoff"]]
@@ -834,7 +914,7 @@ def main():
 
     out_path = Path(args.out)
     digest_path = Path(args.digest) if args.digest else out_path.parent / "GRAPH.md"
-    digest_text = render_digest(doc) + render_sources(doc, bodies, adapter) \
+    digest_text = render_digest(doc, adapter, streams) + render_sources(doc, bodies, adapter) \
         + render_proposals_annex(proposals)
 
     if args.check:

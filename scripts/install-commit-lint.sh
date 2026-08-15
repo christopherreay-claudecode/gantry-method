@@ -31,8 +31,6 @@ EXTRA_ARGS="$*"
 
 [ -d "$REPO/.git" ] || { echo "not a git repo: $REPO" >&2; exit 1; }
 
-HAD_LINT=0
-[ -e "$LINT" ] && HAD_LINT=1
 for tool in "$LINT" "$GENINDEX"; do
   if [ -e "$tool" ]; then
     echo "kept: $tool already exists — the client owns it; not overwriting" >&2
@@ -44,10 +42,9 @@ for tool in "$LINT" "$GENINDEX"; do
   fi
 done
 
-if [ "$HAD_LINT" -eq 1 ] && [ -n "$EXTRA_ARGS" ]; then
-  echo "note: ignoring '$EXTRA_ARGS' — the client's own lint encodes its own law" >&2
-  EXTRA_ARGS=""
-fi
+# (--tracker-dir / --core-prefix are SHIM wiring — arguments the hook passes to
+# whichever lint the client owns — so they are honored whenever we write the shim,
+# including when the client already had a lint copy.)
 
 if [ -e "$HOOK" ] && ! grep -q "installed by gantry" "$HOOK"; then
   echo "kept: $HOOK exists and was not installed by gantry — client wiring already in place" >&2

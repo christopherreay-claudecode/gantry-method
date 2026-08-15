@@ -34,7 +34,7 @@ done
 # repo-relative paths for the refresh scope (git pathspec is repo-root-relative)
 ADAPTER_REL=${ADAPTER#"$REPO"/}
 DEPS_REL=${DEPS#"$REPO"/}
-EXTRA="$ADAPTER_REL tools/gantry_extract.py"
+EXTRA="$ADAPTER_REL tools/gantry_extract.py .gantry/streams.json"
 if [ -n "$DEPS_REL" ]; then EXTRA="$EXTRA $DEPS_REL"; fi
 
 HOOK="$REPO/.git/hooks/pre-commit"
@@ -54,8 +54,11 @@ cat > "$HOOK" <<EOF
 # Remove this file to uninstall.
 REPO="\$(git rev-parse --show-toplevel)"
 EXTRACT="\$REPO/tools/gantry_extract.py"
-ADAPTER="$ADAPTER"
-DEPS="$DEPS"
+# paths are REPO-relative so the same shim serves every worktree of this repo
+# (git worktrees share .git/hooks; a gantry stream is a worktree with its own
+# adapter band on its own branch)
+ADAPTER="\$REPO/$ADAPTER_REL"
+DEPS="${DEPS_REL:+\$REPO/$DEPS_REL}"
 
 note() { printf 'gantry hook: %s (commit proceeds; GRAPH.md may be stale)\n' "\$1" >&2; }
 
@@ -83,6 +86,16 @@ if python3 "\$EXTRACT" --client "\$ADAPTER" --root "\$REPO" \
   printf 'gantry hook: GRAPH.md refreshed and staged\n' >&2
 else
   note "extract failed"
+fi
+# the tracker ledger (issues/INDEX.md) is derived the same way — refresh it in
+# the same commit; same never-blocks rule
+GENINDEX="\$REPO/tools/gen_index.py"
+if [ -f "\$GENINDEX" ]; then
+  if python3 "\$GENINDEX" --root "\$REPO" >/dev/null 2>&1; then
+    git -C "\$REPO" add -- "\$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["tracker_dir"])' "\$ADAPTER")/INDEX.md" 2>/dev/null || true
+  else
+    note "gen_index failed"
+  fi
 fi
 exit 0
 EOF
