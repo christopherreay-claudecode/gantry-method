@@ -1,0 +1,14 @@
+{
+  "client": "{{name}}",
+  "tracker_dir": "issues",
+  "issue_min": {{issue_min}},
+  "issue_max": {{issue_max}},
+  "lineage": {{lineage}},
+  "plan": "plan.md",
+  "plan_source": "plan-v1",
+  "kickoff": "seams.md",
+  "seam_slugs": {},
+  "q_holds": {},
+  "constraint_slug_overrides": {},
+  "parts": []
+}

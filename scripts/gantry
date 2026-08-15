@@ -1,0 +1,818 @@
+#!/usr/bin/env python3
+"""gantry — the ONE entry point for putting a repo on the method (SPEC §8).
+
+    gantry new    <dir>   [--name N] [--core-prefix P]... [--no-commit]
+    gantry adopt  [<repo>] [--name N] [--core-prefix P]... [--link-tools] [--no-seed] [--no-commit]
+    gantry fork   <base> <new-dir> [--name N] [--level L | --issue-min N] [--keep-open]
+                                   [--exclude PATH]... [--no-commit]
+    gantry stream new   --issue NNNN --slug S [--repo R]
+    gantry stream list  [--repo R]
+    gantry stream merge <slug> [--repo R] [--keep-worktree] [--delete-branch]
+    gantry stream drop  <slug> [--repo R] [--keep-branch]
+    gantry check  [<repo>]
+
+Which one, in one line each (docs/00-llm-playbook.md has the long form):
+
+  new     an EMPTY DIRECTORY (or none) that should become a gantry repo: mkdir,
+          git init, then exactly what `adopt` does.
+  adopt   an EXISTING git repo — empty or full of content — that should carry
+          the method: scaffolds only what is missing (plan.md, seams.md,
+          issues/, .gantry/adapter.json, CLAUDE.md section, .gitignore lines),
+          copies the tools + wires both hooks (scripts/adopt.sh), seeds one
+          milestone issue (M0: bootstrap) so the adoption commit itself obeys
+          the commit law, and commits. Idempotent; never overwrites yours.
+  fork    a NEW, SEPARATE repo born from a gantry-adopted base (the copy, not
+          the link): tracked files at the base's HEAD minus excludes, identity
+          edits, inherited issues closed as a reference set, level = base+1 so
+          issues number from the next thousand, fresh init + birth commit,
+          adopt, mint. Generic: any base; the SvelteKit-specific manifest fork
+          stays in fork-app.sh.
+  stream  a WORKTREE on a branch of the SAME repo, for an orchestrating agent:
+          test workorders and parallel development streams. Each stream gets a
+          sub-band of 100 issue numbers inside the next level's thousand
+          (10 concurrent streams per level), recorded in .gantry/streams.json
+          (committed by the parent). merge = merge back, keep the parent's
+          adapter, regenerate derived files; drop = discard.
+  check   the CI gate: extract --check + gen_index --check + lineage sanity.
+
+Numbering law (SPEC §8): a repo at lineage level L owns issue band
+[L*1000, L*1000+999] (level 0 owns #0001–#0999). Every sub-project — fork or
+stream — is one level down; level 9 (#9000–#9999) is the deepest. A stream
+takes a sub-band of one hundred: level-1 streams are #1000–#1099, #1100–#1199,
+… #1900–#1999. Numbers outside your band are never yours to file.
+
+stdlib only. Shells out to git and to the sibling scripts (adopt.sh,
+install-*.sh, gantry_extract.py, gen_index.py) — run it from anywhere.
+"""
+import argparse
+import json
+import re
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+TEMPLATES = HERE / "templates"
+MAX_LEVEL = 9
+HUMAN_GATED = {"ambiguity", "freeze-request", "amendment-proposal"}
+ISSUE_GLOB = "[0-9][0-9][0-9][0-9]-*.md"
+
+
+# ------------------------------------------------------------------ util ----
+
+def say(msg=""):
+    print(msg)
+
+
+def die(msg, code=1):
+    print(f"gantry: {msg}", file=sys.stderr)
+    sys.exit(code)
+
+
+def git(repo, *args, check=True, capture=True):
+    r = subprocess.run(["git", "-C", str(repo), *args], capture_output=capture, text=True)
+    if check and r.returncode != 0:
+        die(f"git {' '.join(args)} failed in {repo}:\n{(r.stderr or r.stdout).strip()}")
+    return r
+
+
+def sh(cmd, cwd=None, check=True):
+    r = subprocess.run(cmd, cwd=cwd, text=True)
+    if check and r.returncode != 0:
+        die(f"{' '.join(str(c) for c in cmd)} failed ({r.returncode})")
+    return r
+
+
+def load_json(p):
+    return json.loads(Path(p).read_text(encoding="utf-8"))
+
+
+def save_json(p, data):
+    Path(p).write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def render(template_name, **kw):
+    text = (TEMPLATES / template_name).read_text(encoding="utf-8")
+    for k, v in kw.items():
+        text = text.replace("{{" + k + "}}", str(v))
+    left = re.findall(r"{{(\w+)}}", text)
+    if left:
+        die(f"template {template_name}: unfilled placeholders {left}")
+    return text
+
+
+def band_for_level(level):
+    if level < 0 or level > MAX_LEVEL:
+        die(f"lineage level {level} out of range 0..{MAX_LEVEL} (SPEC §8: ten levels, #0001–#9999)")
+    return (1, 999) if level == 0 else (level * 1000, level * 1000 + 999)
+
+
+def repo_root(path):
+    p = Path(path).resolve()
+    r = subprocess.run(["git", "-C", str(p), "rev-parse", "--show-toplevel"],
+                       capture_output=True, text=True)
+    if r.returncode != 0:
+        die(f"not a git repo: {p}")
+    return Path(r.stdout.strip())
+
+
+def adapter_path(repo):
+    return Path(repo) / ".gantry" / "adapter.json"
+
+
+def load_adapter(repo):
+    p = adapter_path(repo)
+    if not p.exists():
+        die(f"{repo} is not gantry-adopted (no {p}); run `gantry adopt {repo}` first")
+    return load_json(p)
+
+
+def issue_numbers(tracker):
+    nums = []
+    for f in sorted(Path(tracker).glob(ISSUE_GLOB)):
+        try:
+            nums.append(int(f.name[:4]))
+        except ValueError:
+            pass
+    return nums
+
+
+def next_free_issue(tracker, lo, hi):
+    taken = set(issue_numbers(tracker))
+    for n in range(lo, hi + 1):
+        if n not in taken:
+            return n
+    die(f"no free issue number in band #{lo:04d}–#{hi:04d} — the band is exhausted; "
+        f"open a sub-project (gantry fork / gantry stream) or amend the lineage plan")
+
+
+def has_head(repo):
+    return git(repo, "rev-parse", "HEAD", check=False).returncode == 0
+
+
+def run_extract(repo, adapter=None, check=False, quiet=False):
+    repo = Path(repo)
+    adapter = adapter or adapter_path(repo)
+    tool = repo / "tools" / "gantry_extract.py"
+    if not tool.exists():
+        tool = HERE / "gantry_extract.py"
+    cmd = [sys.executable, str(tool), "--client", str(adapter), "--root", str(repo),
+           "--out", str(repo / ".gantry" / "out" / "state.json"), "--digest", str(repo / "GRAPH.md")]
+    deps = repo / ".gantry" / "deps.json"
+    if deps.exists():
+        cmd += ["--deps", str(deps)]
+    if check:
+        cmd.append("--check")
+    return subprocess.run(cmd, capture_output=quiet, text=True)
+
+
+def run_gen_index(repo, check=False, quiet=False):
+    repo = Path(repo)
+    tool = repo / "tools" / "gen_index.py"
+    if not tool.exists():
+        tool = HERE / "gen_index.py"
+    cmd = [sys.executable, str(tool), "--root", str(repo)] + (["--check"] if check else [])
+    return subprocess.run(cmd, capture_output=quiet, text=True)
+
+
+# --------------------------------------------------------------- scaffold ----
+
+def ensure_gitignore(repo):
+    p = Path(repo) / ".gitignore"
+    snippet = (TEMPLATES / "gitignore.snippet").read_text(encoding="utf-8")
+    cur = p.read_text(encoding="utf-8") if p.exists() else ""
+    if ".gantry/out/" in cur:
+        return "kept"
+    with p.open("a", encoding="utf-8") as fh:
+        if cur and not cur.endswith("\n"):
+            fh.write("\n")
+        fh.write(("\n" if cur else "") + snippet)
+    return "appended" if cur else "created"
+
+
+def ensure_claude_md(repo, name, level, lo, hi):
+    p = Path(repo) / "CLAUDE.md"
+    section = render("CLAUDE.md", name=name, level=level,
+                     issue_min_padded=f"{lo:04d}", issue_max_padded=f"{hi:04d}")
+    if not p.exists():
+        p.write_text(section, encoding="utf-8")
+        return "created"
+    cur = p.read_text(encoding="utf-8")
+    if "gantry" in cur and "GRAPH.md" in cur:
+        return "kept (already briefs gantry)"
+    body = section.split("\n", 1)[1]  # drop the H1: the repo already has its own
+    with p.open("a", encoding="utf-8") as fh:
+        fh.write("\n\n## gantry — the development method this repo runs on\n" + body)
+    return "appended gantry section"
+
+
+def ensure_file(repo, rel, template, **kw):
+    p = Path(repo) / rel
+    if p.exists():
+        return "kept"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(render(template, **kw), encoding="utf-8")
+    return "created"
+
+
+def scaffold(repo, name, level, lo, hi, lineage, seed=True, seed_title=None, lineage_note=""):
+    """Create only what is missing. Returns the seed issue number (or None)."""
+    repo = Path(repo)
+    say(f"== scaffold: {repo}  (name: {name}, level {level}, band #{lo:04d}–#{hi:04d})")
+    ad = adapter_path(repo)
+    if ad.exists():
+        say(f"   kept: .gantry/adapter.json (already adopted — this run is idempotent; no re-seed)")
+        a = load_json(ad)
+        lo, hi = a.get("issue_min", lo) or lo, a.get("issue_max", hi) or hi
+        seed = False
+    else:
+        ad.parent.mkdir(parents=True, exist_ok=True)
+        ad.write_text(render("adapter.json", name=name, issue_min=lo, issue_max=hi,
+                             lineage=json.dumps(lineage)), encoding="utf-8")
+        say("   created: .gantry/adapter.json  (FILL IN seam_slugs / q_holds as seams and holds appear)")
+
+    r = ensure_file(repo, "plan.md", "plan.md", name=name)
+    say(f"   {r}: plan.md" + ("" if r == "created" else "  (existing — verify it has a `## 2.` constraint section)"))
+    if r == "kept" and "## 2." not in (repo / "plan.md").read_text(encoding="utf-8"):
+        say("   !!!  plan.md has no `## 2.` section — extract parses constraints ONLY inside it (SPEC §6)")
+    r = ensure_file(repo, "seams.md", "seams.md", name=name)
+    say(f"   {r}: seams.md")
+    (repo / "issues").mkdir(exist_ok=True)
+    say(f"   {'kept' if issue_numbers(repo / 'issues') else 'created'}: issues/")
+    say(f"   {ensure_gitignore(repo)}: .gitignore (.gantry/out/, .gantry/streams/)")
+    say(f"   {ensure_claude_md(repo, name, level, lo, hi)}: CLAUDE.md")
+
+    seed_no = None
+    if seed:
+        tracker = repo / "issues"
+        existing_m0 = any("-m0-" in f.name or f.name[5:].startswith("m0-") for f in tracker.glob(ISSUE_GLOB))
+        seed_no = next_free_issue(tracker, lo, hi)
+        slug = "gantry-adoption" if existing_m0 else "m0-bootstrap"
+        title = seed_title or (f"{name} — gantry adoption" if existing_m0 else f"{name} — plan, seams, first gate")
+        p = tracker / f"{seed_no:04d}-{slug}.md"
+        p.write_text(render("issue-seed.md", number=f"{seed_no:04d}", title=title,
+                            lineage_note=lineage_note), encoding="utf-8")
+        say(f"   seeded: issues/{p.name}  (the adoption commit refs it — no lint exemption needed)")
+    return seed_no
+
+
+def adopt_repo(repo, name, level, lo, hi, lineage, core_prefixes, link_tools=False,
+               seed=True, commit=True, seed_title=None, lineage_note="", commit_msg=None):
+    repo = Path(repo)
+    seed_no = scaffold(repo, name, level, lo, hi, lineage, seed=seed,
+                       seed_title=seed_title, lineage_note=lineage_note)
+    if link_tools:
+        tools = repo / "tools"
+        tools.mkdir(exist_ok=True)
+        for t in ("gantry_extract.py", "gen_index.py", "lint_commit.py"):
+            dst = tools / t
+            src = HERE / t
+            if dst.exists() or dst.is_symlink():
+                say(f"   kept: tools/{t}")
+                continue
+            try:
+                rel = Path(*([".."] * len(dst.parent.relative_to(repo).parts))) / src.relative_to(repo)
+            except ValueError:
+                rel = src
+            dst.symlink_to(rel)
+            say(f"   linked: tools/{t} -> {rel}  (--link-tools: this repo IS the toolbox)")
+    cmd = ["sh", str(HERE / "adopt.sh"), str(repo)]
+    for cp in core_prefixes:
+        cmd += ["--core-prefix", cp]
+    say("== adopt.sh (tools + both hooks + GRAPH.md mint)")
+    sh(cmd)
+    say("== issues/INDEX.md")
+    run_gen_index(repo, quiet=True)
+    if not commit:
+        say("== --no-commit: tree left for you; commit with a message that refs "
+            f"#{seed_no:04d}" if seed_no else "== --no-commit: tree left for you")
+        return seed_no
+    if seed_no is None and has_head(repo):
+        # re-adopt of an adopted repo: a fresh mint differs from the committed
+        # GRAPH.md by its commit stamp only (the drift gate normalizes that) —
+        # do not leave stamp-only dirt behind, and never commit without a ref.
+        if run_extract(repo, check=True, quiet=True).returncode == 0:
+            git(repo, "checkout", "--", "GRAPH.md", check=False)
+        if run_gen_index(repo, check=True, quiet=True).returncode == 0:
+            git(repo, "checkout", "--", "issues/INDEX.md", check=False)
+        if git(repo, "status", "--porcelain", check=False).stdout.strip():
+            say("== changes present but no seed issue to ref — commit them yourself with an issue ref")
+        else:
+            say("== nothing to commit (already adopted, map up to date)")
+        return None
+    git(repo, "add", "-A")
+    if not git(repo, "diff", "--cached", "--quiet", check=False).returncode == 0:
+        ref = f" (#{seed_no:04d})" if seed_no else ""
+        msg = commit_msg or f"gantry adopted{ref}"
+        body = ("The method's operational layer: tools/ (GRAPH.md builder, ledger, commit law), "
+                ".gantry/adapter.json, plan.md, seams.md, issues/, CLAUDE.md briefing. "
+                "GRAPH.md is minted by the pre-commit shim into this same commit.")
+        say(f"== commit: {msg}")
+        r = git(repo, "commit", "-q", "-m", msg, "-m", body, check=False, capture=False)
+        if r.returncode != 0:
+            die("adoption commit failed (see the lint output above)")
+    else:
+        say("== nothing to commit (already adopted)")
+    return seed_no
+
+
+# ------------------------------------------------------------ new / adopt ----
+
+def cmd_new(a):
+    d = Path(a.dir).resolve()
+    if d.exists() and any(d.iterdir()):
+        die(f"{d} is not empty — use `gantry adopt {d}` for a repo with content")
+    d.mkdir(parents=True, exist_ok=True)
+    if not (d / ".git").exists():
+        git(d, "init", "-q")
+        say(f"== git init: {d}")
+    name = a.name or d.name
+    lo, hi = band_for_level(0)
+    seed_no = adopt_repo(d, name, 0, lo, hi, {"level": 0, "kind": "root"}, a.core_prefix,
+                         seed=True, commit=not a.no_commit)
+    say("")
+    say("NEXT (the developer LLM):")
+    say(f"   1. read {d}/GRAPH.md, then tools/README.md")
+    say("   2. Tier-1 interview → write plan.md §2 (numbered constraints), seams.md, the near-phase gates")
+    say(f"   3. land the plan with a commit `… (closes #{seed_no:04d})` — gate m0 latches")
+    say("   4. every commit from here refs an issue; declare deps: the moment you learn them")
+
+
+def cmd_adopt(a):
+    repo = repo_root(a.repo)
+    name = a.name or repo.name
+    lo, hi = band_for_level(0)
+    seed_no = adopt_repo(repo, name, 0, lo, hi, {"level": 0, "kind": "root"}, a.core_prefix,
+                         link_tools=a.link_tools, seed=not a.no_seed, commit=not a.no_commit)
+    say("")
+    say("NEXT (the developer LLM):")
+    say(f"   1. read {repo}/GRAPH.md, then tools/README.md")
+    say("   2. Tier-1 interview → write plan.md §2 (numbered constraints) FROM THE EXISTING CODE'S felt")
+    say("      outcomes; seams.md for every scheduled swap; one milestone issue per near-phase gate,")
+    say("      one hold per known open question — nothing speculative")
+    if seed_no:
+        say(f"   3. land the plan with a commit `… (closes #{seed_no:04d})` — gate m0 latches")
+    say("   4. every commit from here refs an issue; a core path (--core-prefix) needs one too")
+
+
+# ------------------------------------------------------------------- fork ----
+
+DEFAULT_FORK_EXCLUDES = [".gantry/out", ".gantry/streams", ".gantry/streams.json", "GRAPH.md",
+                         "issues/INDEX.md", ".env", "node_modules", "METALAND"]
+
+
+def close_inherited(tracker, sha):
+    """Inherited issues are a closed reference set (SPEC §8): their work belonged
+    to the base. Commit-closable types get the fork-point sha; human-gated types
+    get a sign-off sentence — closure authority respected in both directions."""
+    closed = 0
+    for p in sorted(Path(tracker).glob(ISSUE_GLOB)):
+        lines = p.read_text(encoding="utf-8").splitlines()
+        typ = st = None
+        for line in lines[:6]:
+            m = re.match(r"^type:\s*(\S+)\s+status:\s*(\S+)", line)
+            if m:
+                typ, st = m.group(1), m.group(2)
+        if st != "open":
+            continue
+        for i, line in enumerate(lines[:6]):
+            if re.match(r"^type:\s*\S+\s+status:\s*open", line):
+                lines[i] = re.sub(r"status:\s*open", "status: closed", line, count=1)
+                break
+        for i, line in enumerate(lines[:6]):
+            if line.startswith("refs:"):
+                cb = f"reference: inherited from base @ {sha}" if typ in HUMAN_GATED else sha
+                if "closed-by:" in line:
+                    lines[i] = re.sub(r"closed-by:\s*.*$", "closed-by: " + cb, line)
+                else:
+                    lines[i] = line.rstrip() + "   closed-by: " + cb
+                break
+        p.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        closed += 1
+        say(f"   closed: {p.name} ({'human-gated' if typ in HUMAN_GATED else 'commit-closable'})")
+    say(f"   {closed} inherited issues closed (reference set)")
+
+
+def cmd_fork(a):
+    base = repo_root(a.base)
+    base_ad = load_adapter(base)
+    new = Path(a.new_dir).resolve()
+    new.mkdir(parents=True, exist_ok=True)
+    if any(new.iterdir()):
+        die(f"refusing: {new} is not empty")
+    name = a.name or new.name
+    if not has_head(base):
+        die(f"{base} has no commits — a fork copies the base's HEAD")
+    if git(base, "status", "--porcelain", check=False).stdout.strip():
+        say("   note: base has uncommitted changes — a fork copies HEAD; those changes are NOT copied")
+    base_sha = git(base, "rev-parse", "HEAD").stdout.strip()
+    base_level = int((base_ad.get("lineage") or {}).get("level", 0))
+    if a.issue_min is not None:
+        lo = a.issue_min
+        level = max(base_level + 1, lo // 1000)
+        hi = (lo // 1000) * 1000 + 999 if lo >= 1000 else 999
+    else:
+        level = a.level if a.level is not None else base_level + 1
+        lo, hi = band_for_level(level)
+    if level > MAX_LEVEL:
+        die(f"base is at level {base_level}; a fork would be level {level} > {MAX_LEVEL}")
+
+    say(f"== gantry fork: {base} @ {base_sha[:7]} -> {new}  (name {name}, level {level}, "
+        f"issues #{lo:04d}–#{hi:04d})")
+    # 1. copy: tracked files at HEAD (git archive), then remove excludes
+    tar = subprocess.Popen(["git", "-C", str(base), "archive", "--format=tar", "HEAD"],
+                           stdout=subprocess.PIPE)
+    r = subprocess.run(["tar", "-x", "-C", str(new)], stdin=tar.stdout)
+    tar.wait()
+    if tar.returncode or r.returncode:
+        die("copy (git archive | tar) failed")
+    excludes = DEFAULT_FORK_EXCLUDES + list(a.exclude or [])
+    manifest = base / ".gantry" / "fork-exclude"
+    if manifest.exists():
+        excludes += [l.strip() for l in manifest.read_text().splitlines()
+                     if l.strip() and not l.startswith("#")]
+    for ex in excludes:
+        p = new / ex
+        if p.exists() or p.is_symlink():
+            shutil.rmtree(p) if p.is_dir() and not p.is_symlink() else p.unlink()
+            say(f"   excluded: {ex}")
+    say(f"   copied: tracked files of base @ {base_sha[:7]} (derived files excluded — they regenerate)")
+    if a.fresh_tools:
+        (new / "tools").mkdir(exist_ok=True)
+        for t in ("gantry_extract.py", "gen_index.py", "lint_commit.py"):
+            shutil.copy2(HERE / t, new / "tools" / t)
+            say(f"   refreshed: tools/{t} (--fresh-tools)")
+
+    # 2. identity edits
+    ad = load_json(adapter_path(new))
+    ad["client"] = name
+    ad["issue_min"], ad["issue_max"] = lo, hi
+    ad["lineage"] = {"level": level, "kind": "fork",
+                     "parent": {"repo": base_ad.get("client", base.name), "path": str(base),
+                                "commit": base_sha}}
+    # key order: keep the canonical shape (client, tracker_dir, issue_min, issue_max, lineage, ...)
+    ordered = {k: ad[k] for k in ("client", "tracker_dir", "issue_min", "issue_max", "lineage") if k in ad}
+    ordered.update({k: v for k, v in ad.items() if k not in ordered})
+    save_json(adapter_path(new), ordered)
+    say(f"   set: .gantry/adapter.json client={name} issue_min={lo} issue_max={hi} lineage=fork level {level}")
+    pkg = new / "package.json"
+    if pkg.exists():
+        t = pkg.read_text(encoding="utf-8")
+        t = re.sub(r'^(\s*"name":\s*)"[^"]*"', rf'\1"{name}"', t, count=1, flags=re.M)
+        pkg.write_text(t, encoding="utf-8")
+        say(f"   set: package.json name={name}")
+    cfg = new / "supabase" / "config.toml"
+    if cfg.exists():
+        t = re.sub(r'project_id = "[^"]*"', f'project_id = "{name}"', cfg.read_text(encoding="utf-8"))
+        cfg.write_text(t, encoding="utf-8")
+        say(f"   set: supabase/config.toml project_id={name}")
+    readme = new / "README.md"
+    head = (f"# {name}\n\n> Born from **{base_ad.get('client', base.name)}** @ {base_sha[:7]} — a gantry fork "
+            f"(lineage level {level}). This repo's issues are numbered **#{lo:04d}–#{hi:04d}**; the "
+            f"inherited issues are the closed reference set. Session start: read `GRAPH.md`, then "
+            f"`tools/README.md`.\n\n")
+    readme.write_text(head + (readme.read_text(encoding="utf-8") if readme.exists() else ""), encoding="utf-8")
+    say("   set: README.md fork header")
+    cl = new / "CLAUDE.md"
+    if cl.exists():
+        cl.unlink()
+    ensure_claude_md(new, name, level, lo, hi)
+    say("   set: CLAUDE.md briefing (band + lineage)")
+
+    # 3. reference set
+    if a.keep_open:
+        say("== inherited issues kept OPEN (--keep-open)")
+    else:
+        say("== close the inherited issues (reference set; their work belongs to the base)")
+        close_inherited(new / ad.get("tracker_dir", "issues"), base_sha[:7])
+
+    # 4. git init + birth commit (exempt from commit law: no issue of this repo exists yet)
+    git(new, "init", "-q")
+    git(new, "add", "-A")
+    if a.no_commit:
+        say("== --no-commit: tree staged for you")
+    else:
+        git(new, "commit", "-q", "--no-verify", "-m", f"repo born from {base_ad.get('client', base.name)} @ {base_sha[:7]}",
+            "-m", f"gantry fork, lineage level {level}. Inherited issues are a closed reference set; "
+                  f"this repo's issues are numbered from {lo:04d}. Birth commit is exempt from commit "
+                  f"law: no issue exists yet — the first issue ({lo:04d}) carries the ref from here on.")
+        say(f"== birth commit: repo born from base @ {base_sha[:7]}")
+
+    # 5. adopt (tools already present from the copy → kept; hooks wired; GRAPH.md minted)
+    say("== adopt.sh (hooks; tools kept from the base copy)")
+    sh(["sh", str(HERE / "adopt.sh"), str(new)])
+    run_gen_index(new, quiet=True)
+    if a.no_commit or not has_head(new):
+        pass
+    else:
+        say(f"   GRAPH.md + issues/INDEX.md minted (uncommitted — commit them with the first issue)")
+    say("")
+    say("NEXT (the operator / orchestrating LLM):")
+    say(f"   - copy secrets by hand (.env), never via git")
+    say(f"   - file the first issue: issues/{lo:04d}-<slug>.md (refs the inherited constraint it serves)")
+    say(f"   - commit it WITH GRAPH.md + issues/INDEX.md — that commit carries the #{lo:04d} ref")
+    say(f"   - 'below issue_min' warnings on inherited issues are expected (copied history)")
+
+
+# ----------------------------------------------------------------- stream ----
+
+def streams_path(repo):
+    return Path(repo) / ".gantry" / "streams.json"
+
+
+def load_streams(repo):
+    p = streams_path(repo)
+    return load_json(p) if p.exists() else {"streams": []}
+
+
+def save_streams(repo, data):
+    save_json(streams_path(repo), data)
+
+
+def find_stream(data, slug):
+    for s in data["streams"]:
+        if s["slug"] == slug:
+            return s
+    die(f"no stream '{slug}' in .gantry/streams.json")
+
+
+def stream_worktree(repo, slug):
+    return Path(repo) / ".gantry" / "streams" / slug
+
+
+def cmd_stream_new(a):
+    repo = repo_root(a.repo)
+    ad = load_adapter(repo)
+    if not has_head(repo):
+        die("no commits yet — a stream branches from HEAD")
+    issue = f"{int(a.issue):04d}"
+    tracker = repo / ad.get("tracker_dir", "issues")
+    if not list(tracker.glob(f"{issue}-*.md")):
+        die(f"parent issue #{issue} not found in {tracker} — file the workorder first; a stream is "
+            f"always spawned BY an issue")
+    slug = re.sub(r"[^a-z0-9-]+", "-", a.slug.lower()).strip("-")
+    full = f"{issue}-{slug}"
+    data = load_streams(repo)
+    if any(s["slug"] == full for s in data["streams"]):
+        die(f"stream {full} already exists")
+    level = int((ad.get("lineage") or {}).get("level", 0)) + 1
+    if level > MAX_LEVEL:
+        die(f"this repo is at level {level-1}; a stream would be level {level} > {MAX_LEVEL}")
+    base_lo = level * 1000
+    taken = {int(s["band"][0]) for s in data["streams"]}
+    k = next((k for k in range(10) if base_lo + k * 100 not in taken), None)
+    if k is None:
+        die(f"all 10 stream sub-bands at level {level} are allocated — drop or merge one first "
+            f"(bands are never re-used while a stream is registered)")
+    lo, hi = base_lo + k * 100, base_lo + k * 100 + 99
+    branch = f"stream/{full}"
+    wt = stream_worktree(repo, full)
+    if wt.exists():
+        die(f"{wt} exists")
+    from_sha = git(repo, "rev-parse", "HEAD").stdout.strip()
+    from_branch = git(repo, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+
+    say(f"== gantry stream new: {full}  (level {level}, band #{lo:04d}–#{hi:04d}, branch {branch})")
+    wt.parent.mkdir(parents=True, exist_ok=True)
+    git(repo, "worktree", "add", "-q", "-b", branch, str(wt), "HEAD")
+    say(f"   worktree: {wt}")
+
+    # the stream's own adapter (on ITS branch): band + lineage. On merge, the
+    # parent keeps its own adapter (gantry stream merge restores it).
+    wad = load_json(adapter_path(wt))
+    wad["issue_min"], wad["issue_max"] = lo, hi
+    wad["lineage"] = {"level": level, "kind": "stream",
+                      "parent": {"repo": ad.get("client", repo.name), "issue": issue,
+                                 "branch": from_branch, "commit": from_sha}}
+    ordered = {k: wad[k] for k in ("client", "tracker_dir", "issue_min", "issue_max", "lineage") if k in wad}
+    ordered.update({k: v for k, v in wad.items() if k not in ordered})
+    save_json(adapter_path(wt), ordered)
+    # a stream is not the place to spawn further streams from the parent's table
+    sp = streams_path(wt)
+    if sp.exists():
+        sp.unlink()
+    cl = wt / "CLAUDE.md"
+    if cl.exists():
+        cl.unlink()
+    ensure_claude_md(wt, f"{ad.get('client', repo.name)} · stream {full}", level, lo, hi)
+    with cl.open("a", encoding="utf-8") as fh:
+        fh.write(f"\nThis is **stream `{full}`** — a worktree on branch `{branch}`, spawned by parent "
+                 f"issue **#{issue}**. Work the workorder; file this stream's own issues in "
+                 f"#{lo:04d}–#{hi:04d} (each refs a constraint of the shared plan); leave a closing "
+                 f"note in the parent issue's body when done. The orchestrator merges or drops the "
+                 f"stream (`gantry stream merge|drop {full}`).\n")
+    # hooks: worktrees share .git/hooks with the main repo — the shims resolve
+    # the worktree root at runtime, so nothing to install here.
+    git(wt, "add", "-A")
+    git(wt, "commit", "-q", "-m", f"stream {full} opened (#{issue})",
+        "-m", f"gantry stream: level {level}, issue band {lo:04d}-{hi:04d}, from {from_branch} @ {from_sha[:7]}.")
+    say(f"   committed on {branch}: adapter band + lineage, CLAUDE.md briefing")
+
+    data["streams"].append({"slug": full, "issue": issue, "band": [lo, hi], "branch": branch,
+                            "worktree": str(wt.relative_to(repo)), "from": from_sha, "status": "open"})
+    save_streams(repo, data)
+    say(f"   registered: .gantry/streams.json (commit it in the parent, refs #{issue})")
+    say("")
+    say("NEXT (the orchestrator):")
+    say(f"   - commit the registration: git -C {repo} add .gantry/streams.json && git commit -m 'stream {full} opened (#{issue})'")
+    say(f"   - run the stream's agent in {wt} (it reads CLAUDE.md → GRAPH.md)")
+    say(f"   - then: gantry stream merge {full}   or   gantry stream drop {full}")
+
+
+def stream_counts(wt, lo, hi):
+    tracker = Path(wt) / "issues"
+    o = c = 0
+    for f in tracker.glob(ISSUE_GLOB):
+        try:
+            n = int(f.name[:4])
+        except ValueError:
+            continue
+        if lo <= n <= hi:
+            txt = f.read_text(encoding="utf-8").splitlines()[:6]
+            st = next((re.match(r"^type:\s*\S+\s+status:\s*(\S+)", l).group(1)
+                       for l in txt if re.match(r"^type:\s*\S+\s+status:\s*(\S+)", l)), "?")
+            if st == "open":
+                o += 1
+            else:
+                c += 1
+    return o, c
+
+
+def cmd_stream_list(a):
+    repo = repo_root(a.repo)
+    data = load_streams(repo)
+    if not data["streams"]:
+        say("no streams registered (.gantry/streams.json absent or empty)")
+        return
+    say(f"{'band':<12} {'status':<7} {'issue':<6} {'open/closed':<12} {'branch':<32} worktree")
+    for s in sorted(data["streams"], key=lambda s: s["band"][0]):
+        wt = repo / s["worktree"]
+        oc = "%d/%d" % stream_counts(wt, *s["band"]) if wt.exists() else "—"
+        say(f"#{s['band'][0]:04d}–#{s['band'][1]:04d} {s['status']:<7} #{s['issue']:<5} {oc:<12} "
+            f"{s['branch']:<32} {s['worktree'] if wt.exists() else '(removed)'}")
+
+
+def cmd_stream_merge(a):
+    repo = repo_root(a.repo)
+    data = load_streams(repo)
+    s = find_stream(data, a.slug)
+    if s["status"] != "open":
+        die(f"stream {a.slug} is {s['status']}")
+    if not a.finish:
+        if git(repo, "status", "--porcelain", "--untracked-files=no", check=False).stdout.strip():
+            die("parent has uncommitted changes — commit or stash before merging a stream")
+        say(f"== gantry stream merge: {a.slug} ({s['branch']}) -> "
+            f"{git(repo, 'rev-parse', '--abbrev-ref', 'HEAD').stdout.strip()}")
+        git(repo, "merge", "--no-ff", "--no-commit", s["branch"], check=False)
+        conflicts = git(repo, "diff", "--name-only", "--diff-filter=U", check=False).stdout.split()
+        # derived / per-branch files: the parent's version wins, then regenerates
+        derived = {".gantry/adapter.json", "GRAPH.md", "issues/INDEX.md", "CLAUDE.md"}
+        for f in list(conflicts):
+            if f in derived:
+                git(repo, "checkout", "--ours", "--", f)
+                git(repo, "add", "--", f)
+                conflicts.remove(f)
+        if conflicts:
+            say("   CONFLICTS in real content — the tool stops here (merge left in progress):")
+            for f in conflicts:
+                say(f"     {f}")
+            die(f"resolve them and `git add` each file, then run:\n"
+                f"       gantry stream merge {a.slug} --finish\n"
+                f"   (which restores the parent's adapter, regenerates GRAPH.md/INDEX.md, records the "
+                f"stream as merged and makes the merge commit)")
+    else:
+        say(f"== gantry stream merge --finish: {a.slug}")
+        if not (repo / ".git" / "MERGE_HEAD").exists() and not (repo / ".git").is_file():
+            say("   note: no merge in progress — finishing bookkeeping only")
+    # the parent keeps ITS adapter and briefing; derived files regenerate
+    for f in (".gantry/adapter.json", "CLAUDE.md"):
+        git(repo, "checkout", "HEAD", "--", f, check=False)
+    s["status"] = "merged"
+    s["merged_from"] = git(repo, "rev-parse", s["branch"]).stdout.strip()
+    save_streams(repo, data)
+    run_extract(repo, quiet=True)
+    run_gen_index(repo, quiet=True)
+    git(repo, "add", "-A")
+    r = git(repo, "commit", "-q", "-m", f"merge stream {a.slug} (#{s['issue']})",
+            "-m", f"gantry stream merge: band {s['band'][0]:04d}-{s['band'][1]:04d} folded into the "
+                  f"parent; parent adapter kept; GRAPH.md + INDEX.md regenerated.", check=False)
+    if r.returncode != 0:
+        die(f"merge commit failed:\n{(r.stderr or r.stdout).strip()}")
+    say(f"   merged + committed: merge stream {a.slug} (#{s['issue']})")
+    if not a.keep_worktree:
+        wt = repo / s["worktree"]
+        if wt.exists():
+            git(repo, "worktree", "remove", "--force", str(wt))
+            say(f"   worktree removed: {s['worktree']}")
+    if a.delete_branch:
+        git(repo, "branch", "-D", s["branch"])
+        say(f"   branch deleted: {s['branch']}")
+    else:
+        say(f"   branch kept: {s['branch']} (--delete-branch to remove)")
+
+
+def cmd_stream_drop(a):
+    repo = repo_root(a.repo)
+    data = load_streams(repo)
+    s = find_stream(data, a.slug)
+    say(f"== gantry stream drop: {a.slug}")
+    wt = repo / s["worktree"]
+    if wt.exists():
+        git(repo, "worktree", "remove", "--force", str(wt))
+        say(f"   worktree removed: {s['worktree']}")
+    if not a.keep_branch:
+        git(repo, "branch", "-D", s["branch"], check=False)
+        say(f"   branch deleted: {s['branch']}")
+    s["status"] = "dropped"
+    save_streams(repo, data)
+    say(f"   .gantry/streams.json: {a.slug} → dropped (band stays reserved; commit it, refs #{s['issue']})")
+
+
+# ------------------------------------------------------------------ check ----
+
+def cmd_check(a):
+    repo = repo_root(a.repo)
+    ad = load_adapter(repo)
+    ok = True
+    say(f"== gantry check: {repo}")
+    r = run_extract(repo, check=True)
+    ok &= r.returncode == 0
+    r = run_gen_index(repo, check=True)
+    ok &= r.returncode == 0
+    lo, hi = ad.get("issue_min", 0) or 0, ad.get("issue_max", 0) or 0
+    lin = ad.get("lineage") or {}
+    level = int(lin.get("level", 0))
+    exp = band_for_level(level)
+    if (lo, hi) != exp and lin.get("kind") != "stream":
+        say(f"   lineage: level {level} expects band #{exp[0]:04d}–#{exp[1]:04d}, adapter says "
+            f"#{lo:04d}–#{hi:04d}")
+        ok = False
+    data = load_streams(repo)
+    for s in data["streams"]:
+        wt = repo / s["worktree"]
+        if s["status"] == "open" and not wt.exists():
+            say(f"   stream {s['slug']}: open but worktree missing ({s['worktree']})")
+            ok = False
+    say("   lineage: ok" if ok else "   lineage: problems above")
+    sys.exit(0 if ok else 1)
+
+
+# ------------------------------------------------------------------- main ----
+
+def main():
+    ap = argparse.ArgumentParser(prog="gantry", description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    p = sub.add_parser("new", help="create a new gantry repo in an empty/absent dir")
+    p.add_argument("dir")
+    p.add_argument("--name")
+    p.add_argument("--core-prefix", action="append", default=[])
+    p.add_argument("--no-commit", action="store_true")
+    p.set_defaults(fn=cmd_new)
+
+    p = sub.add_parser("adopt", help="put an existing git repo (empty or with content) on the method")
+    p.add_argument("repo", nargs="?", default=".")
+    p.add_argument("--name")
+    p.add_argument("--core-prefix", action="append", default=[])
+    p.add_argument("--link-tools", action="store_true",
+                   help="symlink tools/*.py to this toolbox instead of copying (self-hosting)")
+    p.add_argument("--no-seed", action="store_true", help="do not seed the M0 issue")
+    p.add_argument("--no-commit", action="store_true")
+    p.set_defaults(fn=cmd_adopt)
+
+    p = sub.add_parser("fork", help="new separate repo born from a gantry-adopted base (next level)")
+    p.add_argument("base")
+    p.add_argument("new_dir")
+    p.add_argument("--name")
+    p.add_argument("--level", type=int)
+    p.add_argument("--issue-min", type=int)
+    p.add_argument("--keep-open", action="store_true")
+    p.add_argument("--exclude", action="append", default=[])
+    p.add_argument("--fresh-tools", action="store_true", help="ship this toolbox's current tools/ instead of the base's copies")
+    p.add_argument("--no-commit", action="store_true")
+    p.set_defaults(fn=cmd_fork)
+
+    p = sub.add_parser("stream", help="worktree streams for an orchestrating agent")
+    ss = p.add_subparsers(dest="scmd", required=True)
+    q = ss.add_parser("new"); q.add_argument("--issue", required=True); q.add_argument("--slug", required=True)
+    q.add_argument("--repo", default="."); q.set_defaults(fn=cmd_stream_new)
+    q = ss.add_parser("list"); q.add_argument("--repo", default="."); q.set_defaults(fn=cmd_stream_list)
+    q = ss.add_parser("merge"); q.add_argument("slug"); q.add_argument("--repo", default=".")
+    q.add_argument("--keep-worktree", action="store_true"); q.add_argument("--delete-branch", action="store_true")
+    q.add_argument("--finish", action="store_true", help="after resolving conflicts by hand: bookkeeping + merge commit")
+    q.set_defaults(fn=cmd_stream_merge)
+    q = ss.add_parser("drop"); q.add_argument("slug"); q.add_argument("--repo", default=".")
+    q.add_argument("--keep-branch", action="store_true"); q.set_defaults(fn=cmd_stream_drop)
+
+    p = sub.add_parser("check", help="CI gate: extract --check, gen_index --check, lineage sanity")
+    p.add_argument("repo", nargs="?", default=".")
+    p.set_defaults(fn=cmd_check)
+
+    a = ap.parse_args()
+    a.fn(a)
+
+
+if __name__ == "__main__":
+    main()
