@@ -1,6 +1,6 @@
 # #0005 — M4: end-to-end tests — tests/run.sh drives every subcommand in scratch repos
-type: milestone        status: open
-refs: [11] [m3]   opened: M0   closed-by: <sha>
+type: milestone        status: closed
+refs: [11] [m3]   opened: M0   closed-by: 8a2b1f5
 
 **Component constraint (Tier 2):** one script, deterministic, stdlib+git only, exits 1 on the
 first broken expectation; covers new, adopt-empty, adopt-with-content, fork, fork-of-fork,

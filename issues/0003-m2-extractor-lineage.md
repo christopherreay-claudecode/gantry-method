@@ -1,6 +1,6 @@
 # #0003 — M2: extractor + hooks know lineage — bands, streams, unborn HEAD, worktree-safe shim, INDEX refresh
-type: milestone        status: open
-refs: [6] [7] [8] [9] [m1]   opened: M0   closed-by: <sha>
+type: milestone        status: closed
+refs: [6] [7] [8] [9] [m1]   opened: M0   closed-by: c63c534
 deps: blocks #0004
 
 **Component constraint (Tier 2):** `gantry_extract.py` (0.5.0) warns on issues outside the

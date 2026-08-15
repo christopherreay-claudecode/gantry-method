@@ -1,6 +1,6 @@
 # #0004 — M3: sub-projects — gantry fork (generic, next level) + gantry stream new/list/merge/drop + check
-type: milestone        status: open
-refs: [4] [5] [6] [7] [m2]   opened: M0   closed-by: <sha>
+type: milestone        status: closed
+refs: [4] [5] [6] [7] [m2]   opened: M0   closed-by: ae26ba2
 deps: defers-to #0006; informs #0007
 
 **Component constraint (Tier 2):** `gantry fork <base> <new>` births a separate repo at

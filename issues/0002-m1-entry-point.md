@@ -1,6 +1,6 @@
 # #0002 — M1: one entry point — gantry new / adopt (+ templates, seed issue)
-type: milestone        status: open
-refs: [1] [2] [3] [m0]   opened: M0   closed-by: <sha>
+type: milestone        status: closed
+refs: [1] [2] [3] [m0]   opened: M0   closed-by: ae26ba2
 deps: informs #0003; blocks #0004
 
 **Component constraint (Tier 2):** `scripts/gantry new <dir>` and `scripts/gantry adopt

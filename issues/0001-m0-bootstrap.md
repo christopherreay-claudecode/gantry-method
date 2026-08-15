@@ -1,6 +1,6 @@
 # #0001 — M0: gantry — plan, seams, first gate
-type: milestone        status: open
-refs: [m0] [10]   opened: seed   closed-by: <sha>
+type: milestone        status: closed
+refs: [m0] [10]   opened: seed   closed-by: c6cc804
 
 **Component constraint (Tier 2):** this repo carries a plan of numbered constraints, a seam
 table, and a first gate — the truth stack (SPEC §2) exists and `GRAPH.md` renders it.
