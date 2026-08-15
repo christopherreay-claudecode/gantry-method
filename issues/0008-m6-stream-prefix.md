@@ -1,6 +1,6 @@
 # #0008 — M6: streams by prefix — identity not position; sibling worktree; brief seed; stream report
-type: milestone        status: open
-refs: [5] [6] [7] [9] [m3]   opened: seed   closed-by: <sha>
+type: milestone        status: closed
+refs: [5] [6] [7] [9] [m3]   opened: seed   closed-by: 7b0ac47
 deps: informs #0006
 
 **Constraints this issue makes true (Tier 2 — each traces to a plan constraint in `refs:`):**
