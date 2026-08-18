@@ -1,6 +1,6 @@
 # #0010 — M8: stream packet + launch — .gantry/packet.md as the sub-model's first input; multi-issue --brief; boundaries in the stream briefing
-type: milestone        status: open
-refs: [1] [7] [m7]   opened: seed   closed-by: <sha>
+type: milestone        status: closed
+refs: [1] [7] [m7]   opened: seed   closed-by: 3a319ec
 
 **Constraints this issue makes true (Tier 2 — each traces to a plan constraint in `refs:`):**
 <what must be true when this closes — one testable sentence per constraint; each traces to a plan constraint above>
