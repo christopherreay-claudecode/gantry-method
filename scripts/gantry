@@ -8,6 +8,8 @@
     gantry stream new    --issue NNNN --slug S [--brief FILE|-] [--prefix P] [--repo R]
     gantry stream list   [--repo R]
     gantry stream report [<prefix|slug>] [--all] [--repo R]
+    gantry stream packet <prefix|slug> [--print] [--repo R]
+    gantry stream launch <prefix|slug> [--cmd CMD] [--dry-run] [--repo R]
     gantry stream merge  <prefix|slug> [--repo R] [--keep-worktree] [--delete-branch] [--finish]
     gantry stream drop   <prefix|slug> [--repo R] [--keep-branch]
     gantry issue  new    --title T --refs A [A…] [--type T] [--deps "…"] [--repo R]
@@ -640,9 +642,10 @@ def cmd_stream_new(a):
     from_sha = git(repo, "rev-parse", "HEAD").stdout.strip()
     from_branch = git(repo, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
     issue_high = max(issue_numbers(tracker), default=0)
-    brief = ""
+    brief, extra = "", []
     if a.brief:
-        brief = sys.stdin.read() if a.brief == "-" else Path(a.brief).read_text(encoding="utf-8")
+        raw = sys.stdin.read() if a.brief == "-" else Path(a.brief).read_text(encoding="utf-8")
+        brief, extra = parse_brief(raw)
 
     say(f"== gantry stream new: {full}  (prefix {prefix}, level {level}, branch {branch})")
     git(repo, "worktree", "add", "-q", "-b", branch, str(wt), "HEAD")
@@ -652,7 +655,7 @@ def cmd_stream_new(a):
     # parent keeps its own adapter (gantry stream merge restores it).
     wad = load_json(adapter_path(wt))
     wad["issue_prefix"] = prefix
-    wad["lineage"] = {"level": level, "kind": "stream",
+    wad["lineage"] = {"level": level, "kind": "stream", "branch": branch, "prefix": prefix,
                       "parent": {"repo": ad.get("client", repo.name), "issue": issue,
                                  "branch": from_branch, "commit": from_sha, "issue_high": issue_high}}
     ordered = {k: wad[k] for k in ("client", "tracker_dir", "issue_min", "issue_max", "issue_prefix", "lineage") if k in wad}
@@ -674,7 +677,13 @@ def cmd_stream_new(a):
                  f"must show in `GRAPH.md`** — that is what the orchestrator reads "
                  f"(`gantry stream report {prefix}`). Do not file bare `#NNNN` numbers (they collide "
                  f"on merge). When done, close your issues by their type's authority and say so in "
-                 f"the last commit; the orchestrator merges or drops the stream.\n")
+                 f"the last commit; the orchestrator merges or drops the stream.\n\n"
+                 f"**Boundaries:** `plan.md` and `seams.md` are amendment-only truth — you `refs:` them, "
+                 f"you never edit them (open an `amendment-proposal` if one seems wrong). Do not edit "
+                 f"inherited issues beyond a closing note; do not touch `.gantry/adapter.json`, "
+                 f"`.gantry/streams.json`, `GRAPH.md`, `issues/INDEX.md` (derived / the parent's). Do not "
+                 f"merge, rebase or push — the orchestrator does. **Read first:** `.gantry/packet.md` "
+                 f"(the method in brief + your workorders + the constraints they resolve to), then `GRAPH.md`.\n")
     # seed: the stream's brief — its own first workorder, pointing at the
     # parent's constraints (refs copied), carrying the orchestrator's brief.
     seed = tracker_issue(wt / ad.get("tracker_dir", "issues"), f"{prefix}-0001")
@@ -697,6 +706,22 @@ def cmd_stream_new(a):
         f"branch `{branch}` shows the result; the orchestrator reads it and merges or drops.\n",
         encoding="utf-8")
     say(f"   seeded: {seed_path.relative_to(wt)}  (the stream's brief; refs = #{issue}'s anchors)")
+    for k, ex in enumerate(extra, start=2):
+        eslug = re.sub(r"[^a-z0-9-]+", "-", ex["title"].lower()).strip("-")[:48]
+        erefs = ex["refs"] or refs_line
+        ep = wt / ad.get("tracker_dir", "issues") / f"{prefix}-{k:04d}-{eslug}.md"
+        cb = "<a human sentence>" if ex["type"] in HUMAN_GATED else "<sha>"
+        head = [f"# #{prefix}-{k:04d} — {ex['title']}",
+                f"type: {ex['type']}        status: open",
+                f"refs: {erefs}   opened: stream   closed-by: {cb}"]
+        deps = ex["deps"] or f"informs #{prefix}-0001"
+        head.append(f"deps: {deps}")
+        ep.write_text("\n".join(head) + "\n\n" + (ex["body"] or "(no body in the brief — state the "
+                      "constraints this makes true, what it depends on, the approach, the exit)") + "\n",
+                      encoding="utf-8")
+        say(f"   seeded: {ep.relative_to(wt)}  (from the brief's `## issue:` block)")
+    write_packet(wt)
+    say(f"   packet: .gantry/packet.md  (the sub-model's first input; `gantry stream packet {prefix}` regenerates)")
     git(wt, "add", "-A")
     r = git(wt, "commit", "-q", "-m", f"stream {full} opened (#{issue}, #{prefix}-0001)",
             "-m", f"gantry stream: prefix {prefix}, level {level}, from {from_branch} @ {from_sha[:7]}.",
@@ -712,9 +737,221 @@ def cmd_stream_new(a):
     say("")
     say("NEXT (the orchestrator):")
     say(f"   - git -C {repo} add .gantry/streams.json && git -C {repo} commit -m 'stream {full} opened (#{issue})'")
-    say(f"   - run the stream's agent in {wt}  (it reads CLAUDE.md → GRAPH.md → #{prefix}-0001)")
+    say(f"   - launch the sub-model there: gantry stream launch {prefix} --repo {repo}   (cd + claude -p with .gantry/packet.md; --cmd for another harness; --dry-run to see it)")
     say(f"   - watch: gantry stream report {prefix} --repo {repo}")
     say(f"   - then: gantry stream merge {prefix} --repo {repo}   or   gantry stream drop {prefix} --repo {repo}")
+
+
+def parse_brief(text):
+    """A brief is markdown. Text before the first `## issue: <title>` is the
+    seed's body; each `## issue: <title>` block (optional lines `type: T`,
+    `refs: [3] [S1]`, `deps: …` at its top) becomes a further workorder
+    #<prefix>-0002… — the adventure as a small graph, not one blob."""
+    parts = re.split(r"^##\s+issue:\s*(.+)$", text, flags=re.M)
+    preamble = parts[0].strip()
+    issues = []
+    for i in range(1, len(parts), 2):
+        title, body = parts[i].strip(), parts[i + 1]
+        meta = {"type": "workorder", "refs": None, "deps": None}
+        lines = body.strip("\n").splitlines()
+        while lines:
+            m = re.match(r"^(type|refs|deps):\s*(.+)$", lines[0].strip())
+            if not m:
+                break
+            meta[m.group(1)] = m.group(2).strip()
+            lines.pop(0)
+        issues.append({"title": title, "body": "\n".join(lines).strip(), **meta})
+    return preamble, issues
+
+
+def plan_constraint_lines(repo, plan_rel):
+    """{number: text} for the numbered items inside plan.md §2 (quoted for the packet)."""
+    p = Path(repo) / plan_rel
+    if not p.exists():
+        return {}
+    out, in_s2, cur = {}, False, None
+    for line in p.read_text(encoding="utf-8").splitlines():
+        if line.startswith("## 2."):
+            in_s2 = True
+            continue
+        if in_s2 and re.match(r"^## \d", line):
+            break
+        if not in_s2:
+            continue
+        m = re.match(r"^(\d{1,3})\.\s+(.*)$", line)
+        if m:
+            cur = m.group(1)
+            out[cur] = m.group(2).strip()
+        elif cur and line.startswith("   ") and line.strip():
+            out[cur] += " " + line.strip()
+        else:
+            cur = None
+    return out
+
+
+def seam_rows(repo, seams_rel):
+    p = Path(repo) / seams_rel
+    if not p.exists():
+        return {}
+    out = {}
+    for line in p.read_text(encoding="utf-8").splitlines():
+        m = re.match(r"^\s*\|\s*(S\d)\s*\|(.+)\|\s*$", line)
+        if m:
+            out[m.group(1)] = line.strip()
+    return out
+
+
+def write_packet(wt):
+    """`.gantry/packet.md` — the self-contained first input for the stream's
+    sub-model: the method in brief, who/where the stream is, its boundaries,
+    the parent workorder verbatim, its own open issues verbatim, the plan
+    constraints and seams those refs resolve to, the map's head, and the
+    exact commands. Regenerable; never drifts from the tracker."""
+    wt = Path(wt)
+    ad = load_json(adapter_path(wt))
+    prefix = ad.get("issue_prefix")
+    if not prefix:
+        die(f"{wt} is not a stream (no issue_prefix in its adapter)")
+    lin = ad.get("lineage") or {}
+    par = lin.get("parent") or {}
+    tracker = wt / ad.get("tracker_dir", "issues")
+    out = [f"# packet — stream {prefix} of {par.get('repo', '?')} · you are a gantry agent", ""]
+    out.append(f"You are working **in** `{wt}` — a git worktree on branch `{lin.get('branch', 'stream/…')}` of the repo "
+               f"`{par.get('repo', '?')}`, spawned by its issue **#{par.get('issue', '?')}** at "
+               f"`{str(par.get('commit', ''))[:7]}` (lineage level {lin.get('level', '?')}). Your issue "
+               f"namespace is **`#{prefix}-NNNN`**. Read this packet, then `GRAPH.md`, then your "
+               f"open issues below — before you touch anything.")
+    out.append("")
+    out.append((TEMPLATES / "method-brief.md").read_text(encoding="utf-8").rstrip())
+    out.append("")
+    out.append("## Your boundaries (a stream's law)")
+    out.append(f"- File issues only as `#{prefix}-NNNN` (`python3 {HERE / 'gantry'} issue new --repo . …`); "
+               f"never a bare `#NNNN` — those are the parent's and collide on merge.")
+    out.append("- `plan.md`, `seams.md` are read-only for you (amendment-only truth); `refs:` them, do not edit them.")
+    out.append("- Do not edit inherited issues except to add a closing note; do not touch `.gantry/adapter.json`, "
+               "`.gantry/streams.json`, `GRAPH.md`, `issues/INDEX.md` (derived / the parent's).")
+    out.append("- Commit small, on this branch, each commit `… (#<id>)`; the hooks are live. Do not merge, "
+               "rebase, or push — the orchestrator merges or drops this stream.")
+    out.append("- When your issues are closed, say so in the last commit message; the orchestrator reads `GRAPH.md`.")
+    out.append("")
+    # parent issue verbatim
+    pi = par.get("issue")
+    ppath = tracker_issue(tracker, pi) if pi else None
+    if ppath:
+        out.append(f"## The parent workorder — #{pi} (verbatim)")
+        out.append("```")
+        out.append(ppath.read_text(encoding="utf-8").rstrip())
+        out.append("```")
+        out.append("")
+    # own issues verbatim (open first)
+    own = sorted(tracker.glob(f"{prefix}-[0-9][0-9][0-9][0-9]-*.md"))
+    refs_tokens = set()
+    if own:
+        out.append(f"## Your issues — #{prefix}-… (verbatim; #{prefix}-0001 is the brief)")
+        for f in own:
+            iid, title, typ, st, refs = parse_issue_header(f)
+            for tok in re.findall(r"\[([^\]]+)\]", refs or ""):
+                refs_tokens.add(tok.strip())
+            out.append(f"### #{iid} — {title}  ({typ}, {st})")
+            out.append("```")
+            out.append(f.read_text(encoding="utf-8").rstrip())
+            out.append("```")
+        out.append("")
+    if ppath:
+        _, _, _, _, prefs = parse_issue_header(ppath)
+        for tok in re.findall(r"\[([^\]]+)\]", prefs or ""):
+            refs_tokens.add(tok.strip())
+    # constraints + seams those refs resolve to
+    cons = plan_constraint_lines(wt, ad.get("plan", "plan.md"))
+    seams = seam_rows(wt, ad.get("kickoff", "seams.md"))
+    want_c = sorted({t for t in refs_tokens if t.isdigit()}, key=int)
+    want_s = sorted({t for t in refs_tokens if re.match(r"^S\d$", t)})
+    if want_c:
+        out.append(f"## The constraints your refs resolve to (quoted from `{ad.get('plan', 'plan.md')}` §2 — read-only)")
+        for n in want_c:
+            out.append(f"- **{n}.** {cons.get(n, '(not found in plan §2 — the ref is unresolved; check GRAPH.md warnings)')}")
+        out.append("")
+    if want_s:
+        out.append(f"## The seams your refs touch (from `{ad.get('kickoff', 'seams.md')}` — read-only)")
+        for sn in want_s:
+            out.append(f"- {seams.get(sn, sn + ' (row not found)')}")
+        out.append("")
+    other = sorted(refs_tokens - set(want_c) - set(want_s))
+    if other:
+        out.append(f"(other anchors referenced: {' '.join(other)} — gates/phases/holds; see GRAPH.md)")
+        out.append("")
+    # map head
+    g = wt / "GRAPH.md"
+    if g.exists():
+        out.append("## GRAPH.md — the map right now (head; regenerate any time — see commands)")
+        out.append("```")
+        lines = g.read_text(encoding="utf-8").splitlines()
+        cut = next((i for i, l in enumerate(lines) if l.startswith("sources —")), len(lines))
+        out.extend(lines[:cut])
+        out.append("```")
+        out.append("")
+    out.append("## Commands (run from this directory)")
+    out.append("```sh")
+    out.append(f"python3 {HERE / 'gantry'} issue new --repo . --title \"…\" --type workorder --refs <constraint#|S#|gate> [--deps \"blocks #{prefix}-0002\"]")
+    out.append(f"python3 {HERE / 'gantry'} issue close <id> --by <landing-sha | human sentence>")
+    out.append("python3 tools/gantry_extract.py --client .gantry/adapter.json --root . --out .gantry/out/state.json --digest GRAPH.md   # refresh the map by hand")
+    out.append(f"python3 {HERE / 'gantry'} check .")
+    out.append("git add -A && git commit -m \"<what> (#<id>)\"")
+    out.append("```")
+    out.append("")
+    out.append("Start: read `GRAPH.md`, then work `#" + prefix + "-0001` (and the other open `#" + prefix +
+               "-…` issues) in dependency order. Finish: every issue you filed is closed by its type's "
+               "authority and `GRAPH.md` shows it.")
+    pk = wt / ".gantry" / "packet.md"
+    pk.parent.mkdir(exist_ok=True)
+    pk.write_text("\n".join(out) + "\n", encoding="utf-8")
+    return pk
+
+
+def cmd_stream_packet(a):
+    repo = repo_root(a.repo)
+    data = load_streams(repo)
+    s = find_stream(data, a.stream)
+    wt = Path(s["worktree"])
+    if not wt.exists():
+        die(f"stream worktree missing: {wt}")
+    pk = write_packet(wt)
+    if a.print:
+        say(pk.read_text(encoding="utf-8"))
+    else:
+        say(f"   packet: {pk}  ({pk.stat().st_size} bytes)")
+
+
+DEFAULT_LAUNCH = ('claude -p "$(cat .gantry/packet.md)" --permission-mode acceptEdits '
+                  '--allowedTools "Read" "Edit" "Write" "Glob" "Grep" "Bash(git *)" "Bash(python3 *)" '
+                  '--output-format json')
+
+
+def cmd_stream_launch(a):
+    """cd into the stream worktree and run the sub-model there with the packet
+    as its prompt. Location is the harness-independent way to make an agent a
+    gantry agent: its cwd holds CLAUDE.md (auto-loaded by Claude Code), GRAPH.md,
+    the tracker, the tools and the hooks — nobody has to be told to `cd`."""
+    repo = repo_root(a.repo)
+    data = load_streams(repo)
+    s = find_stream(data, a.stream)
+    wt = Path(s["worktree"])
+    if not wt.exists():
+        die(f"stream worktree missing: {wt}")
+    write_packet(wt)
+    cmd = a.cmd or DEFAULT_LAUNCH
+    runs = sorted((wt / ".gantry").glob("run.*.json"))
+    n = len(runs) + 1
+    log = wt / ".gantry" / f"run.{n:02d}.json"
+    shell = f"cd {wt} && {cmd} > {log} 2>&1"
+    say(f"== gantry stream launch: {s['slug']} (prefix {s['prefix']})")
+    say(f"   {shell}")
+    if a.dry_run:
+        say("   (--dry-run: not executed)")
+        return
+    r = subprocess.run(shell, shell=True)
+    say(f"   exit {r.returncode}; output: {log}")
+    say(f"   now: python3 {HERE / 'gantry'} stream report {s['prefix']} --repo {repo}")
 
 
 def stream_issue_rows(tracker, prefix):
@@ -1009,6 +1246,12 @@ def main():
     q.add_argument("stream", nargs="?", help="prefix or slug (default: all open)")
     q.add_argument("--all", action="store_true", help="include merged/dropped")
     q.add_argument("--repo", default="."); q.set_defaults(fn=cmd_stream_report)
+    q = ss.add_parser("packet", help="(re)write <worktree>/.gantry/packet.md — the sub-model's self-contained first input")
+    q.add_argument("stream", help="prefix or slug"); q.add_argument("--print", action="store_true")
+    q.add_argument("--repo", default="."); q.set_defaults(fn=cmd_stream_packet)
+    q = ss.add_parser("launch", help="cd into the stream worktree and run the sub-model with the packet as prompt")
+    q.add_argument("stream", help="prefix or slug"); q.add_argument("--cmd", help="shell command to run in the worktree (default: headless claude -p with the packet)")
+    q.add_argument("--dry-run", action="store_true"); q.add_argument("--repo", default="."); q.set_defaults(fn=cmd_stream_launch)
     q = ss.add_parser("merge"); q.add_argument("stream", help="prefix or slug"); q.add_argument("--repo", default=".")
     q.add_argument("--keep-worktree", action="store_true"); q.add_argument("--delete-branch", action="store_true")
     q.add_argument("--finish", action="store_true", help="after resolving conflicts by hand: bookkeeping + merge commit")

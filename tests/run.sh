@@ -83,7 +83,17 @@ expect "$S/alpha-fork2/GRAPH.md" "lineage: level 2 · fork of alpha-fork"
 expect "$S/alpha-fork2/GRAPH.md" "issues #2000–#2999"
 
 step "stream — spawned by an issue, prefix namespace, sibling worktree, brief seed, report, merge back"
-printf 'Make x.txt say hello.\n' > "$S/brief.md"
+cat > "$S/brief.md" <<'B'
+Make x.txt say hello.
+
+## issue: write the greeting file
+refs: [m0]
+Create x.txt containing "hello".
+
+## issue: verify the greeting
+deps: blocks #a1-0002
+Confirm x.txt reads hello.
+B
 python3 "$G" stream new --repo "$S/alpha" --issue 1 --slug try-a --brief "$S/brief.md" >/dev/null 2>&1
 WT="$S/.gantry.alpha.streams.a1"
 [ -d "$WT" ] || fail "stream: sibling worktree missing ($WT)"
@@ -92,6 +102,15 @@ expect "$WT/GRAPH.md" "lineage: level 1 · stream of alpha @ .* (parent issue #0
 expect "$WT/GRAPH.md" "#a1-0001 workorder a1-try-a"
 expect "$WT/issues/a1-0001-try-a.md" "Make x.txt say hello"
 expect "$WT/CLAUDE.md" "stream \`0001-try-a\`"
+expect "$WT/CLAUDE.md" "Boundaries"
+[ -e "$WT/issues/a1-0002-write-the-greeting-file.md" ] || fail "brief: ## issue block not seeded"
+expect "$WT/issues/a1-0003-verify-the-greeting.md" "deps: blocks #a1-0002"
+expect "$WT/GRAPH.md" "#a1-0003 —blocks→ #a1-0002"
+expect "$WT/.gantry/packet.md" "The parent workorder — #0001"
+expect "$WT/.gantry/packet.md" "Make x.txt say hello"
+expect "$WT/.gantry/packet.md" "Constraints are the first-order language"
+python3 "$G" stream launch a1 --repo "$S/alpha" --dry-run | grep -q "cd $WT && claude -p" || fail "launch dry-run"
+python3 "$G" stream packet a1 --repo "$S/alpha" >/dev/null || fail "packet regen"
 grep -q '"issue_prefix": "a1"' "$WT/.gantry/adapter.json" || fail "stream: adapter prefix"
 git -C "$S/alpha" add .gantry/streams.json; git -C "$S/alpha" commit -q -m "stream try-a opened (#0001)"
 expect "$S/alpha/GRAPH.md" "streams open (prefix"
@@ -102,12 +121,12 @@ python3 "$G" stream new --repo "$S/alpha" --issue 1 --slug try-b >/dev/null 2>&1
 git -C "$S/alpha" add -A; git -C "$S/alpha" commit -q -m "stream try-b opened (#0001)"
 # work inside stream a: an issue via 'gantry issue new' + a code file; close it
 python3 "$G" issue new --repo "$WT" --title "M2: stream work" --type milestone --refs m0 --slug m2-stream-work >/dev/null 2>&1
-[ -e "$WT/issues/a1-0002-m2-stream-work.md" ] || fail "issue new: prefixed id"
-echo hello > "$WT/x.txt"; git -C "$WT" add -A; git -C "$WT" commit -q -m "stream work (#a1-0002)"
-expect "$WT/GRAPH.md" "#a1-0002 workorder a1-m2-stream-work"
-python3 "$G" issue close a1-0002 --by "$(git -C "$WT" rev-parse --short HEAD)" --repo "$WT" >/dev/null 2>&1
-git -C "$WT" add -A; git -C "$WT" commit -q -m "close #a1-0002"
-expect "$WT/GRAPH.md" "closed/resolved: #a1-0002"
+[ -e "$WT/issues/a1-0004-m2-stream-work.md" ] || fail "issue new: prefixed id"
+echo hello > "$WT/x.txt"; git -C "$WT" add -A; git -C "$WT" commit -q -m "stream work (#a1-0004)"
+expect "$WT/GRAPH.md" "#a1-0004 workorder a1-m2-stream-work"
+python3 "$G" issue close a1-0004 --by "$(git -C "$WT" rev-parse --short HEAD)" --repo "$WT" >/dev/null 2>&1
+git -C "$WT" add -A; git -C "$WT" commit -q -m "close #a1-0004"
+expect "$WT/GRAPH.md" "closed/resolved: #a1-0004"
 # a bare-numbered NEW issue in the stream warns
 cat > "$WT/issues/0009-bad.md" <<'I'
 # #0009 — bare number filed in a stream
@@ -118,17 +137,17 @@ python3 "$WT/tools/gantry_extract.py" --client "$WT/.gantry/adapter.json" --root
 rm "$WT/issues/0009-bad.md"
 # lint: a human-gated close is refused; a prefixed ref works
 python3 "$G" issue new --repo "$WT" --title "hold: which greeting" --type ambiguity --refs m0 >/dev/null 2>&1
-if python3 "$G" issue close a1-0003 --by deadbeef --repo "$WT" >/dev/null 2>&1; then fail "issue close: sha on human-gated accepted"; fi
-python3 "$G" issue close a1-0003 --by "operator decided: hello" --repo "$WT" >/dev/null 2>&1 || fail "issue close: sentence refused"
-git -C "$WT" add -A; git -C "$WT" commit -q -m "hold decided (#a1-0003)"
+if python3 "$G" issue close a1-0005 --by deadbeef --repo "$WT" >/dev/null 2>&1; then fail "issue close: sha on human-gated accepted"; fi
+python3 "$G" issue close a1-0005 --by "operator decided: hello" --repo "$WT" >/dev/null 2>&1 || fail "issue close: sentence refused"
+git -C "$WT" add -A; git -C "$WT" commit -q -m "hold decided (#a1-0005)"
 # report + list
-python3 "$G" stream report a1 --repo "$S/alpha" | grep -q "closed/resolved: #a1-0002 #a1-0003" || fail "stream report"
+python3 "$G" stream report a1 --repo "$S/alpha" | grep -q "closed/resolved: #a1-0004 #a1-0005" || fail "stream report"
 python3 "$G" stream list --repo "$S/alpha" | grep -q "^a1 .*open .*#0001" || fail "stream list"
 python3 "$G" stream merge a1 --repo "$S/alpha" >/dev/null 2>&1
 [ -e "$S/alpha/x.txt" ] && grep -q hello "$S/alpha/x.txt" || fail "merge: stream file missing in parent"
-[ -e "$S/alpha/issues/a1-0002-m2-stream-work.md" ] || fail "merge: stream issue missing in parent"
+[ -e "$S/alpha/issues/a1-0004-m2-stream-work.md" ] || fail "merge: stream issue missing in parent"
 grep -q '"issue_min": 1,' "$S/alpha/.gantry/adapter.json" && ! grep -q issue_prefix "$S/alpha/.gantry/adapter.json" || fail "merge: parent adapter clobbered"
-expect "$S/alpha/GRAPH.md" "closed/resolved: #a1-0002 #a1-0003"
+expect "$S/alpha/GRAPH.md" "closed/resolved: #a1-0004 #a1-0005"
 expect "$S/alpha/GRAPH.md" "streams closed: a1\[merged\]"
 [ ! -d "$WT" ] || fail "merge: worktree not removed"
 python3 "$S/alpha/tools/gantry_extract.py" --client "$S/alpha/.gantry/adapter.json" --root "$S/alpha" --out "$S/o.json" --digest "$S/g.md" | grep -q "prefix 'a1'" && fail "merge: parent warns on registered prefix"

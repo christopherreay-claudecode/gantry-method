@@ -649,16 +649,25 @@ machinery* into a completely separate repo — no links, no submodules, no share
    agent starts from constraints, never from nothing;
 5. the parent's **`.gantry/streams.json`** records `{slug, prefix, issue, branch, worktree, from,
    status}` — the orchestrator commits it (`refs #N`);
-6. **the orchestrator's check is `GRAPH.md`**: `gantry stream report [prefix]` reads each open
+6. **`.gantry/packet.md`** is written into the worktree — the sub-model's self-contained first
+   input: the method in one screen, who/where the stream is, its boundaries (plan/seams read-only;
+   file only in your namespace; no merge/rebase/push), the parent workorder verbatim, its own
+   issues verbatim, the plan constraints and seam rows those refs resolve to, the head of
+   `GRAPH.md`, and the exact commands. `gantry stream packet <prefix>` regenerates it;
+   `gantry stream launch <prefix> [--cmd …]` does `cd <worktree> && claude -p "$(cat
+   .gantry/packet.md)" …` (or any harness's command) — location, not instruction, is what makes
+   the agent a gantry agent: its cwd holds the briefing, the map, the tracker, the tools, the hooks;
+   a `--brief` with `## issue: <title>` blocks pre-files the adventure as `#<prefix>-0002…`;
+7. **the orchestrator's check is `GRAPH.md`**: `gantry stream report [prefix]` reads each open
    stream's map (from the worktree, or `git show stream/…:GRAPH.md` once removed) — lineage,
    gates, open items, closed items, the prefixed issues and their status, commits since spawn.
    All work in a stream must surface there: an issue per piece of work, closed by its type's
    authority. If the orchestrator gets no direct output from the sub-model, this is what it reads;
-7. `gantry stream merge <prefix>` merges `--no-ff` back into the parent branch, keeps the
+8. `gantry stream merge <prefix>` merges `--no-ff` back into the parent branch, keeps the
    **parent's** adapter, ledger and briefing, regenerates `GRAPH.md` / `INDEX.md`, marks the stream
    `merged`, removes the worktree (branch kept unless `--delete-branch`); real-content conflicts
    stop the tool (`--finish` completes the bookkeeping after you resolve them);
-8. `gantry stream drop <prefix>` removes worktree and branch and marks it `dropped`; the prefix
+9. `gantry stream drop <prefix>` removes worktree and branch and marks it `dropped`; the prefix
    stays reserved.
 
 The stream's closing note belongs in the parent issue's body; the parent issue closes by its own
