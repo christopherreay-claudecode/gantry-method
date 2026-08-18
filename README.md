@@ -62,6 +62,7 @@ python3 scripts/gantry new   ~/code/my-project            # empty/absent dir →
 python3 scripts/gantry adopt ~/code/existing --core-prefix src/   # existing repo, content kept
 python3 scripts/gantry fork  ~/code/base ~/code/my-app    # separate repo, next level: issues from #1000
 python3 scripts/gantry stream new --repo . --issue 42 --slug try-a --brief b.md  # worktree beside repo, namespace #a42-…
+python3 scripts/gantry stream launch a42 --repo .             # cd worktree + claude -p with .gantry/packet.md
 python3 scripts/gantry stream report a42 --repo .             # the orchestrator's check: the stream's GRAPH.md
 python3 scripts/gantry issue new --title "M1: …" --refs 3 S1 --type milestone   # exact header + workorder body
 python3 scripts/gantry check .                            # CI gate: drift + lineage

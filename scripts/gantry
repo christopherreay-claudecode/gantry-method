@@ -720,8 +720,14 @@ def cmd_stream_new(a):
                       "constraints this makes true, what it depends on, the approach, the exit)") + "\n",
                       encoding="utf-8")
         say(f"   seeded: {ep.relative_to(wt)}  (from the brief's `## issue:` block)")
+    gi = wt / ".gitignore"
+    cur = gi.read_text(encoding="utf-8") if gi.exists() else ""
+    if ".gantry/packet.md" not in cur:
+        with gi.open("a", encoding="utf-8") as fh:
+            fh.write(("" if cur.endswith("\n") or not cur else "\n") +
+                     "# gantry — stream launch artifacts (regenerated)\n.gantry/packet.md\n.gantry/run.*.json\n")
     write_packet(wt)
-    say(f"   packet: .gantry/packet.md  (the sub-model's first input; `gantry stream packet {prefix}` regenerates)")
+    say(f"   packet: .gantry/packet.md  (the sub-model's first input; `gantry stream packet {prefix}` regenerates; gitignored)")
     git(wt, "add", "-A")
     r = git(wt, "commit", "-q", "-m", f"stream {full} opened (#{issue}, #{prefix}-0001)",
             "-m", f"gantry stream: prefix {prefix}, level {level}, from {from_branch} @ {from_sha[:7]}.",
