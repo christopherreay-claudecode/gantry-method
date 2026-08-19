@@ -2,7 +2,7 @@
 """gantry — the ONE entry point for putting a repo on the method (SPEC §8).
 
     gantry new    <dir>   [--name N] [--core-prefix P]... [--no-commit]
-    gantry adopt  [<repo>] [--name N] [--core-prefix P]... [--link-tools] [--no-seed] [--no-commit]
+    gantry adopt  [<repo>] [--name N] [--core-prefix P]... [--link-tools] [--fresh-tools] [--no-seed] [--no-commit]
     gantry fork   <base> <new-dir> [--name N] [--level L | --issue-min N] [--keep-open]
                                    [--exclude PATH]... [--no-commit]
     gantry stream new    --issue NNNN --slug S [--brief FILE|-] [--prefix P] [--repo R]
@@ -232,31 +232,35 @@ def scaffold(repo, name, level, lo, hi, lineage, seed=True, seed_title=None, lin
     repo = Path(repo)
     say(f"== scaffold: {repo}  (name: {name}, level {level}, band #{lo:04d}–#{hi:04d})")
     ad = adapter_path(repo)
+    plan_rel, seams_rel, tracker_rel = "plan.md", "seams.md", "issues"
     if ad.exists():
         say(f"   kept: .gantry/adapter.json (already adopted — this run is idempotent; no re-seed)")
         a = load_json(ad)
         lo, hi = a.get("issue_min", lo) or lo, a.get("issue_max", hi) or hi
         seed = False
+        # honor the client's own truth paths — never scaffold a second plan beside theirs
+        plan_rel, seams_rel = a.get("plan", plan_rel), a.get("kickoff", seams_rel)
+        tracker_rel = a.get("tracker_dir", tracker_rel)
     else:
         ad.parent.mkdir(parents=True, exist_ok=True)
         ad.write_text(render("adapter.json", name=name, issue_min=lo, issue_max=hi,
                              lineage=json.dumps(lineage)), encoding="utf-8")
         say("   created: .gantry/adapter.json  (FILL IN seam_slugs / q_holds as seams and holds appear)")
 
-    r = ensure_file(repo, "plan.md", "plan.md", name=name)
-    say(f"   {r}: plan.md" + ("" if r == "created" else "  (existing — verify it has a `## 2.` constraint section)"))
-    if r == "kept" and "## 2." not in (repo / "plan.md").read_text(encoding="utf-8"):
-        say("   !!!  plan.md has no `## 2.` section — extract parses constraints ONLY inside it (SPEC §6)")
-    r = ensure_file(repo, "seams.md", "seams.md", name=name)
-    say(f"   {r}: seams.md")
-    (repo / "issues").mkdir(exist_ok=True)
-    say(f"   {'kept' if issue_numbers(repo / 'issues') else 'created'}: issues/")
+    r = ensure_file(repo, plan_rel, "plan.md", name=name)
+    say(f"   {r}: {plan_rel}" + ("" if r == "created" else "  (existing — verify it has a `## 2.` constraint section)"))
+    if r == "kept" and "## 2." not in (repo / plan_rel).read_text(encoding="utf-8"):
+        say(f"   !!!  {plan_rel} has no `## 2.` section — extract parses constraints ONLY inside it (SPEC §6)")
+    r = ensure_file(repo, seams_rel, "seams.md", name=name)
+    say(f"   {r}: {seams_rel}")
+    (repo / tracker_rel).mkdir(exist_ok=True)
+    say(f"   {'kept' if issue_numbers(repo / tracker_rel) else 'created'}: {tracker_rel}/")
     say(f"   {ensure_gitignore(repo)}: .gitignore (.gantry/out/, .gantry/streams/)")
     say(f"   {ensure_claude_md(repo, name, level, lo, hi)}: CLAUDE.md")
 
     seed_no = None
     if seed:
-        tracker = repo / "issues"
+        tracker = repo / tracker_rel
         existing_m0 = any("-m0-" in f.name or f.name[5:].startswith("m0-") for f in tracker.glob(ISSUE_GLOB))
         seed_no = next_free_issue(tracker, lo, hi)
         slug = "gantry-adoption" if existing_m0 else "m0-bootstrap"
@@ -269,10 +273,22 @@ def scaffold(repo, name, level, lo, hi, lineage, seed=True, seed_title=None, lin
 
 
 def adopt_repo(repo, name, level, lo, hi, lineage, core_prefixes, link_tools=False,
-               seed=True, commit=True, seed_title=None, lineage_note="", commit_msg=None):
+               seed=True, commit=True, seed_title=None, lineage_note="", commit_msg=None,
+               fresh_tools=False):
     repo = Path(repo)
     seed_no = scaffold(repo, name, level, lo, hi, lineage, seed=seed,
                        seed_title=seed_title, lineage_note=lineage_note)
+    if fresh_tools:
+        # upgrade an older client: overwrite its tools/ copies with this toolbox's
+        # current, byte-identical programs (never symlinks — client content)
+        (repo / "tools").mkdir(exist_ok=True)
+        for t in ("gantry_extract.py", "gen_index.py", "lint_commit.py"):
+            dst = repo / "tools" / t
+            if dst.is_symlink():
+                say(f"   kept: tools/{t} (symlink — already this toolbox)")
+                continue
+            shutil.copy2(HERE / t, dst)
+            say(f"   refreshed: tools/{t} (--fresh-tools: current extractor/ledger/lint)")
     if link_tools:
         tools = repo / "tools"
         tools.mkdir(exist_ok=True)
@@ -306,7 +322,7 @@ def adopt_repo(repo, name, level, lo, hi, lineage, core_prefixes, link_tools=Fal
         if run_extract(repo, check=True, quiet=True).returncode == 0:
             git(repo, "checkout", "--", "GRAPH.md", check=False)
         if run_gen_index(repo, check=True, quiet=True).returncode == 0:
-            git(repo, "checkout", "--", "issues/INDEX.md", check=False)
+            git(repo, "checkout", "--", f"{load_adapter(repo).get('tracker_dir', 'issues')}/INDEX.md", check=False)
         if git(repo, "status", "--porcelain", check=False).stdout.strip():
             say("== changes present but no seed issue to ref — commit them yourself with an issue ref")
         else:
@@ -355,7 +371,8 @@ def cmd_adopt(a):
     name = a.name or repo.name
     lo, hi = band_for_level(0)
     seed_no = adopt_repo(repo, name, 0, lo, hi, {"level": 0, "kind": "root"}, a.core_prefix,
-                         link_tools=a.link_tools, seed=not a.no_seed, commit=not a.no_commit)
+                         link_tools=a.link_tools, seed=not a.no_seed, commit=not a.no_commit,
+                         fresh_tools=a.fresh_tools)
     say("")
     say("NEXT (the developer LLM):")
     say(f"   1. read {repo}/GRAPH.md, then tools/README.md")
@@ -978,7 +995,7 @@ def cmd_stream_list(a):
     for s in sorted(data["streams"], key=lambda s: s["prefix"]):
         wt = Path(s["worktree"])
         if wt.exists():
-            rows = stream_issue_rows(wt / "issues", s["prefix"])
+            rows = stream_issue_rows(wt / load_json(adapter_path(wt)).get("tracker_dir", "issues"), s["prefix"])
             oc = "%d/%d" % (sum(1 for r in rows if r[3] == "open"), sum(1 for r in rows if r[3] != "open"))
         else:
             oc = "—"
@@ -1021,7 +1038,7 @@ def cmd_stream_report(a):
                 break
             if line.startswith(keep) or (line.startswith("  ") and line.strip()):
                 say("     " + line)
-        rows = stream_issue_rows(wt / "issues", s["prefix"]) if wt.exists() else []
+        rows = stream_issue_rows(wt / load_json(adapter_path(wt)).get("tracker_dir", "issues"), s["prefix"]) if wt.exists() else []
         if rows:
             say(f"   {s['prefix']}-issues: " + " · ".join(f"#{iid} {st}" for iid, _, _, st in rows))
         say("")
@@ -1041,7 +1058,8 @@ def cmd_stream_merge(a):
         git(repo, "merge", "--no-ff", "--no-commit", s["branch"], check=False)
         conflicts = git(repo, "diff", "--name-only", "--diff-filter=U", check=False).stdout.split()
         # derived / per-branch files: the parent's version wins, then regenerates
-        derived = {".gantry/adapter.json", ".gantry/streams.json", "GRAPH.md", "issues/INDEX.md", "CLAUDE.md"}
+        tdir = load_adapter(repo).get("tracker_dir", "issues")
+        derived = {".gantry/adapter.json", ".gantry/streams.json", "GRAPH.md", f"{tdir}/INDEX.md", "CLAUDE.md"}
         for f in list(conflicts):
             if f in derived:
                 git(repo, "checkout", "--ours", "--", f)
@@ -1189,7 +1207,7 @@ def cmd_check(a):
     lin = ad.get("lineage") or {}
     level = int(lin.get("level", 0))
     exp = band_for_level(level)
-    if (lo, hi) != exp and not ad.get("issue_prefix"):
+    if (lo or hi) and (lo, hi) != exp and not ad.get("issue_prefix"):
         say(f"   lineage: level {level} expects band #{exp[0]:04d}–#{exp[1]:04d}, adapter says "
             f"#{lo:04d}–#{hi:04d}")
         ok = False
@@ -1199,7 +1217,7 @@ def cmd_check(a):
         if s["status"] == "open" and not wt.exists():
             say(f"   stream {s['slug']}: open but worktree missing ({s['worktree']})")
             ok = False
-    say("   lineage: ok" if ok else "   lineage: problems above")
+    say("   check: ok" if ok else "   check: FAILED (see above)")
     sys.exit(0 if ok else 1)
 
 
@@ -1224,6 +1242,8 @@ def main():
     p.add_argument("--link-tools", action="store_true",
                    help="symlink tools/*.py to this toolbox instead of copying (self-hosting)")
     p.add_argument("--no-seed", action="store_true", help="do not seed the M0 issue")
+    p.add_argument("--fresh-tools", action="store_true",
+                   help="upgrade: overwrite the client's tools/*.py with this toolbox's current copies")
     p.add_argument("--no-commit", action="store_true")
     p.set_defaults(fn=cmd_adopt)
 

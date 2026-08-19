@@ -42,6 +42,8 @@ done
 
 ADAPTER="$REPO/.gantry/adapter.json"
 ADAPTER_READY=1
+# reviewed dependency edges: auto-detect the client's own .gantry/deps.json
+[ -n "$DEPS" ] || { [ -f "$REPO/.gantry/deps.json" ] && DEPS="$REPO/.gantry/deps.json"; }
 
 echo "== gantry adopt: $REPO"
 echo "   1. client tools -> $REPO/tools/  (commit these: they are client content)"

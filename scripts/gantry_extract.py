@@ -21,7 +21,7 @@ import sys
 import unicodedata
 from pathlib import Path
 
-EXTRACTOR_VERSION = "0.6.0"
+EXTRACTOR_VERSION = "0.6.1"
 SCHEMA_VERSION = "0.2"
 DEP_TYPES = {"blocks", "awaits-stamp", "defers-to", "informs"}
 
@@ -63,6 +63,8 @@ def split_issue_id(iid: str):
 def issue_files(tracker: Path) -> list:
     """Every issue file in the tracker, unprefixed first, then by prefix — deterministic."""
     found = []
+    if not tracker.is_dir():
+        return []
     for path in tracker.iterdir():
         m = ISSUE_FILE_RE.match(path.name)
         if m:
@@ -742,6 +744,8 @@ def main():
 
     issues = []
     below = []
+    if not tracker.is_dir():
+        warnings.append(f"tracker dir missing: {tracker} — no issues read")
     for path in issue_files(tracker):
         issue, err = parse_issue(path)
         if err:

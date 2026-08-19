@@ -59,6 +59,19 @@ echo y >> "$S/gamma/src/main.py"; git -C "$S/gamma" add -A
 if git -C "$S/gamma" commit -q -m "touch core without ref" 2>/dev/null; then fail "gamma: core-prefix not enforced"; fi
 git -C "$S/gamma" commit -q -m "core (#0001)"
 
+step "adopt — existing adapter with its own plan/kickoff paths: no second plan scaffolded; deps.json auto-wired"
+mkdir -p "$S/delta/.gantry" "$S/delta/tracker"; git -C "$S/delta" init -q
+printf '# delta plan\n\n## 2. constraints\n1. **Only One.** one.\n' > "$S/delta/PLAN-v1.md"; printf '| S# | n | i | f |\n|--|--|--|--|\n' > "$S/delta/KICKOFF.md"
+cat > "$S/delta/.gantry/adapter.json" <<'A'
+{"client":"delta","tracker_dir":"tracker","plan":"PLAN-v1.md","plan_source":"plan-v1","kickoff":"KICKOFF.md","seam_slugs":{},"q_holds":{},"constraint_slug_overrides":{},"parts":[]}
+A
+echo '[]' > "$S/delta/.gantry/deps.json"
+git -C "$S/delta" add -A; git -C "$S/delta" commit -q -m "delta truth"
+python3 "$G" adopt "$S/delta" >/dev/null 2>&1 || true
+[ ! -e "$S/delta/plan.md" ] && [ ! -e "$S/delta/seams.md" ] || fail "delta: scaffolded a second plan beside the adapter's"
+grep -q 'DEPS="\$REPO/.gantry/deps.json"' "$S/delta/.git/hooks/pre-commit" || fail "delta: deps.json not auto-wired"
+python3 "$G" check "$S/delta" >/dev/null || fail "delta: check (unbanded adapter must pass)"
+
 step "fork — level 1, band #1000–#1999, inherited issues closed, birth commit exempt"
 python3 "$G" fork "$S/alpha" "$S/alpha-fork" >/dev/null 2>&1
 expect "$S/alpha-fork/GRAPH.md" "lineage: level 1 · fork of alpha @"

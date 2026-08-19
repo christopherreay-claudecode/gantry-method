@@ -59,9 +59,25 @@ def main():
                          "i.e. run from <client>/tools/ after copying it there)")
     ap.add_argument("--check", action="store_true",
                     help="fail with exit 1 if issues/INDEX.md is stale")
+    ap.add_argument("--tracker-dir", default=None,
+                    help="tracker directory relative to root (default: the adapter's tracker_dir "
+                         "if .gantry/adapter.json exists, else 'issues')")
     args = ap.parse_args()
 
-    issues_dir = (Path(args.root) if args.root else REPO) / "issues"
+    root = Path(args.root) if args.root else REPO
+    tracker = args.tracker_dir
+    if tracker is None:
+        ad = root / ".gantry" / "adapter.json"
+        if ad.exists():
+            try:
+                import json
+                tracker = json.loads(ad.read_text()).get("tracker_dir")
+            except ValueError:
+                tracker = None
+    issues_dir = root / (tracker or "issues")
+    if not issues_dir.is_dir():
+        print(f"tracker dir missing: {issues_dir}", file=sys.stderr)
+        return 1
     rows = []
     for path in sorted(issues_dir.iterdir()):
         if FILE_RE.match(path.name):

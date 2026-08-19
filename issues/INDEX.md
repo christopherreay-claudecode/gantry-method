@@ -12,3 +12,4 @@
 | #0008 | M6: streams by prefix — identity not position; sibling worktree; brief seed; stream report | milestone | closed | [0008-m6-stream-prefix.md](0008-m6-stream-prefix.md) |
 | #0009 | M7: constraints-first doctrine — SPEC §1, docs/01-constraint-interview.md, gantry issue new/close (workorder = constraints · depends-on · approaches · exit) | milestone | closed | [0009-m7-constraint-doctrine.md](0009-m7-constraint-doctrine.md) |
 | #0010 | M8: stream packet + launch — .gantry/packet.md as the sub-model's first input; multi-issue --brief; boundaries in the stream briefing | milestone | closed | [0010-m8-stream-packet-launch.md](0010-m8-stream-packet-launch.md) |
+| #0011 | M9: upgrade path for older clients — adopt --fresh-tools; scaffold honors adapter paths; deps.json auto-wired; gen_index tracker_dir; check passes unbanded (metalKnee-physics-2 upgraded) | milestone | open | [0011-m9-client-upgrade.md](0011-m9-client-upgrade.md) |
