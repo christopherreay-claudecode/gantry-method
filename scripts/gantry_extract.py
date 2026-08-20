@@ -21,7 +21,7 @@ import sys
 import unicodedata
 from pathlib import Path
 
-EXTRACTOR_VERSION = "0.6.1"
+EXTRACTOR_VERSION = "0.6.2"
 SCHEMA_VERSION = "0.2"
 DEP_TYPES = {"blocks", "awaits-stamp", "defers-to", "informs"}
 
@@ -58,6 +58,24 @@ def split_issue_id(iid: str):
     """'a42-0003' -> ('a42', 3); '0003' -> (None, 3)."""
     m = ISSUE_ID_RE.match(iid)
     return (m.group(1), int(m.group(2))) if m else (None, None)
+
+
+def archived_ids(tracker: Path) -> set:
+    """Issue ids living in a SUBDIRECTORY of the tracker (`issues/archive/…`).
+    A project may compress its tracker — closed issues moved aside, their residue
+    carried in a STATE file. Those issues are history: deliberately absent from the
+    graph, but real. A body mention or a dep pointing at one is not a dangling
+    reference, so it is skipped without a warning."""
+    if not tracker.is_dir():
+        return set()
+    out = set()
+    for path in tracker.rglob("*.md"):
+        if path.parent == tracker:
+            continue
+        m = ISSUE_FILE_RE.match(path.name)
+        if m:
+            out.add(m.group(1))
+    return out
 
 
 def issue_files(tracker: Path) -> list:
@@ -861,6 +879,8 @@ def main():
 
     # stratum 2: issue-body #NNNN cross-links -> `mentions` edges (deterministic)
     num_to_eid = {issue["number"]: sid for issue, sid in issue_selfids}
+    archived = archived_ids(tracker)
+    archived_hits = 0
     for issue, sid in issue_selfids:
         have = {(r["type"], r["target"]) for r in entities[sid]["relations"]}
         for num in sorted(set(re.findall(rf"#({ISSUE_ID})\b", issue["body"]))):
@@ -868,6 +888,9 @@ def main():
                 continue
             target = num_to_eid.get(num)
             if not target:
+                if num in archived:
+                    archived_hits += 1     # history, not a dangling reference
+                    continue
                 warnings.append(f"#{issue['number']}: body mentions #{num} — no such issue")
                 continue
             if ("mentions", target) in have or ("refs", target) in have:
@@ -877,6 +900,7 @@ def main():
             have.add(("mentions", target))
 
     # author-declared deps: lines (contract section 5) -> parsed dependency edges
+    # (archived_hits is summarised after both loops, below)
     for issue, sid in issue_selfids:
         line = issue.get("deps_line")
         if not line:
@@ -894,6 +918,9 @@ def main():
                 if tok.startswith("#"):
                     target = num_to_eid.get(tok.lstrip("#"))
                     if not target:
+                        if tok.lstrip("#") in archived:
+                            archived_hits += 1   # a dep on closed, archived history
+                            continue
                         warnings.append(f"#{issue['number']}: deps target {tok}: no such issue")
                         continue
                 else:
@@ -938,6 +965,11 @@ def main():
     # the pre-commit shim mints GRAPH.md INTO the birth commit, and by the hook
     # convention the stamp is the parent sha — here, none. Stamped 0000000+dirty.
     commit = head.stdout.strip() if head.returncode == 0 else "0" * 40
+    if archived_hits:
+        warnings.append(f"{archived_hits} reference(s) point at archived issues "
+                        f"({len(archived)} in {adapter['tracker_dir']}/ subdirectories) — "
+                        f"skipped, not dangling: archived issues are history, deliberately "
+                        f"outside the graph")
     # dirty = uncommitted changes (staged, unstaged, or untracked) under the
     # extract INPUT paths only — other noise in the client tree doesn't count.
     input_paths = [adapter["tracker_dir"], adapter["plan"], adapter["kickoff"]]

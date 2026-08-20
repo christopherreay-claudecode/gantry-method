@@ -284,6 +284,12 @@ stronger than any later machine proposal.
    bare sha is rendered **open** and warned (see §3).
 3. **Every seam names its scheduled substitute or its freeze stamp** — a seam with neither
    contradicts the seam definition.
+4b. **A compressed tracker keeps its history real.** A project may move closed issues into a
+   tracker subdirectory (`issues/archive/`) and carry their residue in a STATE file. Archived
+   issues are deliberately **outside the graph** — but they are not missing: the commit lint
+   still resolves a reference to one, id allocation never re-uses their numbers, and body
+   mentions or `deps:` targets pointing at them are skipped with a single summary line, never
+   reported as dangling.
 4. **Nothing bound is silently dropped** — unresolvable refs, dangling edges, duplicate/ bad ids,
    and body-mentions of non-existent issues all warn. Silent truncation reads as "covered
    everything" when it didn't.
