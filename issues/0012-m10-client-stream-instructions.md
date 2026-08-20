@@ -1,6 +1,6 @@
 # #0012 — M10: client-facing stream instructions + safe re-adopt — tools/README carries the orchestration commands with the toolbox path; a materially changed map survives re-adopt
-type: milestone        status: open
-refs: [1] [2] [8] [m9]   opened: seed   closed-by: <sha>
+type: milestone        status: closed
+refs: [1] [2] [8] [m9]   opened: seed   closed-by: 98c1b9d
 
 **Constraints this issue makes true (Tier 2 — each traces to a plan constraint in `refs:`):**
 <what must be true when this closes — one testable sentence per constraint; each traces to a plan constraint above>
