@@ -409,11 +409,11 @@
     }
   ],
   "generated_from": {
-    "commit": "520bf04b8826a98cb5153ecdc98f20a6a5b525e7",
+    "commit": "239f14bfde66dcd2c189e4a37fc35d217b3a9fd9",
     "dirty": false,
-    "extractor_version": "0.6.2",
+    "extractor_version": "0.6.3",
     "repo": "widget-press (fullMethodology example)"
   },
-  "hash": "43904307bc70ba1f8ab4934cd12d3a0d794eb55394acba2ff61807fa8e68bea7",
+  "hash": "da17d511325314ff99714d2e2a6f8c89d49b59d80af511464571a89d577da2f3",
   "schema_version": "0.2"
 }

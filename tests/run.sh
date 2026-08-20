@@ -105,6 +105,12 @@ python3 "$G" adopt "$S/delta" >/dev/null 2>&1 || true
 grep -q 'DEPS="\$REPO/.gantry/deps.json"' "$S/delta/.git/hooks/pre-commit" || fail "delta: deps.json not auto-wired"
 python3 "$G" check "$S/delta" >/dev/null || fail "delta: check (unbanded adapter must pass)"
 
+step "duplicate issue numbers are reported"
+cp "$S/gamma/issues/0001-m0-bootstrap.md" "$S/gamma/issues/0001-a-second-file-same-number.md"
+python3 "$S/gamma/tools/g" refresh 2>&1 | grep -q "DUPLICATE issue number" || fail "duplicate number not reported"
+rm "$S/gamma/issues/0001-a-second-file-same-number.md"; python3 "$S/gamma/tools/g" refresh >/dev/null
+git -C "$S/gamma" checkout -- . 2>/dev/null || true
+
 step "fork — level 1, band #1000–#1999, inherited issues closed, birth commit exempt"
 python3 "$G" fork "$S/alpha" "$S/alpha-fork" >/dev/null 2>&1
 expect "$S/alpha-fork/GRAPH.md" "lineage: level 1 · fork of alpha @"

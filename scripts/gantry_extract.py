@@ -21,7 +21,7 @@ import sys
 import unicodedata
 from pathlib import Path
 
-EXTRACTOR_VERSION = "0.6.2"
+EXTRACTOR_VERSION = "0.6.3"
 SCHEMA_VERSION = "0.2"
 DEP_TYPES = {"blocks", "awaits-stamp", "defers-to", "informs"}
 
@@ -787,6 +787,15 @@ def main():
                                 f"(parent had #{issue_high:04d} at spawn) — a stream files "
                                 f"#{own_prefix}-NNNN, never bare numbers (they collide on merge)")
         issues.append(issue)
+    seen_nums = {}
+    for i in issues:
+        seen_nums.setdefault(i["number"], []).append(i["file"])
+    for num, files in sorted(seen_nums.items()):
+        if len(files) > 1:
+            warnings.append(f"#{num}: DUPLICATE issue number — {', '.join(sorted(files))}. "
+                            f"Two issues cannot share an id: body mentions and deps targeting "
+                            f"#{num} resolve to only one of them. Renumber one (a fork's own work "
+                            f"belongs in its band; a stream's carries its prefix)")
     if below:
         # one line, not one per inherited issue: a fork legitimately carries its
         # base's whole closed reference set below the floor
