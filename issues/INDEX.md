@@ -16,3 +16,4 @@
 | #0012 | M10: client-facing stream instructions + safe re-adopt — tools/README carries the orchestration commands with the toolbox path; a materially changed map survives re-adopt | milestone | closed | [0012-m10-client-stream-instructions.md](0012-m10-client-stream-instructions.md) |
 | #0013 | M11: token-efficient driver — tools/g (map/open/next/show/refresh), gantry install onto PATH, client README how-to | milestone | closed | [0013-m11-token-efficient-driver.md](0013-m11-token-efficient-driver.md) |
 | #0014 | M12: compressed trackers — archived issues resolve for the lint/show and never have their numbers re-used | milestone | closed | [0014-m12-compressed-tracker.md](0014-m12-compressed-tracker.md) |
+| #0015 | stream merge reports success while landing nothing: git merge runs with check=False | bug | open | [0015-stream-merge-reports-success-while-landing-nothi.md](0015-stream-merge-reports-success-while-landing-nothi.md) |
