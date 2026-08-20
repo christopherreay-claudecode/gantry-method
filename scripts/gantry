@@ -189,9 +189,13 @@ def load_adapter(repo):
     return load_json(p)
 
 
-def issue_numbers(tracker):
+def issue_numbers(tracker, include_archived=False):
+    """Numbers in the tracker. With include_archived, also everything in its
+    subdirectories — a compressed tracker (issues/archive/) still owns those
+    numbers, and re-issuing one would collide with history."""
     nums = []
-    for f in sorted(Path(tracker).glob(ISSUE_GLOB)):
+    globber = Path(tracker).rglob if include_archived else Path(tracker).glob
+    for f in sorted(globber(ISSUE_GLOB)):
         try:
             nums.append(int(f.name[:4]))
         except ValueError:
@@ -200,7 +204,7 @@ def issue_numbers(tracker):
 
 
 def next_free_issue(tracker, lo, hi):
-    taken = set(issue_numbers(tracker))
+    taken = set(issue_numbers(tracker, include_archived=True))
     for n in range(lo, hi + 1):
         if n not in taken:
             return n
@@ -680,13 +684,15 @@ def parse_issue_header(path):
 
 
 def tracker_issue(tracker, iid):
-    """Path of issue <iid> ('0042' or 'a42-0003') or None."""
-    hits = list(Path(tracker).glob(f"{iid}-*.md"))
+    """Path of issue <iid> ('0042' or 'a42-0003') — live first, then archived
+    (a compressed tracker keeps closed issues in issues/archive/)."""
+    hits = sorted(Path(tracker).glob(f"{iid}-*.md")) or sorted(Path(tracker).rglob(f"{iid}-*.md"))
     return hits[0] if hits else None
 
 
 def next_free_prefixed(tracker, prefix):
-    seqs = [int(f.name[len(prefix) + 1:len(prefix) + 5]) for f in Path(tracker).glob(f"{prefix}-[0-9][0-9][0-9][0-9]-*.md")]
+    seqs = [int(f.name[len(prefix) + 1:len(prefix) + 5])
+            for f in Path(tracker).rglob(f"{prefix}-[0-9][0-9][0-9][0-9]-*.md")]
     return max(seqs, default=0) + 1
 
 

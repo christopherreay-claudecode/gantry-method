@@ -36,9 +36,12 @@ CLOSES_RE = re.compile(rf"\b(?:closes|closed|fixes|resolves)\s+#({ISSUE_ID})\b",
 
 
 def issue_path(tracker: Path, ref: str):
+    """Search the tracker AND its subdirectories: a project that compresses its
+    tracker (closed issues moved to `issues/archive/`) must still be able to
+    reference them — an archived issue is history, not a non-existent issue."""
     pfx, _, seq = ref.rpartition("-")
     name = f"{pfx}-{int(seq):04d}" if pfx else f"{int(seq):04d}"
-    hits = list(tracker.glob(f"{name}-*.md"))
+    hits = sorted(tracker.glob(f"{name}-*.md")) or sorted(tracker.rglob(f"{name}-*.md"))
     return hits[0] if hits else None
 
 

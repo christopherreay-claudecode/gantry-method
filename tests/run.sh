@@ -68,6 +68,14 @@ python3 "$G" install --bin "$S/bin" --name gy >/dev/null 2>&1 || fail "gantry in
 [ -L "$S/bin/gy" ] || fail "install: no symlink"
 python3 "$S/bin/gy" next --repo "$S/beta" >/dev/null || fail "installed entry point does not run"
 
+step "a compressed tracker — archived issues still exist (lint) and their numbers are never re-used"
+mkdir -p "$S/beta/issues/archive"; git -C "$S/beta" mv issues/0001-m0-bootstrap.md issues/archive/ 2>/dev/null || mv "$S/beta/issues/0001-m0-bootstrap.md" "$S/beta/issues/archive/"
+python3 "$S/beta/tools/g" issue new -t "after the archive" -r m0 --slug after-archive >/dev/null 2>&1
+[ -e "$S/beta/issues/0003-after-archive.md" ] || { ls "$S/beta/issues"; fail "archived number re-used (expected #0003)"; }
+python3 "$S/beta/tools/lint_commit.py" --message "touch (#0001)" --files x >/dev/null 2>&1 || fail "lint: archived issue reported missing"
+python3 "$S/beta/tools/g" show 1 | grep -q "M0" || fail "g show: archived issue not found"
+git -C "$S/beta" add -A && git -C "$S/beta" commit -q -m "compress the tracker; new issue after it (#0003)"
+
 step "adopt — repo WITH content and history; own CLAUDE.md, .gitignore, src/"
 mkdir -p "$S/gamma/src"; git -C "$S/gamma" init -q
 echo "# gamma" > "$S/gamma/README.md"; echo "print(1)" > "$S/gamma/src/main.py"
