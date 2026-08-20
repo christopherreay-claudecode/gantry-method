@@ -289,6 +289,12 @@ def adopt_repo(repo, name, level, lo, hi, lineage, core_prefixes, link_tools=Fal
                 continue
             shutil.copy2(HERE / t, dst)
             say(f"   refreshed: tools/{t} (--fresh-tools: current extractor/ledger/lint)")
+        rd = repo / "tools" / "README.md"
+        if not rd.is_symlink():
+            rd.write_text((TEMPLATES.parent / "tools-README.template.md")
+                          .read_text(encoding="utf-8")
+                          .replace("{{gantry_repo}}", str(HERE.parent)), encoding="utf-8")
+            say("   refreshed: tools/README.md (ritual + lineage + the stream/orchestration commands)")
     if link_tools:
         tools = repo / "tools"
         tools.mkdir(exist_ok=True)
@@ -316,15 +322,32 @@ def adopt_repo(repo, name, level, lo, hi, lineage, core_prefixes, link_tools=Fal
             f"#{seed_no:04d}" if seed_no else "== --no-commit: tree left for you")
         return seed_no
     if seed_no is None and has_head(repo):
-        # re-adopt of an adopted repo: a fresh mint differs from the committed
-        # GRAPH.md by its commit stamp only (the drift gate normalizes that) —
-        # do not leave stamp-only dirt behind, and never commit without a ref.
-        if run_extract(repo, check=True, quiet=True).returncode == 0:
-            git(repo, "checkout", "--", "GRAPH.md", check=False)
-        if run_gen_index(repo, check=True, quiet=True).returncode == 0:
-            git(repo, "checkout", "--", f"{load_adapter(repo).get('tracker_dir', 'issues')}/INDEX.md", check=False)
-        if git(repo, "status", "--porcelain", check=False).stdout.strip():
-            say("== changes present but no seed issue to ref — commit them yourself with an issue ref")
+        # Re-adopt of an already-adopted repo: there is no seed issue to reference,
+        # so this run must not commit. Keep a materially-changed GRAPH.md/INDEX.md
+        # (the operator commits it against one of their own issues); revert only
+        # dirt that is the commit STAMP alone — a fresh mint legitimately differs
+        # from the committed digest in `@ <sha>[+dirty] · REV …`.
+        stamp = re.compile(r"@ [0-9a-f]{7,40}(\+dirty)? · REV [0-9a-f]{12}")
+        tdir = load_adapter(repo).get("tracker_dir", "issues")
+        for rel in ("GRAPH.md", f"{tdir}/INDEX.md"):
+            f = repo / rel
+            if not f.exists():
+                continue
+            head_txt = git(repo, "show", f"HEAD:{rel}", check=False)
+            if head_txt.returncode != 0:
+                continue
+            norm = lambda t: stamp.sub("@ <stamp>", t, count=1)
+            if norm(head_txt.stdout) == norm(f.read_text(encoding="utf-8")) \
+                    and head_txt.stdout != f.read_text(encoding="utf-8"):
+                git(repo, "checkout", "--", rel, check=False)
+                say(f"   reverted stamp-only churn: {rel}")
+        dirty = git(repo, "status", "--porcelain", check=False).stdout.strip()
+        if dirty:
+            say("== changes present and no seed issue to reference — commit them yourself,")
+            say("   against one of this repo's issues, e.g.:")
+            say(f"     git -C {repo} add -A && git -C {repo} commit -m \"gantry tools refreshed (#NNNN)\"")
+            for line in dirty.splitlines()[:12]:
+                say(f"     {line}")
         else:
             say("== nothing to commit (already adopted, map up to date)")
         return None

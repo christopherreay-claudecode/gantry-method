@@ -534,6 +534,7 @@ the law those commands implement.
 | Situation | Command | Contract |
 |---|---|---|
 | empty/absent directory | `gantry new <dir>` | mkdir, `git init`, then `adopt` |
+| an adopted repo on older tools | `gantry adopt <repo> --fresh-tools` | refresh `tools/*.py` + `tools/README.md` (which carries the stream/orchestration commands) and both hook shims; re-mint; never commits — the operator commits against one of the repo's own issues |
 | existing repo — empty or with content | `gantry adopt [<repo>]` | scaffold **only what is missing** (`plan.md`, `seams.md`, `issues/`, `.gantry/adapter.json`, a gantry section in `CLAUDE.md`, `.gitignore` lines), copy tools + wire both hooks (`adopt.sh`), seed `#<floor> — M0`, commit `gantry adopted (#<floor>)`. Idempotent; never overwrites client content; re-run is a no-op |
 | new separate repo from a gantry-adopted base | `gantry fork <base> <new>` | see *Forking* below; level = base + 1 |
 | worktree stream of the same repo | `gantry stream new --issue N --slug S [--brief F]` · `list` · `report` · `merge` · `drop` | see *Streams* below; level = repo + 1, own prefix namespace |

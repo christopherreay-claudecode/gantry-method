@@ -46,6 +46,67 @@ by construction; the extractor warns and `gantry check` fails otherwise. Sub-pro
 (worktree beside this repo, registered in `.gantry/streams.json`; the orchestrator reads
 `gantry stream report`).
 
+## Streams — parallel work / test workorders (only if you need them)
+
+A **stream** is a git worktree on a branch of THIS repo, spawned by one of this
+repo's issues, with its own issue namespace (`#<prefix>-NNNN`) so parallel streams
+never collide when they merge back. It is how an orchestrating agent runs a test
+workorder, or two competing approaches, without leaving the method. The toolbox
+that drives it lives at **`{{gantry_repo}}`** (`G` below).
+
+```sh
+G={{gantry_repo}}/scripts/gantry
+
+# 0. the workorder this stream will fulfil — an issue of THIS repo, stating the
+#    constraints it makes true (--refs = the plan constraints / seams it serves):
+python3 $G issue new --repo . --title "try approach X for constraint 3" --type workorder --refs 3 S1
+#    → issues/00NN-try-approach-x.md ; fill the body, commit it: git commit -m "... (#00NN)"
+
+# 1. the brief: what the stream must make true. Plain markdown; optional
+#    `## issue: <title>` blocks (with optional refs:/type:/deps: lines) are
+#    pre-filed as the stream's own #<prefix>-0002, -0003 … :
+cat > /tmp/brief.md <<'B'
+Make constraints 3 and 4 true behind seam S1. Keep the public API unchanged.
+
+## issue: spike the adapter
+refs: [3]
+Write the smallest thing that satisfies constraint 3 behind S1.
+
+## issue: exit test
+refs: [4]
+deps: blocks #<prefix>-0002
+A test that fails before the spike and passes after.
+B
+
+# 2. spawn it (worktree lands BESIDE this repo, never inside it):
+python3 $G stream new --repo . --issue 00NN --slug approach-x --brief /tmp/brief.md
+#    → ../.gantry.<thisRepoDir>.streams.a<NN>/   on branch stream/00NN-approach-x
+#    → registers .gantry/streams.json — COMMIT IT: git commit -m "stream approach-x opened (#00NN)"
+
+# 3. hand it to a sub-model. The worktree carries .gantry/packet.md — a
+#    self-contained first input (method in one screen · boundaries · the parent
+#    workorder · the stream's issues · the constraints they resolve to ·
+#    GRAPH.md head · commands). Launch runs it IN the worktree:
+python3 $G stream launch a<NN> --repo .                 # default: claude -p "$(cat .gantry/packet.md)" …
+python3 $G stream launch a<NN> --repo . --dry-run       # print the command, run nothing
+python3 $G stream launch a<NN> --repo . --cmd 'my-agent --prompt-file .gantry/packet.md'
+python3 $G stream packet a<NN> --repo . --print          # regenerate/inspect the packet
+
+# 4. watch it — the check is the stream's GRAPH.md, not its chat output:
+python3 $G stream list   --repo .
+python3 $G stream report a<NN> --repo .
+
+# 5. fold it back, or throw it away:
+python3 $G stream merge a<NN> --repo .     # --no-ff; this repo's adapter kept; GRAPH.md/INDEX.md regenerated
+python3 $G stream drop  a<NN> --repo .     # worktree + branch gone; the prefix stays reserved
+#    then close the parent issue by its type's authority:
+python3 $G issue close 00NN --by <merge-sha>
+```
+
+A stream shares THIS repo's plan and seams (read-only for it) and files only
+`#<prefix>-NNNN` issues; the extractor warns if it strays. `.gantry/packet.md`
+and `.gantry/run.*.json` are launch artifacts — gitignored, never truth.
+
 ## CI
 
 Add a drift gate: regenerate and fail on any diff — visualization/report drift is

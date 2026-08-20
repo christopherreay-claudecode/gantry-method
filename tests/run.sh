@@ -43,6 +43,19 @@ python3 "$G" adopt "$S/beta" >/dev/null 2>&1
 [ "$(git -C "$S/beta" rev-list --count HEAD)" = 1 ] || fail "beta: expected 1 commit"
 python3 "$G" check "$S/beta" >/dev/null || fail "beta: check"
 
+step "re-adopt — a materially changed map is KEPT (not reverted to HEAD); no commit without a seed"
+python3 "$G" issue new --repo "$S/beta" --title "M1: second gate" --type milestone --refs m0 --slug m1-second >/dev/null 2>&1
+python3 "$G" adopt "$S/beta" --fresh-tools >/dev/null 2>&1
+git -C "$S/beta" status --porcelain | grep -q "GRAPH.md" || fail "beta: fresh GRAPH.md was reverted over the operator's change"
+grep -q "m1-second" "$S/beta/GRAPH.md" || fail "beta: GRAPH.md does not carry the new issue"
+[ "$(git -C "$S/beta" rev-list --count HEAD)" = 1 ] || fail "beta: re-adopt made a commit with no seed issue"
+grep -q "gantry stream new" "$S/beta/tools/README.md" || fail "beta: tools/README.md lacks the stream commands"
+grep -q "{{gantry_repo}}" "$S/beta/tools/README.md" && fail "beta: toolbox path placeholder not substituted"
+grep -qE "^G=/.*/scripts/gantry$" "$S/beta/tools/README.md" || fail "beta: toolbox path not an absolute gantry path"
+git -C "$S/beta" add -A && git -C "$S/beta" commit -q -m "second gate + tools refresh (#0002)"
+python3 "$G" adopt "$S/beta" >/dev/null 2>&1
+[ -z "$(git -C "$S/beta" status --porcelain)" ] || fail "beta: re-adopt left stamp-only churn behind"
+
 step "adopt — repo WITH content and history; own CLAUDE.md, .gitignore, src/"
 mkdir -p "$S/gamma/src"; git -C "$S/gamma" init -q
 echo "# gamma" > "$S/gamma/README.md"; echo "print(1)" > "$S/gamma/src/main.py"

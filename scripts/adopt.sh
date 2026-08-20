@@ -60,8 +60,9 @@ done
 if [ -e "$REPO/tools/README.md" ]; then
   echo "   kept: tools/README.md"
 else
-  cp "$HERE/tools-README.template.md" "$REPO/tools/README.md"
-  echo "   copied: tools/README.md (the ritual — read it first)"
+  GANTRY_ROOT=$(CDPATH= cd -- "$HERE/.." && pwd)
+  sed "s|{{gantry_repo}}|$GANTRY_ROOT|g" "$HERE/tools-README.template.md" > "$REPO/tools/README.md"
+  echo "   copied: tools/README.md (the ritual + the stream/orchestration commands — read it first)"
 fi
 
 echo "   2. commit-msg lint shim"
