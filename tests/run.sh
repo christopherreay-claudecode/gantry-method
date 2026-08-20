@@ -51,10 +51,22 @@ grep -q "m1-second" "$S/beta/GRAPH.md" || fail "beta: GRAPH.md does not carry th
 [ "$(git -C "$S/beta" rev-list --count HEAD)" = 1 ] || fail "beta: re-adopt made a commit with no seed issue"
 grep -q "gantry stream new" "$S/beta/tools/README.md" || fail "beta: tools/README.md lacks the stream commands"
 grep -q "{{gantry_repo}}" "$S/beta/tools/README.md" && fail "beta: toolbox path placeholder not substituted"
-grep -qE "^G=/.*/scripts/gantry$" "$S/beta/tools/README.md" || fail "beta: toolbox path not an absolute gantry path"
+grep -qE "^G=/.*/scripts/gantry" "$S/beta/tools/README.md" || fail "beta: toolbox path not an absolute gantry path"
 git -C "$S/beta" add -A && git -C "$S/beta" commit -q -m "second gate + tools refresh (#0002)"
 python3 "$G" adopt "$S/beta" >/dev/null 2>&1
 [ -z "$(git -C "$S/beta" status --porcelain)" ] || fail "beta: re-adopt left stamp-only churn behind"
+
+step "the short driver — tools/g views (map/open/next/show/refresh) and PATH install"
+[ -x "$S/beta/tools/g" ] || fail "beta: tools/g not installed"
+python3 "$S/beta/tools/g" refresh | grep -q "GRAPH.md + INDEX.md refreshed · REV" || fail "g refresh"
+python3 "$S/beta/tools/g" map | grep -q "sources —" && fail "g map still carries the navigation index"
+python3 "$S/beta/tools/g" map | grep -q "open items" || fail "g map lost the open items"
+python3 "$S/beta/tools/g" open | grep -q "m1-second" || fail "g open"
+python3 "$S/beta/tools/g" next | grep -q "ready (nothing open blocks these)" || fail "g next"
+python3 "$S/beta/tools/g" show 2 | grep -q "M1: second gate" || fail "g show"
+python3 "$G" install --bin "$S/bin" --name gy >/dev/null 2>&1 || fail "gantry install"
+[ -L "$S/bin/gy" ] || fail "install: no symlink"
+python3 "$S/bin/gy" next --repo "$S/beta" >/dev/null || fail "installed entry point does not run"
 
 step "adopt — repo WITH content and history; own CLAUDE.md, .gitignore, src/"
 mkdir -p "$S/gamma/src"; git -C "$S/gamma" init -q

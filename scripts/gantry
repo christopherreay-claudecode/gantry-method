@@ -14,7 +14,21 @@
     gantry stream drop   <prefix|slug> [--repo R] [--keep-branch]
     gantry issue  new    --title T --refs A [A…] [--type T] [--deps "…"] [--repo R]
     gantry issue  close  <id> --by <sha|sentence> [--repo R]
-    gantry check  [<repo>]
+    gantry map | open | next | show <id> | refresh | check      [--repo R]
+    gantry install [--bin ~/.local/bin] [--name gantry] [--force]
+
+`gantry install` puts this file on PATH, so every command below is `gantry …`
+rather than `python3 /long/path/scripts/gantry …`.
+
+In an adopted client the SAME program is installed as `tools/g` — the short,
+token-cheap driver an agent uses all day:
+
+    python3 tools/g map          the map without its navigation index
+    python3 tools/g open         only the open items (+ their edges)
+    python3 tools/g next         only what nothing blocks
+    python3 tools/g show 42      one issue, its refs already resolved to constraint text
+    python3 tools/g refresh      regenerate GRAPH.md + INDEX.md — one line back
+    python3 tools/g issue new -t "…" -r 3 S1    ·    issue close 42 -b <sha>
 
 Which one, in one line each (docs/00-llm-playbook.md has the long form):
 
@@ -57,6 +71,7 @@ install-*.sh, gantry_extract.py, gen_index.py) — run it from anywhere.
 """
 import argparse
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -64,10 +79,38 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+# The same program is the toolbox entry point (gantry/scripts/gantry) AND the
+# client's own short driver (<client>/tools/g — copied, byte-identical). Only the
+# scaffolding subcommands need the templates; the client copy resolves them if a
+# toolbox is reachable and otherwise falls back to the inlined workorder body.
 TEMPLATES = HERE / "templates"
+def default_repo():
+    """As <client>/tools/g the driver's home repo is its own parent — so
+    `python3 tools/g open` needs no arguments from anywhere. As the toolbox entry
+    point (or a PATH symlink into it) the default stays the current directory."""
+    if HERE.name == "tools" and (HERE.parent / ".gantry").is_dir():
+        return str(HERE.parent)
+    return "."
+
+
+WORKORDER_FALLBACK = """**Constraints this issue makes true (Tier 2 — each traces to a plan constraint in `refs:`):**
+{{constraints}}
+
+**Depends on:**
+{{depends}}
+
+**Approaches (the technical ways to satisfy the constraints; the one taken, and why):**
+{{approaches}}
+
+**Exit (what latches this):**
+{{exit}}
+"""
 MAX_LEVEL = 9
 HUMAN_GATED = {"ambiguity", "freeze-request", "amendment-proposal"}
 ISSUE_GLOB = "[0-9][0-9][0-9][0-9]-*.md"
+
+
+DEFAULT_REPO = None   # set below, once default_repo() is defined
 
 
 # ------------------------------------------------------------------ util ----
@@ -104,7 +147,14 @@ def save_json(p, data):
 
 
 def render(template_name, **kw):
-    text = (TEMPLATES / template_name).read_text(encoding="utf-8")
+    src = TEMPLATES / template_name
+    if not src.exists() and template_name == "issue-workorder.md":
+        text = WORKORDER_FALLBACK
+    elif not src.exists():
+        die(f"template {template_name} not found at {src} — run this subcommand from the "
+            f"gantry toolbox (this is the client copy: tools/g)")
+    else:
+        text = src.read_text(encoding="utf-8")
     for k, v in kw.items():
         text = text.replace("{{" + k + "}}", str(v))
     left = re.findall(r"{{(\w+)}}", text)
@@ -282,13 +332,14 @@ def adopt_repo(repo, name, level, lo, hi, lineage, core_prefixes, link_tools=Fal
         # upgrade an older client: overwrite its tools/ copies with this toolbox's
         # current, byte-identical programs (never symlinks — client content)
         (repo / "tools").mkdir(exist_ok=True)
-        for t in ("gantry_extract.py", "gen_index.py", "lint_commit.py"):
+        for t, src in (("gantry_extract.py", "gantry_extract.py"), ("gen_index.py", "gen_index.py"),
+                       ("lint_commit.py", "lint_commit.py"), ("g", "gantry")):
             dst = repo / "tools" / t
             if dst.is_symlink():
                 say(f"   kept: tools/{t} (symlink — already this toolbox)")
                 continue
-            shutil.copy2(HERE / t, dst)
-            say(f"   refreshed: tools/{t} (--fresh-tools: current extractor/ledger/lint)")
+            shutil.copy2(HERE / src, dst)
+            say(f"   refreshed: tools/{t} (--fresh-tools: current {'driver' if t == 'g' else 'extractor/ledger/lint'})")
         rd = repo / "tools" / "README.md"
         if not rd.is_symlink():
             rd.write_text((TEMPLATES.parent / "tools-README.template.md")
@@ -298,9 +349,10 @@ def adopt_repo(repo, name, level, lo, hi, lineage, core_prefixes, link_tools=Fal
     if link_tools:
         tools = repo / "tools"
         tools.mkdir(exist_ok=True)
-        for t in ("gantry_extract.py", "gen_index.py", "lint_commit.py"):
+        for t, srcname in (("gantry_extract.py", "gantry_extract.py"), ("gen_index.py", "gen_index.py"),
+                           ("lint_commit.py", "lint_commit.py"), ("g", "gantry")):
             dst = tools / t
-            src = HERE / t
+            src = HERE / srcname
             if dst.exists() or dst.is_symlink():
                 say(f"   kept: tools/{t}")
                 continue
@@ -1215,6 +1267,191 @@ def cmd_issue_close(a):
     say(f"   closed: #{iid} — closed-by: {a.by}   (commit it: 'close #{iid} …')")
 
 
+# ------------------------------------------------------- the short views ----
+#
+# Token economy: an agent reads the map every session and issue files all day.
+# These print the smallest thing that answers the question — GRAPH.md without its
+# navigation index, only the open items, only what is unblocked, one issue with
+# the constraints it refs already resolved — so nobody pays for a full file read.
+
+SECTION_HEADS = ("gates latched:", "seams ", "open items", "dependency edges",
+                 "closed/resolved:", "sources —", "## proposed", "lineage:", "streams ")
+
+
+def graph_text(repo):
+    g = Path(repo) / "GRAPH.md"
+    if not g.exists():
+        die(f"no GRAPH.md in {repo} — run `g refresh` (or gantry adopt) first")
+    return g.read_text(encoding="utf-8")
+
+
+def cmd_map(a):
+    """GRAPH.md minus the navigation index (and minus the proposed annex unless
+    asked) — the part an agent actually reasons over."""
+    repo = repo_root(a.repo)
+    lines = graph_text(repo).splitlines()
+    if a.full:
+        say("\n".join(lines))
+        return
+    out, skip = [], False
+    for line in lines:
+        if line.startswith("sources —"):
+            skip = True
+            continue
+        if line.startswith("## proposed"):
+            skip = not a.proposed
+        if skip and line.startswith(("gates", "seams", "open items", "dependency", "closed/")):
+            skip = False
+        if not skip:
+            out.append(line)
+    while out and not out[-1].strip():
+        out.pop()
+    say("\n".join(out))
+    say("")
+    say("(`g map --full` adds the sources index; `--proposed` the annex; "
+        "`g show <id>` prints one issue with its constraints resolved)")
+
+
+def section(lines, head):
+    out, on = [], False
+    for line in lines:
+        if line.startswith(head):
+            on = True
+            continue
+        if on and (not line.strip() or any(line.startswith(h) for h in SECTION_HEADS)):
+            break
+        if on:
+            out.append(line)
+    return out
+
+
+def cmd_open(a):
+    repo = repo_root(a.repo)
+    lines = graph_text(repo).splitlines()
+    items = section(lines, "open items")
+    if not items:
+        say("no open items")
+        return
+    say("\n".join(l.strip() for l in items))
+    edges = [l.strip() for l in section(lines, "dependency edges")]
+    ids = {re.match(r"#(\S+)", l.strip()).group(1) for l in items if re.match(r"#(\S+)", l.strip())}
+    rel = [e for e in edges if any(f"#{i}" in e for i in ids)]
+    if rel:
+        say("edges: " + " · ".join(rel))
+
+
+def cmd_next(a):
+    """Open items nothing blocks — what may be started right now."""
+    repo = repo_root(a.repo)
+    lines = graph_text(repo).splitlines()
+    items = [l.strip() for l in section(lines, "open items")]
+    edges = [l.strip() for l in section(lines, "dependency edges")]
+    open_ids = {}
+    for l in items:
+        m = re.match(r"#(\S+)\s+(\S+)\s+(\S+)", l)
+        if m:
+            open_ids[m.group(1)] = l
+    blocked = {}
+    for e in edges:
+        m = re.match(r"#(\S+)\s+—(\S+)→\s+#(\S+)", e)
+        if not m:
+            continue
+        src, typ, tgt = m.group(1), m.group(2), m.group(3)
+        # "A blocks B" → B waits on A; "A defers-to B"/"awaits-stamp B" → A waits on B
+        if typ == "blocks" and src in open_ids and tgt in open_ids:
+            blocked.setdefault(tgt, []).append(f"#{src}")
+        if typ in ("defers-to", "awaits-stamp") and tgt in open_ids and src in open_ids:
+            blocked.setdefault(src, []).append(f"#{tgt}")
+    if not open_ids:
+        say("no open items")
+        return
+    ready = [l for i, l in open_ids.items() if i not in blocked]
+    say("ready (nothing open blocks these):")
+    for l in ready or ["  (none — everything open is waiting)"]:
+        say("  " + l if not l.startswith("  ") else l)
+    if blocked:
+        say("waiting:")
+        for i, on in sorted(blocked.items()):
+            say(f"  #{i} ← {' '.join(sorted(set(on)))}")
+
+
+def cmd_show(a):
+    """One issue, plus the plan constraints / seam rows its refs resolve to."""
+    repo = repo_root(a.repo)
+    ad = load_adapter(repo)
+    tracker = repo / ad.get("tracker_dir", "issues")
+    iid = a.id.lstrip("#")
+    pfx, _, seq = iid.rpartition("-")
+    if seq.isdigit():
+        iid = f"{pfx}-{int(seq):04d}" if pfx else f"{int(seq):04d}"
+    p = tracker_issue(tracker, iid)
+    if not p:
+        die(f"#{iid} not found in {tracker}")
+    text = p.read_text(encoding="utf-8").rstrip()
+    say(text)
+    _, _, _, _, refs = parse_issue_header(p)
+    toks = [t.strip() for t in re.findall(r"\[([^\]]+)\]", refs or "")]
+    cons = plan_constraint_lines(repo, ad.get("plan", "plan.md"))
+    seams = seam_rows(repo, ad.get("kickoff", "seams.md"))
+    resolved = []
+    for t in toks:
+        if t.isdigit() and t in cons:
+            resolved.append(f"  [{t}] {cons[t]}")
+        elif re.match(r"^S\d$", t) and t in seams:
+            resolved.append(f"  [{t}] {seams[t]}")
+    if resolved:
+        say("")
+        say("refs resolve to:")
+        say("\n".join(resolved))
+
+
+def cmd_refresh(a):
+    """Regenerate GRAPH.md + INDEX.md; print one line (plus any warnings)."""
+    repo = repo_root(a.repo)
+    r = run_extract(repo, quiet=True)
+    out = (r.stdout or "") + (r.stderr or "")
+    if r.returncode != 0:
+        die(f"extract failed:\n{out.strip()}")
+    rev = re.search(r"REV (\S+)\s+@ client (\S+)", out)
+    ents = re.search(r"entities: (\d+)", out)
+    warn = out.split("warnings (", 1)
+    run_gen_index(repo, quiet=True)
+    say(f"GRAPH.md + INDEX.md refreshed · REV {rev.group(1) if rev else '?'} "
+        f"@ {rev.group(2) if rev else '?'} · {ents.group(1) if ents else '?'} entities")
+    if len(warn) > 1:
+        say("warnings (" + warn[1].strip())
+
+
+# ---------------------------------------------------------------- install ----
+
+def cmd_install(a):
+    """Symlink this toolbox's entry point onto PATH as `gantry`, so every
+    instruction is four characters instead of an absolute path (and every agent
+    session spends fewer tokens typing it)."""
+    bindir = Path(a.bin).expanduser()
+    bindir.mkdir(parents=True, exist_ok=True)
+    link = bindir / a.name
+    target = HERE / "gantry"
+    if link.exists() or link.is_symlink():
+        cur = link.resolve() if link.is_symlink() else link
+        if cur == target.resolve():
+            say(f"   already installed: {link} -> {target}")
+        elif a.force:
+            link.unlink()
+            link.symlink_to(target)
+            say(f"   replaced: {link} -> {target}  (was {cur})")
+        else:
+            die(f"{link} exists and points at {cur} — pass --force to replace it")
+    else:
+        link.symlink_to(target)
+        say(f"   installed: {link} -> {target}")
+    on_path = str(bindir) in (os.environ.get("PATH") or "").split(os.pathsep)
+    say(f"   PATH: {'yes' if on_path else 'NO — add it'} ({bindir})")
+    if not on_path:
+        say(f'     echo \'export PATH="{bindir}:$PATH"\' >> ~/.bashrc && exec bash')
+    say(f"   try: {a.name} map --repo <a-gantry-repo>   ·   {a.name} --help")
+
+
 # ------------------------------------------------------------------ check ----
 
 def cmd_check(a):
@@ -1246,6 +1483,9 @@ def cmd_check(a):
 
 # ------------------------------------------------------------------- main ----
 
+DEFAULT_REPO = default_repo()
+
+
 def main():
     ap = argparse.ArgumentParser(prog="gantry", description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -1259,7 +1499,7 @@ def main():
     p.set_defaults(fn=cmd_new)
 
     p = sub.add_parser("adopt", help="put an existing git repo (empty or with content) on the method")
-    p.add_argument("repo", nargs="?", default=".")
+    p.add_argument("repo", nargs="?", default=DEFAULT_REPO)
     p.add_argument("--name")
     p.add_argument("--core-prefix", action="append", default=[])
     p.add_argument("--link-tools", action="store_true",
@@ -1289,40 +1529,61 @@ def main():
     q.add_argument("--slug", required=True)
     q.add_argument("--brief", help="markdown file (or - for stdin) with the constraints/workorders to fulfil; becomes #<prefix>-0001's body")
     q.add_argument("--prefix", help="override the allocated prefix ([a-z][a-z0-9]{0,11})")
-    q.add_argument("--repo", default="."); q.set_defaults(fn=cmd_stream_new)
-    q = ss.add_parser("list"); q.add_argument("--repo", default="."); q.set_defaults(fn=cmd_stream_list)
+    q.add_argument("--repo", default=DEFAULT_REPO); q.set_defaults(fn=cmd_stream_new)
+    q = ss.add_parser("list"); q.add_argument("--repo", default=DEFAULT_REPO); q.set_defaults(fn=cmd_stream_list)
     q = ss.add_parser("report", help="what each stream's GRAPH.md says now — the orchestrator's check")
     q.add_argument("stream", nargs="?", help="prefix or slug (default: all open)")
     q.add_argument("--all", action="store_true", help="include merged/dropped")
-    q.add_argument("--repo", default="."); q.set_defaults(fn=cmd_stream_report)
+    q.add_argument("--repo", default=DEFAULT_REPO); q.set_defaults(fn=cmd_stream_report)
     q = ss.add_parser("packet", help="(re)write <worktree>/.gantry/packet.md — the sub-model's self-contained first input")
     q.add_argument("stream", help="prefix or slug"); q.add_argument("--print", action="store_true")
-    q.add_argument("--repo", default="."); q.set_defaults(fn=cmd_stream_packet)
+    q.add_argument("--repo", default=DEFAULT_REPO); q.set_defaults(fn=cmd_stream_packet)
     q = ss.add_parser("launch", help="cd into the stream worktree and run the sub-model with the packet as prompt")
     q.add_argument("stream", help="prefix or slug"); q.add_argument("--cmd", help="shell command to run in the worktree (default: headless claude -p with the packet)")
-    q.add_argument("--dry-run", action="store_true"); q.add_argument("--repo", default="."); q.set_defaults(fn=cmd_stream_launch)
-    q = ss.add_parser("merge"); q.add_argument("stream", help="prefix or slug"); q.add_argument("--repo", default=".")
+    q.add_argument("--dry-run", action="store_true"); q.add_argument("--repo", default=DEFAULT_REPO); q.set_defaults(fn=cmd_stream_launch)
+    q = ss.add_parser("merge"); q.add_argument("stream", help="prefix or slug"); q.add_argument("--repo", default=DEFAULT_REPO)
     q.add_argument("--keep-worktree", action="store_true"); q.add_argument("--delete-branch", action="store_true")
     q.add_argument("--finish", action="store_true", help="after resolving conflicts by hand: bookkeeping + merge commit")
     q.set_defaults(fn=cmd_stream_merge)
-    q = ss.add_parser("drop"); q.add_argument("stream", help="prefix or slug"); q.add_argument("--repo", default=".")
+    q = ss.add_parser("drop"); q.add_argument("stream", help="prefix or slug"); q.add_argument("--repo", default=DEFAULT_REPO)
     q.add_argument("--keep-branch", action="store_true"); q.set_defaults(fn=cmd_stream_drop)
 
     p = sub.add_parser("issue", help="write / close a correctly-formed issue (the header grammar is exact)")
     ss = p.add_subparsers(dest="icmd", required=True)
     q = ss.add_parser("new")
-    q.add_argument("--title", required=True)
-    q.add_argument("--type", default="workorder", help="milestone|workorder|bug|ambiguity|freeze-request|amendment-proposal|…")
-    q.add_argument("--refs", nargs="+", default=[], help="upstream anchors: 3 S1 m1 PhaseB Q1 (≥1 required)")
+    q.add_argument("-t", "--title", required=True)
+    q.add_argument("-T", "--type", default="workorder", help="milestone|workorder|bug|ambiguity|freeze-request|amendment-proposal|…")
+    q.add_argument("-r", "--refs", nargs="+", default=[], help="upstream anchors: 3 S1 m1 PhaseB Q1 (≥1 required)")
     q.add_argument("--deps", help='e.g. "blocks #0004; informs #0003"')
     q.add_argument("--slug"); q.add_argument("--number", help="force an id (default: next free in this repo's namespace)")
     q.add_argument("--opened", default="seed"); q.add_argument("--constraints", help="the constraints this issue makes true (body)")
-    q.add_argument("--repo", default="."); q.set_defaults(fn=cmd_issue_new)
-    q = ss.add_parser("close"); q.add_argument("id"); q.add_argument("--by", required=True, help="landing sha, or a human sentence for human-gated types")
-    q.add_argument("--repo", default="."); q.set_defaults(fn=cmd_issue_close)
+    q.add_argument("--repo", default=DEFAULT_REPO); q.set_defaults(fn=cmd_issue_new)
+    q = ss.add_parser("close"); q.add_argument("id"); q.add_argument("-b", "--by", required=True, help="landing sha, or a human sentence for human-gated types")
+    q.add_argument("--repo", default=DEFAULT_REPO); q.set_defaults(fn=cmd_issue_close)
+
+    p = sub.add_parser("map", help="GRAPH.md without its navigation index — the map you reason over")
+    p.add_argument("--full", action="store_true", help="the whole file, sources index included")
+    p.add_argument("--proposed", action="store_true", help="keep the proposed annex")
+    p.add_argument("--repo", default=DEFAULT_REPO); p.set_defaults(fn=cmd_map)
+
+    p = sub.add_parser("open", help="just the open items (+ their edges)")
+    p.add_argument("--repo", default=DEFAULT_REPO); p.set_defaults(fn=cmd_open)
+
+    p = sub.add_parser("next", help="open items nothing blocks — what may be started now")
+    p.add_argument("--repo", default=DEFAULT_REPO); p.set_defaults(fn=cmd_next)
+
+    p = sub.add_parser("show", help="one issue + the constraints/seams its refs resolve to")
+    p.add_argument("id"); p.add_argument("--repo", default=DEFAULT_REPO); p.set_defaults(fn=cmd_show)
+
+    p = sub.add_parser("refresh", help="regenerate GRAPH.md + INDEX.md, one line of output")
+    p.add_argument("--repo", default=DEFAULT_REPO); p.set_defaults(fn=cmd_refresh)
+
+    p = sub.add_parser("install", help="symlink this toolbox onto PATH as `gantry`")
+    p.add_argument("--bin", default="~/.local/bin"); p.add_argument("--name", default="gantry")
+    p.add_argument("--force", action="store_true"); p.set_defaults(fn=cmd_install)
 
     p = sub.add_parser("check", help="CI gate: extract --check, gen_index --check, lineage sanity")
-    p.add_argument("repo", nargs="?", default=".")
+    p.add_argument("repo", nargs="?", default=DEFAULT_REPO)
     p.set_defaults(fn=cmd_check)
 
     a = ap.parse_args()

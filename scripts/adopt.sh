@@ -57,6 +57,13 @@ for tool in gantry_extract.py gen_index.py lint_commit.py; do
     echo "   copied: tools/$tool"
   fi
 done
+if [ -e "$REPO/tools/g" ]; then
+  echo "   kept: tools/g (client already owns it)"
+else
+  cp "$HERE/gantry" "$REPO/tools/g"
+  chmod +x "$REPO/tools/g"
+  echo "   copied: tools/g (the short driver: python3 tools/g map | open | next | show | refresh | issue new)"
+fi
 if [ -e "$REPO/tools/README.md" ]; then
   echo "   kept: tools/README.md"
 else

@@ -5,10 +5,32 @@ These were copied into this repo by the gantry adoption script
 tools**: commit them, version them, keep them. A clean clone of this repo carries
 its own GRAPH.md builder and tracker law — no gantry repo required.
 
-## The three tools
+## The short driver — `tools/g` (use this all day)
+
+`tools/g` is the gantry entry point, committed in this repo. Prefer it over
+reading files: each view prints the smallest thing that answers the question, so a
+session spends tokens on the work rather than on the scaffold.
+
+```sh
+python3 tools/g map          # GRAPH.md WITHOUT its navigation index — the map you reason over
+python3 tools/g open         # only the open items (+ the edges that touch them)
+python3 tools/g next         # only what nothing blocks — what may be started now
+python3 tools/g show 42      # one issue, with the constraints/seams its refs resolve to
+python3 tools/g refresh      # regenerate GRAPH.md + INDEX.md → one line back
+python3 tools/g check        # drift + lineage gate (CI)
+python3 tools/g issue new -t "M2: …" -T milestone -r 3 S1 m1     # exact header, right id
+python3 tools/g issue close 42 -b <landing-sha>                  # or -b "<human sentence>"
+```
+
+If the toolbox is installed on PATH (`gantry install` in the toolbox repo), the
+same commands are just `gantry map`, `gantry next`, `gantry show 42`, … from
+anywhere inside this repo. `tools/g` always works — a clean clone needs no toolbox.
+
+## The tools
 
 | Tool | What it does | When to run it |
 |---|---|---|
+| `g` | the driver: `map` · `open` · `next` · `show` · `refresh` · `check` · `issue new/close` · `stream …` | all day; prefer it to opening files |
 | `gantry_extract.py` | truth (plan + seams + tracker + git) → `GRAPH.md` + `state.json` + `bodies.json` | after any tracker/plan/seam change — or never, if you rely on the pre-commit hook |
 | `gen_index.py` | tracker → `issues/INDEX.md` (the derived ledger); `--check` fails if stale | after adding/closing issues; `--check` in CI |
 | `lint_commit.py` | enforces the commit law: every commit refs an issue; `closes` never targets a human-gated type | automatically, via the `commit-msg` hook |
@@ -55,11 +77,11 @@ workorder, or two competing approaches, without leaving the method. The toolbox
 that drives it lives at **`{{gantry_repo}}`** (`G` below).
 
 ```sh
-G={{gantry_repo}}/scripts/gantry
+G={{gantry_repo}}/scripts/gantry     # or just `gantry` if installed on PATH (`gantry install`)
 
 # 0. the workorder this stream will fulfil — an issue of THIS repo, stating the
 #    constraints it makes true (--refs = the plan constraints / seams it serves):
-python3 $G issue new --repo . --title "try approach X for constraint 3" --type workorder --refs 3 S1
+python3 tools/g issue new -t "try approach X for constraint 3" -T workorder -r 3 S1
 #    → issues/00NN-try-approach-x.md ; fill the body, commit it: git commit -m "... (#00NN)"
 
 # 1. the brief: what the stream must make true. Plain markdown; optional
