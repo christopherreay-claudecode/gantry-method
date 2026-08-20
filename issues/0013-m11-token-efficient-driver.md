@@ -1,6 +1,6 @@
 # #0013 — M11: token-efficient driver — tools/g (map/open/next/show/refresh), gantry install onto PATH, client README how-to
-type: milestone        status: open
-refs: [1] [2] [m10]   opened: seed   closed-by: <sha>
+type: milestone        status: closed
+refs: [1] [2] [m10]   opened: seed   closed-by: 9ce6238
 
 **Constraints this issue makes true (Tier 2 — each traces to a plan constraint in `refs:`):**
 <what must be true when this closes — one testable sentence per constraint; each traces to a plan constraint above>
