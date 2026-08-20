@@ -1,6 +1,6 @@
 # #0014 — M12: compressed trackers — archived issues resolve for the lint/show and never have their numbers re-used
-type: milestone        status: open
-refs: [2] [6] [m11]   opened: seed   closed-by: <sha>
+type: milestone        status: closed
+refs: [2] [6] [m11]   opened: seed   closed-by: 72d0b73
 
 **Constraints this issue makes true (Tier 2 — each traces to a plan constraint in `refs:`):**
 <what must be true when this closes — one testable sentence per constraint; each traces to a plan constraint above>
