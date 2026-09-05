@@ -1,6 +1,6 @@
 # #0020 — mmt_tokens / mmt_edges in adapter.json: the §5b token grammar and the ->@[type] vocabulary become per-repo bindings; collect() interprets the table per root; gantry ships the generic defaults, clients add their own
-type: feature        status: open
-refs: [10] [11]   opened: seed   closed-by: <sha>
+type: feature        status: closed
+refs: [10] [11]   opened: seed   closed-by: fcd9bce
 deps: blocks #0021
 
 **Constraints this issue makes true (Tier 2 — each traces to a plan constraint in `refs:`):**
