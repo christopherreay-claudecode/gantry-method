@@ -151,7 +151,7 @@ in gantry) renders to a local `file://` page: `@addr` anchors, `->@addr` links, 
 `#NNNN` / `R7` / `c17` / `[3]` / `S1` / `m2` / `Q1` / `§6.1` / `path:line` / commit hash
 linked into a line-numbered rendering of the document that defines it.
 
-    python3 tools/g tree new <slug> <<'MMT'             # → trees/<today>-<slug>.mmt (committed) AND
+    python3 tools/g tree new <slug> <<'MMT'             # → trees/<yyyymmdd-HHMMSS>-<slug>.mmt (committed) AND
     @root  = …                                          #   .site/mmt/<name>.html; prints the file:// URL,
     └─ …                                                #   the level-1 lint and the unresolved tokens
     MMT

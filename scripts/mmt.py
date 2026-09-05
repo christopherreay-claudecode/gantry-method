@@ -456,10 +456,22 @@ def page(title: str, body: str, depth: str) -> str:
             f"<header><b>{html.escape(title)}</b><a href=\"{depth}index.html\">index</a></header><main>{body}</main>")
 
 
+STAMP_NAME = re.compile(r"^(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})-(.+)$")
+
+
 def write_index(out: Path) -> None:
-    pages = sorted(p.name for p in out.glob("*.html") if p.name != "index.html")
-    body = "<ul>" + "".join(f'<li><a class="p" href="{html.escape(n)}">{html.escape(n[:-5])}</a></li>' for n in pages) + "</ul>"
-    (out / "index.html").write_text(page("MindMapTrees", body, ""), encoding="utf-8")
+    """Newest first. A page named yyyymmdd-HHMMSS-<slug> (tools/g tree new) shows as
+    'yyyymmdd-HH:MM:SS  slug'; anything else sorts after those, by name."""
+    def key(n):
+        m = STAMP_NAME.match(n[:-5])
+        return (0, "".join(m.groups()[:6])) if m else (1, n)
+    pages = sorted((p.name for p in out.glob("*.html") if p.name != "index.html"), key=key, reverse=True)
+    rows = []
+    for n in pages:
+        m = STAMP_NAME.match(n[:-5])
+        label = f"{m[1]}{m[2]}{m[3]}-{m[4]}:{m[5]}:{m[6]}  {m[7]}" if m else n[:-5]
+        rows.append(f'<li><a class="p" href="{html.escape(n)}">{html.escape(label)}</a></li>')
+    (out / "index.html").write_text(page("MindMapTrees", "<ul>" + "".join(rows) + "</ul>", ""), encoding="utf-8")
 
 
 # -------------------------------------------------------------------- main --

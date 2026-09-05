@@ -77,7 +77,7 @@ import shutil
 import subprocess
 import tempfile
 import sys
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -1448,7 +1448,7 @@ def _tree_roots(repo):
 
 
 def cmd_tree_new(a):
-    """Write trees/<today>-<slug>.mmt from stdin (or --from FILE), then render it (#0019):
+    """Write trees/<yyyymmdd-HHMMSS>-<slug>.mmt from stdin (or --from FILE), then render it (#0019):
     the tree is emitted ONCE — as this command's stdin — and what comes back is the page URL,
     the level-1 lint and the unresolved tokens. The chat reply is the URL, never the tree again."""
     repo = Path(a.repo)
@@ -1456,7 +1456,8 @@ def cmd_tree_new(a):
     if not src.strip():
         die("tree new: empty input (pipe the tree on stdin, or --from FILE)")
     (repo / "trees").mkdir(exist_ok=True)
-    name = f"{date.today().isoformat()}-{re.sub(r'[^a-z0-9]+', '-', a.slug.lower()).strip('-')}.mmt"
+    # yyyymmdd-HHMMSS-<slug>: a tree is a moment; the index sorts these newest first
+    name = f"{datetime.now().strftime('%Y%m%d-%H%M%S')}-{re.sub(r'[^a-z0-9]+', '-', a.slug.lower()).strip('-')}.mmt"
     out = repo / "trees" / name
     if out.exists() and not a.force:
         die(f"tree new: {out} exists (use --force)")
@@ -1747,7 +1748,7 @@ def main():
 
     p = sub.add_parser("tree", help="MindMapTrees: trees/*.mmt → .site/mmt/ linked pages (designDocs/MindMapTreeFormat-0.1.md)")
     ss = p.add_subparsers(dest="tcmd", required=True)
-    q = ss.add_parser("new", help="write trees/<today>-<slug>.mmt from stdin or --from FILE, render it, print the page URL + lint")
+    q = ss.add_parser("new", help="write trees/<yyyymmdd-HHMMSS>-<slug>.mmt from stdin or --from FILE, render it, print the page URL + lint")
     q.add_argument("slug"); q.add_argument("--from", dest="from_file"); q.add_argument("--force", action="store_true")
     q.add_argument("--no-render", action="store_true", help="write the file only (default: render it and print the file:// URL + lint)")
     q.add_argument("--strict", action="store_true"); q.add_argument("--open", action="store_true")
