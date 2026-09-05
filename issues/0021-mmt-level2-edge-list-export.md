@@ -1,6 +1,6 @@
 # #0021 — mmt level-2 export: tree → typed node/edge JSON; mmt_edges map onto DEP_TYPES so a tree can be diffed against GRAPH.md (spec §11 bridge)
-type: feature        status: open
-refs: [10] [11]   opened: seed   closed-by: <sha>
+type: feature        status: closed
+refs: [10] [11]   opened: seed   closed-by: eaf0721
 
 **Constraints this issue makes true (Tier 2 — each traces to a plan constraint in `refs:`):**
 - [10] `mmt.py TREE --edges out.json` emits the Level-2 shape spec §9 promises: nodes
