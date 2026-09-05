@@ -339,7 +339,7 @@ def adopt_repo(repo, name, level, lo, hi, lineage, core_prefixes, link_tools=Fal
         # current, byte-identical programs (never symlinks — client content)
         (repo / "tools").mkdir(exist_ok=True)
         for t, src in (("gantry_extract.py", "gantry_extract.py"), ("gen_index.py", "gen_index.py"),
-                       ("lint_commit.py", "lint_commit.py"), ("g", "gantry")):
+                       ("lint_commit.py", "lint_commit.py"), ("mmt.py", "mmt.py"), ("g", "gantry")):
             dst = repo / "tools" / t
             if dst.is_symlink():
                 say(f"   kept: tools/{t} (symlink — already this toolbox)")
@@ -356,7 +356,7 @@ def adopt_repo(repo, name, level, lo, hi, lineage, core_prefixes, link_tools=Fal
         tools = repo / "tools"
         tools.mkdir(exist_ok=True)
         for t, srcname in (("gantry_extract.py", "gantry_extract.py"), ("gen_index.py", "gen_index.py"),
-                           ("lint_commit.py", "lint_commit.py"), ("g", "gantry")):
+                           ("lint_commit.py", "lint_commit.py"), ("mmt.py", "mmt.py"), ("g", "gantry")):
             dst = tools / t
             src = HERE / srcname
             if dst.exists() or dst.is_symlink():
