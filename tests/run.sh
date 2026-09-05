@@ -268,4 +268,31 @@ printf '@root  = no table\n└─ §8 now plain · #0001 still links\n' | python
 grep -q 'class="t spec"' "$S/alpha/.site/mmt/"*-notable.html && fail "mmt-adapter: §8 linked with no mmt_tokens entry"
 grep -q '0 unresolved' "$S/notable.out" || fail "mmt-adapter: with no shape declared §8 must pass as prose, not unresolved"
 
+step "mmt-l2 — --edges exports nodes/containment/typed edges/token edges; tree diff checks issue→issue edges against the tracker"
+python3 "$HERE/../scripts/mmt.py" "$HERE/../examples/mmt/status-2026-09-05.mmt" --root gantry="$HERE/.." --root core="$S/alpha" --out "$S/mmt" --edges "$S/edges.json" >/dev/null || fail "mmt-l2: render with --edges"
+python3 - "$S/edges.json" <<'PYT' || fail "mmt-l2: export shape"
+import json, sys
+d = json.load(open(sys.argv[1]))
+assert d["nodes"] and d["edges"], "empty export"
+assert any(n["parent"] for n in d["nodes"]), "no containment parent recorded"
+assert any(e["type"] not in (None, "mentions") for e in d["edges"]), "no typed ->@ edge"
+assert any(e["type"] == "mentions" and str(e["to"]).startswith("gantry:") for e in d["edges"]), "no token edge into gantry"
+PYT
+printf '@t  = diff\n├─ @a  #0002 entry point ->@b [depends]\n├─ @b  #0001 bootstrap\n└─ @c  #0001 again ->@a [depends] · wrong on purpose\n' > "$S/alpha/trees/diff.mmt"
+python3 "$G" issue new -t "second" -T workorder -r 1 --repo "$S/alpha" >/dev/null 2>&1 || true
+printf '\ndeps: blocks #0002\n' >/dev/null
+python3 - "$S/alpha" <<'PYT'
+import re, sys
+from pathlib import Path
+for p in sorted(Path(sys.argv[1], "issues").glob("0001-*.md")):
+    t = p.read_text().splitlines()
+    if not any(l.startswith("deps:") for l in t[:6]):
+        t.insert(3, "deps: blocks #0002")
+    p.write_text("\n".join(t) + "\n")
+PYT
+python3 "$G" refresh --repo "$S/alpha" >/dev/null 2>&1 || python3 "$S/alpha/tools/gantry_extract.py" --client "$S/alpha/.gantry/adapter.json" --root "$S/alpha" --out "$S/alpha/.gantry/out/state.json" --digest "$S/alpha/GRAPH.md" >/dev/null 2>&1
+python3 "$G" tree diff "$S/alpha/trees/diff.mmt" --repo "$S/alpha" > "$S/diff.out" 2>&1 && fail "mmt-l2: tree diff passed a tree with a dependency the tracker lacks"
+grep -q 'ok .*#0002 —depends→ #0001' "$S/diff.out" || fail "mmt-l2: tree diff did not confirm the edge the tracker has (#0001 blocks #0002)"
+grep -q 'MISSING .*#0001 —depends→ #0002' "$S/diff.out" || fail "mmt-l2: tree diff did not report the wrong edge"
+
 echo; echo "ALL PASSED  (scratch: $S)"

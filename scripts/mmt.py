@@ -305,6 +305,18 @@ class Site:
                         return f"doc/{d}", "commit", f"{r.name}: {full[:12]}"
         return None
 
+    def lookup(self, prefix: str, tok: str) -> tuple[str, str] | None:
+        """-> (root name, kind) for a token, touching no pages (L2 export, #0021)."""
+        for r in self.cands(prefix):
+            s = r.sym.get(tok)
+            if s:
+                return r.name, s["kind"]
+        if re.fullmatch(r"[0-9a-f]{7,40}", tok):
+            for r in self.cands(prefix):
+                if r.commits.get(tok):
+                    return r.name, "commit"
+        return None
+
     def resolve_path(self, prefix: str, rel: str, line: str | None) -> str | None:
         for r in self.cands(prefix):
             if r.has(rel):
@@ -414,6 +426,31 @@ h2{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mu)
 """
 
 
+def export_edges(site: Site, nodes: list[Node], name: str) -> dict:
+    """Level-2 shape (spec §9, §11): nodes with their containment parent, typed ->@ edges, and
+    §5b token edges (node → root:token) — a tree as the typed edge list state.json already is."""
+    by_addr = {n.addr: n.n for n in nodes if n.addr}
+    stack: list[tuple[int, int]] = []          # (depth, line)
+    out_nodes, edges = [], []
+    for n in nodes:
+        while stack and stack[-1][0] >= n.depth:
+            stack.pop()
+        parent = stack[-1][1] if stack else None
+        stack.append((n.depth, n.n))
+        toks = []
+        for m in site.token_re.finditer(n.text):
+            hit = site.lookup(m.group(1), m.group(2))
+            if hit:
+                toks.append({"token": m.group(0), "root": hit[0], "kind": hit[1]})
+                edges.append({"from": n.n, "to": f"{hit[0]}:{m.group(2)}", "type": "mentions", "line": n.n})
+        for ref, typ in re.findall(r"->@([\w.\-]+)\s*(?:\[([\w\-]+)\])?", n.text):
+            edges.append({"from": n.n, "to": by_addr.get(ref), "to_addr": ref, "type": typ or None, "line": n.n})
+        out_nodes.append({"n": n.n, "addr": n.addr, "glyph": n.glyph, "depth": n.depth, "parent": parent,
+                          "text": n.text.strip(), "tokens": toks})
+    dim = next((n.text[4:].strip() for n in nodes if n.text.startswith("DIM:")), None)
+    return {"tree": name, "dim": dim, "roots": [r.name for r in site.roots], "nodes": out_nodes, "edges": edges}
+
+
 def page(title: str, body: str, depth: str) -> str:
     return (f"<!doctype html><meta charset=utf-8><title>{html.escape(title)}</title><style>{CSS}</style>"
             f"<header><b>{html.escape(title)}</b><a href=\"{depth}index.html\">index</a></header><main>{body}</main>")
@@ -436,6 +473,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--name", default=None, help="page name (default: tree file stem, or 'tree')")
     ap.add_argument("--strict", action="store_true", help="exit 1 on any level-1 lint finding")
     ap.add_argument("--open", action="store_true", help="open the page with xdg-open")
+    ap.add_argument("--edges", metavar="FILE", help="also write the level-2 export (nodes · containment · typed ->@ edges · token edges) as JSON")
     a = ap.parse_args(argv)
 
     roots: list[Root] = []
@@ -466,6 +504,8 @@ def main(argv: list[str] | None = None) -> int:
     pg = site.render_tree(name, src, nodes, findings)
     site.render_docs()
     write_index(out)
+    if a.edges:
+        Path(a.edges).write_text(json.dumps(export_edges(site, nodes, name), indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
 
     print(pg)
     print(f"  {len(nodes)} nodes · {sum(len(r.docs) for r in roots)} documents rendered · "

@@ -158,6 +158,8 @@ linked into a line-numbered rendering of the document that defines it.
     python3 tools/g tree render --all --open            # re-render everything (fresh clone) + index
     python3 tools/mmt.py tree.mmt --root ui=. --root core=../core --open   # the raw renderer
     python3 tools/mmt.py - --strict < answer.txt        # level-1 lint as a gate
+    python3 tools/mmt.py tree.mmt --edges edges.json    # level-2 export: nodes · containment · typed ->@ edges · token edges
+    python3 tools/g tree diff trees/<tree>.mmt          # issue→issue [depends]/[blocks]/… edges vs GRAPH.md's deps (exit 1 on a missing one)
 
 Roots are ordered: an unprefixed token resolves in the first root that defines it; `ui:#0011`
 pins one. `tools/g tree` takes them from `.gantry/adapter.json` `"mmt_roots"` (name → path);

@@ -179,8 +179,10 @@ into node names ("old-x", "new-x").
 **Tooling (gantry `scripts/mmt.py`, symlinked `tools/mmt.py`):** renders a tree to a local
 linked page (`@` anchors, `->@` links, every §5b token linked into a line-numbered copy of
 its document, across named roots, each by its own `mmt_tokens`), lints Level 1 (`--strict`
-exits 1) and notes `[type]`s outside `mmt_edges`. It does not yet emit the Level 2 edge list;
-that is gantry #0021. See `tools/README.md`.
+exits 1) and notes `[type]`s outside `mmt_edges`. `--edges FILE` emits the Level 2 shape: nodes
+with containment parent, typed `->@` edges, and token edges (`node → root:token`);
+`tools/g tree diff` checks a tree's issue→issue edges against the tracker's `deps:` (gantry
+#0021). See `tools/README.md`.
 
 ## 10. Worked example
 
@@ -198,9 +200,11 @@ DIM: evidence(=/~) · dependency(->[depends]) · ownership(->[owner])
 ## 11. Relationship to gantry
 
 gantry's `state.json` is already a typed edge list (issues, refs, deps, seams). A Level 2
-MindMapTree is the same shape written for a human first. The planned bridge is:
-tree → edge list → gantry graph, so a status tree can be diffed against `GRAPH.md` and a
-plan tree can be minted into issues. See `docs/plans/gantry-graph-subtraction.md` in
+MindMapTree is the same shape written for a human first. The bridge, first half built (gantry
+#0021): tree → edge list (`mmt.py --edges`) → compared with the gantry graph (`tools/g tree
+diff`: `A ->@B [depends]` is the tracker's `B blocks A`; `serves`/`proves`/`evidence` are
+`informs`; a repo may remap in `mmt_edges` as a dict). Second half, later: a plan tree minted
+into issues — a human-gated act. See `docs/plans/gantry-graph-subtraction.md` in
 cubeOnSKOS for the enforcement-graph plan this format feeds.
 
 ## 12. Changelog
@@ -211,3 +215,4 @@ cubeOnSKOS for the enforcement-graph plan this format feeds.
 - 0.1 + vocabulary (2026-09-05): §5b split into the six built-in kinds and repository-declared
   kinds (`mmt_tokens`); §5 edge vocabulary is `mmt_edges`; a tree is written once through
   `tools/g tree new`, which renders it (gantry #0019 #0020).
+- 0.1 + level 2 (2026-09-05): `--edges` export and `tools/g tree diff` (gantry #0021).

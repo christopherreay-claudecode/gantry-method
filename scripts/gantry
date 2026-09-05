@@ -75,6 +75,7 @@ import os
 import re
 import shutil
 import subprocess
+import tempfile
 import sys
 from datetime import date
 from pathlib import Path
@@ -1507,6 +1508,79 @@ def cmd_tree_render(a):
         sys.exit(rc)
 
 
+# The ->@ [type] vocabulary a tree uses, mapped onto the extractor's dependency types so a
+# tree edge between two issues can be checked against the tracker (#0021). "^" = the tracker
+# edge runs the other way: "A ->@B [depends]" is the tracker's "B blocks A". A repo's adapter
+# may give mmt_edges as a dict {type: dep-type|null} to override; a list means these defaults.
+EDGE_TO_DEP = {"depends": "^blocks", "blocks": "blocks", "awaits-stamp": "awaits-stamp",
+               "defers-to": "defers-to", "serves": "informs", "informs": "informs",
+               "proves": "informs", "evidence": "informs"}
+
+
+def cmd_tree_diff(a):
+    """Compare a tree's issue-to-issue ->@ edges with GRAPH.md's dependency edges
+    (.gantry/out/state.json). Reports tree edges the tracker lacks, and how the two
+    graphs overlap. Exit 1 if any tree edge is missing from the tracker."""
+    repo = Path(a.repo)
+    mmt = repo / "tools/mmt.py"
+    if not mmt.exists():
+        mmt = HERE / "mmt.py"
+    st = repo / ".gantry/out/state.json"
+    if not st.exists():
+        die("tree diff: .gantry/out/state.json missing — run tools/g refresh first")
+    ad = load_adapter(repo)
+    emap = dict(EDGE_TO_DEP)
+    if isinstance(ad.get("mmt_edges"), dict):
+        emap.update(ad["mmt_edges"])
+    with tempfile.TemporaryDirectory() as td:
+        ej = Path(td) / "edges.json"
+        args = [sys.executable, str(mmt), a.tree, "--out", str(repo / ".site/mmt"), "--edges", str(ej)]
+        for r in _tree_roots(repo):
+            args += ["--root", r]
+        r = subprocess.run(args, capture_output=True, text=True)
+        if r.returncode not in (0, 1) or not ej.exists():
+            die(f"tree diff: render failed\n{r.stdout}{r.stderr}")
+        ex = json.loads(ej.read_text())
+    ents = json.load(open(st))["entities"]
+    by_ref = {b["ref"]: e for e in ents for b in e.get("bindings", []) if b["ref"].startswith("#")}
+    tracker = {(e["id"], rel["type"], rel["target"]) for e in ents for rel in e.get("relations", [])
+               if rel["type"] in ("blocks", "awaits-stamp", "defers-to", "informs")}
+    nodes = {n["n"]: n for n in ex["nodes"]}
+    own = {spec.split("=", 1)[0] for spec in _tree_roots(repo) if Path(spec.split("=", 1)[1]).resolve() == repo.resolve()}
+
+    def issue_of(n):
+        """The one issue of THIS repo a node names (a node naming two is not an edge endpoint)."""
+        toks = [t["token"].split(":")[-1] for t in nodes[n]["tokens"] if t["kind"] == "issue" and t["root"] in own]
+        return toks[0] if len(toks) == 1 else None
+
+    checked = missing = 0
+    say(f"== tree diff: {a.tree} vs {st.relative_to(repo)}")
+    for e in ex["edges"]:
+        if e["type"] in (None, "mentions", "todo") or e.get("to") is None:
+            continue
+        dep = emap.get(e["type"])
+        if not dep:
+            continue
+        src, dst = issue_of(e["from"]), issue_of(e["to"])
+        if not (src and dst) or src not in by_ref or dst not in by_ref:
+            continue
+        checked += 1
+        sid, did = by_ref[src]["id"], by_ref[dst]["id"]
+        if dep.startswith("^"):
+            dep, sid, did, src_, dst_ = dep[1:], did, sid, dst, src
+        else:
+            src_, dst_ = src, dst
+        if (sid, dep, did) in tracker:
+            say(f"   ok       L{e['line']}: {src} —{e['type']}→ {dst}   (tracker: {dep})")
+        else:
+            missing += 1
+            have = sorted(t for (s, t, d) in tracker if s == sid and d == did)
+            say(f"   MISSING  L{e['line']}: {src} —{e['type']}→ {dst}   tracker has {have or 'no edge'}; "
+                f"expected `deps: {dep} {dst_}` on {src_}")
+    say(f"   {checked} issue→issue edges checked · {missing} missing from the tracker")
+    sys.exit(1 if missing else 0)
+
+
 # ---------------------------------------------------------------- install ----
 
 def cmd_install(a):
@@ -1681,6 +1755,8 @@ def main():
     q = ss.add_parser("render", help="render one tree, or --all of trees/, to .site/mmt/")
     q.add_argument("files", nargs="*"); q.add_argument("--all", action="store_true"); q.add_argument("--open", action="store_true")
     q.add_argument("--strict", action="store_true"); q.add_argument("--repo", default=DEFAULT_REPO); q.set_defaults(fn=cmd_tree_render)
+    q = ss.add_parser("diff", help="check a tree's issue→issue ->@ [type] edges against GRAPH.md's dependency edges (#0021)")
+    q.add_argument("tree"); q.add_argument("--repo", default=DEFAULT_REPO); q.set_defaults(fn=cmd_tree_diff)
 
     a = ap.parse_args()
     a.fn(a)
