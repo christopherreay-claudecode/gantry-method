@@ -130,6 +130,9 @@ URLs.
   `[guidance]`, `[question]`, `[MetaLand]`) and nothing else.
 - On disk a tree is a `.mmt` file (the tree and nothing else), or the first ```` ```mmt ````
   fenced block in a `.md`. A DIM: line, if present, is the second line.
+- In a gantry repository trees live in `trees/YYYY-MM-DD-<slug>.mmt` (committed, like issues)
+  and render to `.site/mmt/` (on disk, gitignored): `tools/g tree new <slug>`,
+  `tools/g tree render --all`. Roots come from `.gantry/adapter.json` `mmt_roots`.
 - Code identifiers appear bare (`server/socket.mjs`, `cube:move`); no backticks inside the
   tree, since the tree itself sits in a fenced block.
 

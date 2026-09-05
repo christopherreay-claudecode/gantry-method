@@ -48,7 +48,7 @@ ADAPTER_READY=1
 echo "== gantry adopt: $REPO"
 echo "   1. client tools -> $REPO/tools/  (commit these: they are client content)"
 mkdir -p "$REPO/tools"
-for tool in gantry_extract.py gen_index.py lint_commit.py; do
+for tool in gantry_extract.py gen_index.py lint_commit.py mmt.py; do
   if [ -e "$REPO/tools/$tool" ]; then
     echo "   kept: tools/$tool (client already owns it)"
   else
@@ -57,6 +57,9 @@ for tool in gantry_extract.py gen_index.py lint_commit.py; do
     echo "   copied: tools/$tool"
   fi
 done
+mkdir -p "$REPO/trees"
+[ -e "$REPO/trees/README.md" ] || cp "$HERE/trees-README.template.md" "$REPO/trees/README.md"
+grep -qs '^\.site/' "$REPO/.gitignore" || { printf '.site/\n' >> "$REPO/.gitignore"; echo "   .site/ gitignored (rendered trees live there)"; }
 if [ -e "$REPO/tools/g" ]; then
   echo "   kept: tools/g (client already owns it)"
 else

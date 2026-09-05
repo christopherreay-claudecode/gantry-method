@@ -151,8 +151,12 @@ in gantry) renders to a local `file://` page: `@addr` anchors, `->@addr` links, 
 `#NNNN` / `R7` / `c17` / `[3]` / `S1` / `m2` / `Q1` / `§6.1` / `path:line` / commit hash
 linked into a line-numbered rendering of the document that defines it.
 
-    python3 tools/mmt.py tree.mmt --root ui=. --root core=../core --open
+    python3 tools/g tree new <slug> < answer.txt        # → trees/<today>-<slug>.mmt (committed)
+    python3 tools/g tree render --all --open            # → .site/mmt/ (on disk, gitignored) + index
+    python3 tools/mmt.py tree.mmt --root ui=. --root core=../core --open   # the raw renderer
     python3 tools/mmt.py - --strict < answer.txt        # level-1 lint as a gate
 
 Roots are ordered: an unprefixed token resolves in the first root that defines it; `ui:#0011`
-pins one. Output goes to `<first root>/.site/mmt/` (gitignore `.site/`). Never published.
+pins one. `tools/g tree` takes them from `.gantry/adapter.json` `"mmt_roots"` (name → path);
+the repo itself is the default. Trees are client content under `trees/`; pages are `.site/mmt/`.
+Never published.

@@ -231,4 +231,14 @@ PY
 printf '@t  = x\n├─ ? a question with no owner\n└─ ! no actor here\n' > "$S/bad.mmt"
 if python3 "$HERE/../scripts/mmt.py" "$S/bad.mmt" --root gantry="$HERE/.." --out "$S/mmt" --strict >/dev/null; then fail "mmt: --strict let an L1 violation through"; fi
 
+step "tree — trees/ facet: adopt copied tools/mmt.py + trees/README.md; tree new + render --all"
+[ -f "$S/alpha/tools/mmt.py" ] || fail "tree: adopt did not copy tools/mmt.py"
+[ -f "$S/alpha/trees/README.md" ] || fail "tree: adopt did not seed trees/README.md"
+grep -q '^\.site/' "$S/alpha/.gitignore" || fail "tree: .site/ not gitignored"
+printf '@root  = a status\n├─ #0001 the birth issue · R1\n└─ ! me: nothing ->@root\n' | python3 "$G" tree new smoke --repo "$S/alpha" >/dev/null || fail "tree new"
+ls "$S/alpha/trees/"*-smoke.mmt >/dev/null || fail "tree new: file not written"
+python3 "$G" tree render --all --strict --repo "$S/alpha" >/dev/null || fail "tree render --all"
+ls "$S/alpha/.site/mmt/"*-smoke.html >/dev/null || fail "tree render: page missing"
+grep -q 'class="t issue" href="doc/alpha__issues__0001' "$S/alpha/.site/mmt/"*-smoke.html || fail "tree render: #0001 not linked"
+
 echo; echo "ALL PASSED  (scratch: $S)"
