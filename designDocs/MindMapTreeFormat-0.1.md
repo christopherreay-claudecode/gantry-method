@@ -1,0 +1,159 @@
+# MindMapTreeFormat 0.1
+
+*A plain-text notation for saying n-dimensional things in a one-dimensional tree. The tree
+gives containment; typed references give every other axis. It is meant to be written by
+people and models, read in a terminal, grepped, and diffed.*
+
+Status: 0.1 — the notation as used in the cubeOnSKOS / cubeOnSKOS-ui / gantry sessions of
+2026-08-30 → 2026-09-05. Nothing here is enforced by a tool yet; see §9.
+
+---
+
+## 1. Purpose and non-goals
+
+A MindMapTree answers "what is the state of X, along which axes, and where do the axes
+cross" without linearising into paragraphs. It replaces prose for substantive answers,
+status reports, plans, and audits.
+
+It is NOT:
+- a diagram language (no layout, no coordinates);
+- a serialisation format (no schema, no escaping rules beyond §7);
+- a replacement for the artefacts it points at (issues, specs, contracts). A tree
+  *addresses* truth; it does not *hold* it.
+
+## 2. The one rule
+
+**The tree carries one axis: containment. Every other dimension is carried by a typed
+reference.** If a fact belongs to two parents, it lives under one and is referenced from
+the other. Never duplicate a node to make a second axis visible.
+
+## 3. Lexical elements
+
+| glyph | name | meaning |
+|---|---|---|
+| `@name` | address | declares this node's stable identity (kebab-case, unique in the tree) |
+| `->@name` | reference | a typed edge OUT of this node to `@name`; optional `[type]` suffix |
+| `=` | measured | asserted against the running system; carries a date, count, hash or path |
+| `~` | derived | read off a body of text or code, not exercised |
+| `?` | open | a question; MUST name its owner and what changes on either answer |
+| `!` | action | a to-do; MUST name the actor and the artefact it produces |
+| `x` | blocked | cannot proceed; MUST reference what unblocks it |
+| `DIM:` | axis list | declares the dimensions in play (top of tree, optional but recommended) |
+
+Glyphs are single ASCII characters placed at the start of a node's text, after the tree
+drawing characters and an optional `@address`. The set is deliberately small: seven
+markers plus `DIM:`. A tree that needs more glyphs needs more nodes instead.
+
+## 4. Structure
+
+```
+@root                                   = one-line summary  (optional evidence)
+├─ @child-a                             glyph text
+│  ├─ leaf text
+│  └─ ? question — owner · yes→consequence · no→consequence
+├─ @child-b                             ->@child-a [depends]
+└─ !  actor: artefact                   ->@issue-0011
+```
+
+- Tree-drawing characters: `├─`, `└─`, `│`. Two spaces of indent per level after the bar.
+- The **first line** is the root; it may carry `@address`, a glyph and a summary. A root
+  that reports state SHOULD be `=` with a date.
+- A node is ONE line. If a fact needs a sentence, it is a leaf and the sentence stays on
+  that line. Wrapping is the renderer's problem, not the author's.
+- Order within a parent is meaningful only when the parent says so (`(ordered)` in the
+  parent's text, or the children are numbered).
+- Aligned columns (`node text        = value`) are cosmetic. Whitespace is not semantic
+  beyond the indent.
+
+## 5. Addresses and references
+
+- `@name` is declared once. Kebab-case; may contain dots for a namespace (`@you.H`,
+  `@core.tests`). Numbers are fine (`@issue-0011`, `@c17`).
+- `->@name` may appear anywhere in a node's text; several per node are legal.
+- `->@name` with **no matching declaration is legal**. It marks a node worth writing, the
+  same way a wiki red-link does. A checker MAY list them; it MUST NOT reject them.
+- `[type]` on a reference is free text but SHOULD come from a small vocabulary the tree's
+  `DIM:` line names. Suggested base vocabulary:
+  `depends`, `serves`, `proves`, `blocks`, `contradicts`, `same-as`, `owner`, `evidence`.
+- A reference is directional. If both directions matter, write both edges; do not rely on
+  the reader inferring the inverse.
+
+## 6. Semantics of the glyphs
+
+- `=` **measured.** The author (or their tooling) exercised the system and observed this.
+  Carry the evidence inline: a date, a count, a commit hash, a file path, a port. A `=`
+  without evidence is a `~` wearing the wrong glyph.
+- `~` **derived.** Read from text, code, a spec, or reasoning. Honest default when nothing
+  was run.
+- `?` **open.** Shape: `? <question> — <owner> · <branch>→<what changes> · <branch>→<what changes>`.
+  A question with no consequence named is not yet a question; it is a musing, and does not
+  belong in the tree.
+- `!` **action.** Shape: `! <actor>: <artefact>` optionally `->@` the thing it closes.
+- `x` **blocked.** Shape: `x <what> — needs ->@unblocker`.
+- Glyphs compose only by nesting, never by stacking on one line: `? ! foo` is invalid; a
+  question whose answer produces an action is a `?` with a `!` child.
+
+## 7. Text rules
+
+- ASCII glyphs and tree characters; UTF-8 text otherwise. `·` (middle dot) is the
+  conventional inline separator for parallel facts on one line; `∥` for "in parallel with";
+  `→` inside a `?` branch only.
+- No em-dash as a glyph. `—` is plain punctuation inside text.
+- No prose paragraphs. A tree may be preceded by a one-line tag (`[immediate]`,
+  `[guidance]`, `[question]`, `[MetaLand]`) and nothing else.
+- Code identifiers appear bare (`server/socket.mjs`, `cube:move`); no backticks inside the
+  tree, since the tree itself sits in a fenced block.
+
+## 8. Dimensions (`DIM:`)
+
+Optional first line under the root. Names the axes the references carry, so a reader knows
+which `[type]`s to expect and a checker knows which to warn on.
+
+```
+@release-status                         = 2026-09-05
+DIM: time(commit) · ownership(actor) · evidence(=/~) · dependency(->[depends])
+```
+
+Time SHOULD be factored out into evidence (`= c0b273f`, `= 2026-09-05`) rather than inferred
+into node names ("old-x", "new-x").
+
+## 9. Conformance levels
+
+- **Level 0 — readable.** Tree characters, one node per line, glyphs at node start. Any
+  human can read it. This document's examples are Level 0.
+- **Level 1 — addressable.** Every node that is referenced has an `@address`; every `?`
+  names an owner; every `!` names an actor and artefact; every `x` references its
+  unblocker. A grep-based checker can verify this.
+- **Level 2 — graphable.** `DIM:` present; every `->@` carries a `[type]` from the declared
+  vocabulary; no dangling references except those explicitly marked `->@name [todo]`.
+  From here a tree exports to a typed edge list (node, glyph, text; edge, type) and can
+  join gantry's own graph.
+
+No tool ships with 0.1. The intended checker is a ~100-line script under `gantry/tools/`
+that lints Level 1 and emits the Level 2 edge list; that is a follow-up issue, not this
+document.
+
+## 10. Worked example
+
+```
+@live-moves                                 = core #1013 · merged 2dfe0a0 · socket :6464 · flag on
+DIM: evidence(=/~) · dependency(->[depends]) · ownership(->[owner])
+├─ measured    A→B relay 4 ms of a 300 ms budget · 10/10 frames · no echo
+├─ proved      six outcomes with real sockets  ->@spec-s8-live-moves [proves]
+├─ ~ standing  tools/g check reports GRAPH.md stale at every clean HEAD — cosmetic
+├─ ui-half     ->@ui-issue-0011 [depends]
+│  └─ ! ui-stream a7: emit on slider input ≤10/s, render others' moves behind the toggle
+└─ ? per-cube live_moves switch — owner ->@you [owner] · yes→amendment + column + edit_cube arg · no→stays server-global
+```
+
+## 11. Relationship to gantry
+
+gantry's `state.json` is already a typed edge list (issues, refs, deps, seams). A Level 2
+MindMapTree is the same shape written for a human first. The planned bridge is:
+tree → edge list → gantry graph, so a status tree can be diffed against `GRAPH.md` and a
+plan tree can be minted into issues. See `docs/plans/gantry-graph-subtraction.md` in
+cubeOnSKOS for the enforcement-graph plan this format feeds.
+
+## 12. Changelog
+
+- 0.1 (2026-09-05): first written specification of the notation in use since 2026-08-30.
