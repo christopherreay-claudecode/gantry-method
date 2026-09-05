@@ -1,6 +1,6 @@
 # #0019 — tools/g tree new renders on write and prints the file:// URL + lint + unresolved — a tree is emitted once, into the tool call, never twice
-type: feature        status: open
-refs: [10] [11]   opened: seed   closed-by: <sha>
+type: feature        status: closed
+refs: [10] [11]   opened: seed   closed-by: 49371f8
 
 **Constraints this issue makes true (Tier 2 — each traces to a plan constraint in `refs:`):**
 - [10] A substantive answer written as a MindMapTree is emitted ONCE — as the stdin of
