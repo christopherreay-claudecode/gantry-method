@@ -1,6 +1,6 @@
 # #0016 — MindMapTreeFormat 0.1: designDocs spec + tools/mmt.py — render a tree as a linked local page across roots, lint level 1
-type: feature        status: open
-refs: [10]   opened: seed   closed-by: <sha>
+type: feature        status: closed
+refs: [10]   opened: seed   closed-by: 024dab7
 
 **Constraints this issue makes true (Tier 2 — each traces to a plan constraint in `refs:`):**
 - [10] The notation the method's own sessions answer in is written down in this repo

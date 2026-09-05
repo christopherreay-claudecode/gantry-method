@@ -1,6 +1,6 @@
 # #0017 — trees/ facet: tools/g tree new|render, adopt copies mmt.py + trees/README, mmt_roots in adapter.json — trees persist as client content, pages in .site/mmt
-type: feature        status: open
-refs: [10]   opened: seed   closed-by: <sha>
+type: feature        status: closed
+refs: [10]   opened: seed   closed-by: 4a2cda3
 
 **Constraints this issue makes true (Tier 2 — each traces to a plan constraint in `refs:`):**
 - [10] A tree is client content like an issue: `trees/YYYY-MM-DD-<slug>.mmt`, committed, rendered
