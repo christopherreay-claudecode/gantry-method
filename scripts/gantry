@@ -1447,7 +1447,9 @@ def _tree_roots(repo):
 
 
 def cmd_tree_new(a):
-    """Write trees/<today>-<slug>.mmt from stdin (or --from FILE)."""
+    """Write trees/<today>-<slug>.mmt from stdin (or --from FILE), then render it (#0019):
+    the tree is emitted ONCE — as this command's stdin — and what comes back is the page URL,
+    the level-1 lint and the unresolved tokens. The chat reply is the URL, never the tree again."""
     repo = Path(a.repo)
     src = Path(a.from_file).read_text() if a.from_file else sys.stdin.read()
     if not src.strip():
@@ -1458,30 +1460,49 @@ def cmd_tree_new(a):
     if out.exists() and not a.force:
         die(f"tree new: {out} exists (use --force)")
     out.write_text(src.strip("\n") + "\n")
-    say(f"trees/{name} written · render: python3 tools/g tree render trees/{name}")
+    if a.no_render:
+        say(f"trees/{name} written · render: python3 tools/g tree render trees/{name}")
+        return
+    say(f"trees/{name} written")
+    sys.exit(_render_trees(repo, [out], strict=a.strict, open_=a.open))
 
 
-def cmd_tree_render(a):
-    """Render one tree, or every trees/*.mmt, to .site/mmt/ with the repo's roots."""
-    repo = Path(a.repo)
+def _render_trees(repo, files, *, strict=False, open_=False):
+    """Run the repo's mmt.py over FILES into .site/mmt/ with the repo's roots. Prints, per tree:
+    the file:// URL of its page, then mmt's own summary/lint/unresolved lines. Returns the rc."""
     mmt = repo / "tools/mmt.py"
     if not mmt.exists():
         mmt = HERE / "mmt.py"
-    files = [Path(f) for f in a.files]
-    if a.all or not files:
-        files = sorted((repo / "trees").glob("*.mmt"))
-    if not files:
-        die("tree render: no trees/*.mmt and no file given")
     out = repo / ".site/mmt"
     args = ["--out", str(out)]
     for r in _tree_roots(repo):
         args += ["--root", r]
     rc = 0
     for f in files:
-        r = subprocess.run([sys.executable, str(mmt), str(f), *args, *(["--strict"] if a.strict else [])])
+        r = subprocess.run([sys.executable, str(mmt), str(f), *args, *(["--strict"] if strict else [])],
+                           capture_output=True, text=True)
+        lines = r.stdout.splitlines()
+        if lines and lines[0].endswith(".html"):
+            lines[0] = Path(lines[0]).resolve().as_uri()
+        for ln in lines:
+            say(ln)
+        if r.stderr.strip():
+            say(r.stderr.rstrip())
         rc = rc or r.returncode
-    if a.open:
+    if open_:
         subprocess.Popen(["xdg-open", str(out / "index.html")], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return rc
+
+
+def cmd_tree_render(a):
+    """Render one tree, or every trees/*.mmt, to .site/mmt/ with the repo's roots."""
+    repo = Path(a.repo)
+    files = [Path(f) for f in a.files]
+    if a.all or not files:
+        files = sorted((repo / "trees").glob("*.mmt"))
+    if not files:
+        die("tree render: no trees/*.mmt and no file given")
+    rc = _render_trees(repo, files, strict=a.strict, open_=a.open)
     if rc:
         sys.exit(rc)
 
@@ -1652,8 +1673,10 @@ def main():
 
     p = sub.add_parser("tree", help="MindMapTrees: trees/*.mmt → .site/mmt/ linked pages (designDocs/MindMapTreeFormat-0.1.md)")
     ss = p.add_subparsers(dest="tcmd", required=True)
-    q = ss.add_parser("new", help="write trees/<today>-<slug>.mmt from stdin or --from FILE")
+    q = ss.add_parser("new", help="write trees/<today>-<slug>.mmt from stdin or --from FILE, render it, print the page URL + lint")
     q.add_argument("slug"); q.add_argument("--from", dest="from_file"); q.add_argument("--force", action="store_true")
+    q.add_argument("--no-render", action="store_true", help="write the file only (default: render it and print the file:// URL + lint)")
+    q.add_argument("--strict", action="store_true"); q.add_argument("--open", action="store_true")
     q.add_argument("--repo", default=DEFAULT_REPO); q.set_defaults(fn=cmd_tree_new)
     q = ss.add_parser("render", help="render one tree, or --all of trees/, to .site/mmt/")
     q.add_argument("files", nargs="*"); q.add_argument("--all", action="store_true"); q.add_argument("--open", action="store_true")
