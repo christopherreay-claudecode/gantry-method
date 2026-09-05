@@ -164,6 +164,12 @@ pins one. `tools/g tree` takes them from `.gantry/adapter.json` `"mmt_roots"` (n
 the repo itself is the default. Trees are client content under `trees/`; pages are `.site/mmt/`.
 Never published.
 
+**Vocabulary is yours.** `#NNNN` `c17` `[17]` `S1` `m2` `Q1` `path:line` and commit shas resolve
+in every gantry repo. Anything else this repo wants linkable — its rule lines, contract headings,
+plan sections — is declared once in `.gantry/adapter.json` `"mmt_tokens"` (kind · glob · line regex ·
+`{1}`/`{2}` token+label templates · `match` shape); `"mmt_edges"` lists the `->@x [type]`s a tree may
+use. SPEC §6 "The adapter" has the shape; cubeOnSKOS's adapter is a worked example.
+
 **The ritual (token discipline):** a substantive answer — a status, an audit, a plan — is
 written ONCE, as the heredoc of `tree new`. The tool renders it in the same call and hands back
 the URL + lint; the chat reply is that URL and the verdict, not the tree again. `--no-render`

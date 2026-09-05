@@ -246,4 +246,26 @@ python3 "$G" tree render --all --strict --repo "$S/alpha" >/dev/null || fail "tr
 ls "$S/alpha/.site/mmt/"*-quiet.html >/dev/null || fail "tree render --all: page missing"
 grep -q 'class="t issue" href="doc/alpha__issues__0001' "$S/alpha/.site/mmt/"*-smoke.html || fail "tree render: #0001 not linked"
 
+step "mmt-adapter — a client's own token kind (mmt_tokens) resolves; its shape reports unknowns; the generic six need no entry; mmt_edges notes a stray [type]"
+mkdir -p "$S/alpha/specs"; printf '# 8 the eighth spec\nbody\n' > "$S/alpha/specs/eight.md"
+python3 - "$S/alpha/.gantry/adapter.json" <<'PYT'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p))
+d["mmt_tokens"] = [{"kind": "spec", "glob": "specs/*.md", "line": r"^# (\d+) (.+)$", "token": "§{1}", "label": "{2}", "match": r"§\d+"}]
+d["mmt_edges"] = ["depends", "proves"]
+json.dump(d, open(p, "w"), indent=2)
+PYT
+printf '@root  = adapter vocabulary\n├─ §8 declared · §9 not · #0001 generic · S1 generic\n└─ ~ edge ->@root [flies]\n' | python3 "$G" tree new vocab --repo "$S/alpha" > "$S/vocab.out" || fail "mmt-adapter: tree new"
+grep -q 'class="t spec" href="doc/alpha__specs__eight.md.html#L1"' "$S/alpha/.site/mmt/"*-vocab.html || fail "mmt-adapter: declared §8 not linked into specs/eight.md"
+grep -q 'unresolved: §9' "$S/vocab.out" || fail "mmt-adapter: undeclared §9 not reported unresolved (match shape)"
+grep -q 'class="t issue" href="doc/alpha__issues__0001' "$S/alpha/.site/mmt/"*-vocab.html || fail "mmt-adapter: generic #0001 stopped resolving"
+grep -q 'note: L3: ->@root \[flies\] is not in mmt_edges' "$S/vocab.out" || fail "mmt-adapter: stray [type] not noted"
+python3 - "$S/alpha/.gantry/adapter.json" <<'PYT'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p)); d["mmt_tokens"] = []; json.dump(d, open(p, "w"), indent=2)
+PYT
+printf '@root  = no table\n└─ §8 now plain · #0001 still links\n' | python3 "$G" tree new notable --repo "$S/alpha" > "$S/notable.out" || fail "mmt-adapter: tree new (no table)"
+grep -q 'class="t spec"' "$S/alpha/.site/mmt/"*-notable.html && fail "mmt-adapter: §8 linked with no mmt_tokens entry"
+grep -q '0 unresolved' "$S/notable.out" || fail "mmt-adapter: with no shape declared §8 must pass as prose, not unresolved"
+
 echo; echo "ALL PASSED  (scratch: $S)"

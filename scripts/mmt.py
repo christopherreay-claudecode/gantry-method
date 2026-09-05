@@ -19,6 +19,16 @@ no-artifacts rule).
 
 Tokens may carry a root prefix — core:#1013, ui:#0011, gantry:scripts/mmt.py —
 otherwise the first root that defines the token wins (roots in the order given).
+
+Six token kinds are generic to every gantry repo and built in: #NNNN issues, c17/[17]
+constraints, S1 seams, m2/g1/Q1 gates+holds, path[:line], commit sha. Everything else a
+repo wants linkable — rule lines in CLAUDE.md, contract headings, plan sections — is that
+repo's own vocabulary, declared in its .gantry/adapter.json and read per root (#0020):
+
+    "mmt_tokens": [ {"kind": "rule", "glob": "CLAUDE.md",
+                     "line": "^([A-Z]\\d{1,2})\\s{2,}(.+)$", "token": "{1}", "label": "{2}",
+                     "match": "[A-Z]\\d{1,2}"} ],      # match: the shape, so unknown ones are reported unresolved
+    "mmt_edges":  ["depends", "serves", "proves", "blocks", "contradicts", "same-as", "owner", "evidence"]
 """
 from __future__ import annotations
 
@@ -41,6 +51,8 @@ class Root:
     sym: dict[str, dict] = field(default_factory=dict)   # token -> {path,line,label,kind}
     docs: dict[str, str] = field(default_factory=dict)   # rel path -> html file name
     commits: dict[str, str] = field(default_factory=dict)  # short sha -> full sha
+    adapter: dict = field(default_factory=dict)             # .gantry/adapter.json, if any
+    shapes: list[str] = field(default_factory=list)        # "match" regexes of declared token kinds
 
     def add(self, tok: str, path: str, line: int, label: str, kind: str) -> None:
         self.sym.setdefault(tok, {"path": path, "line": line, "label": label.strip(), "kind": kind})
@@ -54,11 +66,12 @@ class Root:
 
 def collect(root: Root) -> None:
     R = root
-    if R.has("CLAUDE.md"):                                   # R1.. U1.. rules
-        for i, ln in enumerate(R.lines("CLAUDE.md"), 1):
-            m = re.match(r"^([A-Z]\d{1,2})\s{2,}(.+)$", ln)
-            if m:
-                R.add(m.group(1), "CLAUDE.md", i, m.group(2), "rule")
+    ad = R.path / ".gantry/adapter.json"
+    if ad.exists():
+        try:
+            R.adapter = json.load(open(ad))
+        except Exception:
+            R.adapter = {}
     if R.has("plan.md"):                                     # c17 / [17] constraints
         for i, ln in enumerate(R.lines("plan.md"), 1):
             m = re.match(r"^(\d{1,2})\.\s+\*\*(.+?)\*\*", ln)
@@ -101,23 +114,34 @@ def collect(root: Root) -> None:
                 if ref and ref in R.sym:
                     s = R.sym[ref]
                     R.add(qtok, s["path"], s["line"], ent.get("label", qtok), "hold")
-    for name, suffix in (("database-surface", ""), ("http-routes", "/http")):   # §N.N contract
-        rel = f"docs/contract/{name}.md"
-        if R.has(rel):
-            for i, ln in enumerate(R.lines(rel), 1):
-                m = re.match(r"^#{2,4}\s+(\d+(?:\.\d+)*[a-z]?)\.?\s+(.+)$", ln)
-                if m:
-                    R.add(f"§{m.group(1)}{suffix}", rel, i, m.group(2), "contract")
-    for p in sorted((R.path / "docs/plans").glob("*.md")):   # U4 W2 H3 plan sections
-        rel = str(p.relative_to(R.path))
-        for i, ln in enumerate(R.lines(rel), 1):
-            m = re.match(r"^#+\s+(U\d{1,2}b?)\s+·\s+(.+?)\s+·", ln) or re.match(r"^#+\s+(W\d)\s+—\s+(.+)$", ln)
-            if m:
-                R.add(m.group(1), rel, i, m.group(2), "plan")
+    collect_declared(R)
+
+
+def collect_declared(R: Root) -> None:
+    """The repo's own token kinds — `mmt_tokens` in its adapter (#0020). Each entry: kind ·
+    glob (relative to the root) · line (regex; group 1 is the token, group 2 the label unless
+    `token`/`label` templates say otherwise) · optional `match` (the token shape, so a token of
+    this kind that no line defines is still reported as unresolved rather than passed as text)."""
+    for spec in R.adapter.get("mmt_tokens", []) or []:
+        try:
+            line_re = re.compile(spec["line"])
+        except (KeyError, re.error) as e:
+            print(f"root {R.name}: mmt_tokens entry {spec.get('kind', '?')}: bad 'line' regex ({e})", file=sys.stderr)
+            continue
+        tok_t, lab_t = spec.get("token", "{1}"), spec.get("label", "{2}")
+        if spec.get("match"):
+            R.shapes.append(spec["match"])
+        for p in sorted(R.path.glob(spec.get("glob", ""))):
+            if not p.is_file():
                 continue
-            m = re.match(r"^\|\s*\*\*(H\d)\*\*\s*\|\s*(.+?)\s*\|", ln)
-            if m:
-                R.add(m.group(1), rel, i, re.sub(r"\*\*", "", m.group(2)), "plan")
+            rel = str(p.relative_to(R.path))
+            for i, ln in enumerate(R.lines(rel), 1):
+                m = line_re.match(ln)
+                if not m:
+                    continue
+                g = [m.group(0), *m.groups()]
+                fmt = lambda s: re.sub(r"\{(\d+)\}", lambda x: (g[int(x.group(1))] or "") if int(x.group(1)) < len(g) else "", s)
+                R.add(fmt(tok_t), rel, i, re.sub(r"\*\*", "", fmt(lab_t)), spec.get("kind", "token"))
 
 
 def git(root: Root, *args: str) -> str | None:
@@ -177,8 +201,10 @@ def extract_tree(text: str) -> str:
 # -------------------------------------------------------------------- lint --
 
 
-def lint(nodes: list[Node]) -> list[str]:
-    out = []
+def lint(nodes: list[Node], edges: list[str] | None = None) -> tuple[list[str], list[str]]:
+    """-> (level-1 findings, notes). Notes: a ->@x [type] outside the subject root's `mmt_edges`
+    vocabulary (spec §5, §8) — level-2 territory, reported but never fatal."""
+    out, notes = [], []
     addrs = {n.addr for n in nodes if n.addr}
     seen: set[str] = set()
     for n in nodes:
@@ -199,21 +225,34 @@ def lint(nodes: list[Node]) -> list[str]:
             out.append(f"L{n.n}: x names no ->@unblocker")
         if re.match(r"[=~?!x]\s", n.text):
             out.append(f"L{n.n}: stacked glyphs — nest instead")
-    return out
+        if edges:
+            for ref, typ in re.findall(r"->@([\w.\-]+)\s*\[([\w\-]+)\]", n.text):
+                if typ not in edges and typ != "todo":
+                    notes.append(f"L{n.n}: ->@{ref} [{typ}] is not in mmt_edges ({', '.join(edges)})")
+    return out, notes
 
 
 # ------------------------------------------------------------------ linkify --
 
-TOKEN_RE = re.compile(
-    r"(?<![\w/#§@\-])((?:[a-z][\w\-]*:)?)("
+GENERIC_TOKENS = (
     r"#\d{4}"
-    r"|[A-Z]\d{1,2}b?(?!\d)"          # R7 U3 S1 Q1 W2 H3 U4
     r"|c\d{1,2}(?!\d)|\[\d{1,2}\]"    # constraints
-    r"|[mg]\d(?!\d)"                  # gates
-    r"|§\d+(?:\.\d+)*[a-z]?(?:/http)?"
+    r"|S\d{1,2}(?!\d)"                 # seams
+    r"|[mg]\d(?!\d)|Q\d{1,2}(?!\d)"    # gates · holds
     r"|[0-9a-f]{7,40}"                # commit
-    r")(?![\w])"
 )
+
+
+def token_re(roots: list[Root]) -> re.Pattern:
+    """The generic six, plus every declared kind's shape and every declared symbol (longest
+    first), so a root's own vocabulary is matched exactly as it declared it."""
+    alts = [GENERIC_TOKENS]
+    alts += [s for r in roots for s in r.shapes]
+    syms = sorted({k for r in roots for k in r.sym if not re.fullmatch(GENERIC_TOKENS, k)}, key=lambda s: (-len(s), s))
+    alts += [re.escape(s) for s in syms]
+    return re.compile(r"(?<![\w/#§@\-])((?:[a-z][\w\-]*:)?)(" + "|".join(alts) + r")(?![\w])")
+
+
 PATH_RE = re.compile(
     r"(?<![\w/@\-])((?:[a-z][\w\-]*:)?)((?:[\w.\-]+/)+[\w.\-]+\.[a-z]{1,5}|(?:CLAUDE|GRAPH|README|SPEC|plan|seams)\.md)(?::(\d+))?\b"
 )
@@ -227,6 +266,7 @@ class Site:
         self.by_name = {r.name: r for r in roots}
         self.todo: list[tuple[Root, str]] = []      # docs to render
         self.unresolved: dict[str, int] = {}
+        self.token_re = token_re(roots)
 
     def slug(self, root: Root, rel: str) -> str:
         return root.name + "__" + re.sub(r"[^\w.]+", "__", rel) + ".html"
@@ -283,14 +323,14 @@ class Site:
         def tok(m):
             r = self.resolve_tok(m.group(1), m.group(2))
             if not r:
-                if tree and not re.fullmatch(r"[0-9a-f]{7,40}|[A-Z]\d{1,2}b?", m.group(2)):
+                if tree and not re.fullmatch(r"[0-9a-f]{7,40}", m.group(2)):
                     self.unresolved[m.group(0)] = self.unresolved.get(m.group(0), 0) + 1
                 return m.group(0)
             h, kind, title = r
             return f'<a class="t {kind}" href="{depth}{h}" title="{html.escape(title)}">{m.group(0)}</a>'
 
         s = PATH_RE.sub(path, esc)
-        s = TOKEN_RE.sub(tok, s)
+        s = self.token_re.sub(tok, s)
         if tree:
             s = REF_RE.sub(lambda m: f'-&gt;<a class="r" href="#{m.group(1)}">@{m.group(1)}</a>', s.replace("-&gt;@", "->@"))
         return s
@@ -418,7 +458,7 @@ def main(argv: list[str] | None = None) -> int:
             text = extract_tree(text)
     src = text.strip("\n")
     nodes = parse_tree(src)
-    findings = lint(nodes)
+    findings, notes = lint(nodes, roots[0].adapter.get("mmt_edges") or None)
 
     out = Path(a.out) if a.out else roots[0].path / ".site" / "mmt"
     out.mkdir(parents=True, exist_ok=True)
@@ -432,6 +472,8 @@ def main(argv: list[str] | None = None) -> int:
           f"{len(site.unresolved)} unresolved tokens · {len(findings)} lint findings")
     for f in findings:
         print("  lint:", f)
+    for f in notes:
+        print("  note:", f)
     for t in sorted(site.unresolved):
         print("  unresolved:", t)
     if a.open:

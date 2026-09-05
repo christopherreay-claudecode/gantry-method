@@ -400,9 +400,25 @@ One JSON file per client tells extract where truth lives and how to slug it:
   "q_holds":    { "Q1": "torque-law" },
   "constraint_slug_overrides": {},
   "content": [ { "path": "../sister-repo/legal/comm-log.md", "note": "one-line description" } ],
-  "parts": [ { "id": "part:...", "label": "...", "bindings": [ ... ] } ]
+  "parts": [ { "id": "part:...", "label": "...", "bindings": [ ... ] } ],
+  "mmt_roots":  { "core": ".", "ui": "../sister-ui" },
+  "mmt_tokens": [ { "kind": "rule", "glob": "CLAUDE.md", "line": "^([A-Z]\\d{1,2})\\s{2,}(.+)$",
+                    "token": "{1}", "label": "{2}", "match": "R\\d{1,2}(?!\\d)" } ],
+  "mmt_edges":  [ "depends", "serves", "proves", "blocks", "contradicts", "same-as", "owner", "evidence" ]
 }
 ```
+
+`mmt_roots` / `mmt_tokens` / `mmt_edges` (optional) are the repo's **MindMapTree vocabulary**
+(`designDocs/MindMapTreeFormat-0.1.md` §5, §5b; `tools/mmt.py`; gantry #0017 #0020). `mmt_roots`
+names the repositories a tree's tokens resolve in, in order (the repo itself is the default).
+`mmt_tokens` declares the token kinds that are THIS repo's own — a rule line in `CLAUDE.md`, a
+contract heading, a plan section: each entry is `kind` · `glob` (files, relative to the repo) ·
+`line` (a regex; `{1}`, `{2}` … in `token`/`label` are its groups) · optional `match` (the shape of
+the kind, so a token of that shape that no line defines is reported as unresolved instead of passing
+as prose). Six kinds are generic to every gantry repo and need no entry: `#NNNN`, `c17`/`[17]`, `S1`,
+`m2`/`g1`/`Q1`, `path[:line]`, a commit sha. `mmt_edges` is the `->@x [type]` vocabulary a tree
+may use; the renderer notes a type outside it. All three are copied by `adopt`/`fork` under S1 like
+the other binding tables, and **none enters `state.json` or the REV**.
 
 `issue_min` / `issue_max` (optional, default 0 = unchecked) are this repo's **issue band**
 (§8 lineage law). Extract warns on any issue below the floor ("copied-in history is fine; new

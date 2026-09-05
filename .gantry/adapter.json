@@ -18,5 +18,21 @@
     "Q1": "stream-band-size"
   },
   "constraint_slug_overrides": {},
-  "parts": []
+  "parts": [],
+  "mmt_roots": {
+    "gantry": ".",
+    "core": "../cubeOnSKOS",
+    "ui": "../cubeOnSKOS-ui"
+  },
+  "mmt_tokens": [],
+  "mmt_edges": [
+    "depends",
+    "serves",
+    "proves",
+    "blocks",
+    "contradicts",
+    "same-as",
+    "owner",
+    "evidence"
+  ]
 }

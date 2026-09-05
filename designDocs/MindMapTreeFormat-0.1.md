@@ -73,27 +73,42 @@ markers plus `DIM:`. A tree that needs more glyphs needs more nodes instead.
 - `->@name` with **no matching declaration is legal**. It marks a node worth writing, the
   same way a wiki red-link does. A checker MAY list them; it MUST NOT reject them.
 - `[type]` on a reference is free text but SHOULD come from a small vocabulary the tree's
-  `DIM:` line names. Suggested base vocabulary:
-  `depends`, `serves`, `proves`, `blocks`, `contradicts`, `same-as`, `owner`, `evidence`.
+  `DIM:` line names. The base vocabulary, shipped as the default `mmt_edges` in every gantry
+  adapter: `depends`, `serves`, `proves`, `blocks`, `contradicts`, `same-as`, `owner`,
+  `evidence`. A repository extends it in its own `.gantry/adapter.json`; the renderer notes a
+  type outside the subject repository's list (a Level-2 concern, never a Level-1 failure).
 - A reference is directional. If both directions matter, write both edges; do not rely on
   the reader inferring the inverse.
 
 ### 5b. External references (tokens)
 
-A tree addresses truth that lives elsewhere. Any of these tokens, appearing bare in a node's
-text, IS a reference to the document that defines it, and a renderer links it:
+A tree addresses truth that lives elsewhere. A bare token in a node's text IS a reference to the
+document that defines it, and a renderer links it. **The mechanism is fixed; the vocabulary is
+the repository's.** Six kinds exist in every gantry repository by construction and are built in:
 
 | token | resolves to |
 |---|---|
 | `#NNNN`, `#a1-0003` | `issues/NNNN-*.md` (the tracker) |
-| `R7`, `U3` | a rule line in `CLAUDE.md` (any capital letter + number, two-space gap) |
 | `c17`, `[17]` | constraint 17 in `plan.md` |
 | `S1` | a seam row in `seams.md` |
 | `m2`, `g1`, `Q1` | a gate / hold, via `.gantry/out/state.json` and `adapter.json` |
-| `U4`, `W2`, `H3` | a section of a plan under `docs/plans/` |
-| `§6.1`, `§6a`, `§17/http` | a heading in `docs/contract/database-surface.md` (or `http-routes.md` with `/http`) |
 | `path/to/file.ext`, `path:42` | the file, at the line |
 | `c0b273f` (7–40 hex) | a commit, rendered from `git show` |
+
+Everything else a repository wants linkable is **its own token kind**, declared in its
+`.gantry/adapter.json` `mmt_tokens` (gantry SPEC §6 "The adapter"): `kind` · `glob` · `line`
+regex · `token`/`label` templates over the regex groups · `match` (the shape). The renderer reads
+each root's own table, so a tree spanning repositories resolves every token by the grammar of the
+repository it points into. Kinds declared by the repositories this format grew up in:
+
+| token | declared by | resolves to |
+|---|---|---|
+| `R7` | cubeOnSKOS | a rule line in `CLAUDE.md` (`R` + number, two-space gap) |
+| `U4`, `W2`, `H3` | cubeOnSKOS | a section / hypothesis row of a plan under `docs/plans/` |
+| `§6.1`, `§6a`, `§17/http` | cubeOnSKOS, cubeOnSKOS-ui | a heading in `docs/contract/database-surface.md` (`/http`: `http-routes.md`) |
+
+Glyphs are NOT extensible (§3): a formality the model did not already produce is a token tax.
+Vocabulary is data; the notation is not.
 
 Trees often span repositories. A **root prefix** pins a token to one: `core:#1013`,
 `ui:#0011`, `gantry:scripts/mmt.py`, `ui:S1`. Unprefixed tokens resolve in the first
@@ -163,8 +178,9 @@ into node names ("old-x", "new-x").
 
 **Tooling (gantry `scripts/mmt.py`, symlinked `tools/mmt.py`):** renders a tree to a local
 linked page (`@` anchors, `->@` links, every §5b token linked into a line-numbered copy of
-its document, across named roots), and lints Level 1 (`--strict` exits 1). It does not yet
-emit the Level 2 edge list; that is the follow-up. See `tools/README.md`.
+its document, across named roots, each by its own `mmt_tokens`), lints Level 1 (`--strict`
+exits 1) and notes `[type]`s outside `mmt_edges`. It does not yet emit the Level 2 edge list;
+that is gantry #0021. See `tools/README.md`.
 
 ## 10. Worked example
 
@@ -192,3 +208,6 @@ cubeOnSKOS for the enforcement-graph plan this format feeds.
 - 0.1 (2026-09-05): first written specification of the notation in use since 2026-08-30.
 - 0.1 + tooling (2026-09-05): §5b external references and root prefixes; `.mmt` files and
   ```` ```mmt ```` fences; `scripts/mmt.py` renders and lints (gantry #0016).
+- 0.1 + vocabulary (2026-09-05): §5b split into the six built-in kinds and repository-declared
+  kinds (`mmt_tokens`); §5 edge vocabulary is `mmt_edges`; a tree is written once through
+  `tools/g tree new`, which renders it (gantry #0019 #0020).
