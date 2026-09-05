@@ -4,3 +4,4 @@ __pycache__/
 # gantry — derived state and stream worktrees (GRAPH.md and issues/INDEX.md ARE committed)
 .gantry/out/
 .gantry/streams/
+.site/

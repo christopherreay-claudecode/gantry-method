@@ -1,0 +1,443 @@
+#!/usr/bin/env python3
+"""mmt — render a MindMapTreeFormat-0.1 tree as a local, linked web page.
+
+Every @address becomes an anchor, every ->@address a link to it, and every
+external token — #NNNN, R7, U3, c17, [3], S1, m2, Q1, U4/W2/H3, §6.1, a
+path[:line], a commit hash — becomes a link into a line-numbered rendering of
+the document that defines it, resolved across one or more repositories
+("roots"). Level-1 conformance (spec §9) is linted at the same time.
+
+stdlib only · deterministic · writes a file:// site for one reader. Never
+published anywhere (see designDocs/MindMapTreeFormat-0.1.md §12 and the
+no-artifacts rule).
+
+    mmt.py TREE.mmt                       # roots: cwd
+    mmt.py TREE.mmt --root core=../cubeOnSKOS --root ui=../cubeOnSKOS-ui
+    mmt.py - < answer.txt --out .site/mmt --open
+    mmt.py TREE.md                        # first ```mmt fenced block in a .md
+    mmt.py TREE.mmt --strict              # exit 1 on any L1 lint finding
+
+Tokens may carry a root prefix — core:#1013, ui:#0011, gantry:scripts/mmt.py —
+otherwise the first root that defines the token wins (roots in the order given).
+"""
+from __future__ import annotations
+
+import argparse
+import html
+import json
+import re
+import subprocess
+import sys
+from dataclasses import dataclass, field
+from pathlib import Path
+
+# ------------------------------------------------------------------ symbols --
+
+
+@dataclass
+class Root:
+    name: str
+    path: Path
+    sym: dict[str, dict] = field(default_factory=dict)   # token -> {path,line,label,kind}
+    docs: dict[str, str] = field(default_factory=dict)   # rel path -> html file name
+    commits: dict[str, str] = field(default_factory=dict)  # short sha -> full sha
+
+    def add(self, tok: str, path: str, line: int, label: str, kind: str) -> None:
+        self.sym.setdefault(tok, {"path": path, "line": line, "label": label.strip(), "kind": kind})
+
+    def lines(self, rel: str) -> list[str]:
+        return (self.path / rel).read_text(encoding="utf-8", errors="replace").splitlines()
+
+    def has(self, rel: str) -> bool:
+        return (self.path / rel).is_file()
+
+
+def collect(root: Root) -> None:
+    R = root
+    if R.has("CLAUDE.md"):                                   # R1.. U1.. rules
+        for i, ln in enumerate(R.lines("CLAUDE.md"), 1):
+            m = re.match(r"^([A-Z]\d{1,2})\s{2,}(.+)$", ln)
+            if m:
+                R.add(m.group(1), "CLAUDE.md", i, m.group(2), "rule")
+    if R.has("plan.md"):                                     # c17 / [17] constraints
+        for i, ln in enumerate(R.lines("plan.md"), 1):
+            m = re.match(r"^(\d{1,2})\.\s+\*\*(.+?)\*\*", ln)
+            if m:
+                R.add(f"c{m.group(1)}", "plan.md", i, m.group(2), "constraint")
+                R.add(f"[{m.group(1)}]", "plan.md", i, m.group(2), "constraint")
+    if R.has("seams.md"):                                    # S1 seams
+        for i, ln in enumerate(R.lines("seams.md"), 1):
+            m = re.match(r"^\|\s*(S\d)\s*\|\s*(.+?)\s*\|", ln)
+            if m:
+                R.add(m.group(1), "seams.md", i, m.group(2), "seam")
+    for p in sorted((R.path / "issues").glob("[0-9][0-9][0-9][0-9]-*.md")):   # #NNNN issues
+        rel = str(p.relative_to(R.path))
+        title = ""
+        for ln in R.lines(rel)[:3]:
+            h = re.match(r"^#\s+#\d{4}\s+[—-]+\s+(.+)$", ln)
+            if h:
+                title = h.group(1)
+                break
+        R.add("#" + p.name[:4], rel, 1, title or p.stem, "issue")
+    st = R.path / ".gantry/out/state.json"                   # m0 g1 gates · Q1 holds
+    if st.exists():
+        try:
+            ents = json.load(open(st))["entities"]
+        except Exception:
+            ents = []
+        for e in ents:
+            if e.get("kind") != "gate":
+                continue
+            tok = e["id"].split(":", 1)[1]
+            ref = next((b["ref"] for b in e.get("bindings", []) if b["ref"].startswith("#")), None)
+            if ref and ref in R.sym:
+                s = R.sym[ref]
+                R.add(tok, s["path"], s["line"], e.get("label", tok), "gate")
+        ad = R.path / ".gantry/adapter.json"
+        if ad.exists():
+            for qtok, target in json.load(open(ad)).get("q_holds", {}).items():
+                ent = next((e for e in ents if e["id"] == f"hold:{target}"), None)
+                ref = ent and next((b["ref"] for b in ent.get("bindings", []) if b["ref"].startswith("#")), None)
+                if ref and ref in R.sym:
+                    s = R.sym[ref]
+                    R.add(qtok, s["path"], s["line"], ent.get("label", qtok), "hold")
+    for name, suffix in (("database-surface", ""), ("http-routes", "/http")):   # §N.N contract
+        rel = f"docs/contract/{name}.md"
+        if R.has(rel):
+            for i, ln in enumerate(R.lines(rel), 1):
+                m = re.match(r"^#{2,4}\s+(\d+(?:\.\d+)*[a-z]?)\.?\s+(.+)$", ln)
+                if m:
+                    R.add(f"§{m.group(1)}{suffix}", rel, i, m.group(2), "contract")
+    for p in sorted((R.path / "docs/plans").glob("*.md")):   # U4 W2 H3 plan sections
+        rel = str(p.relative_to(R.path))
+        for i, ln in enumerate(R.lines(rel), 1):
+            m = re.match(r"^#+\s+(U\d{1,2}b?)\s+·\s+(.+?)\s+·", ln) or re.match(r"^#+\s+(W\d)\s+—\s+(.+)$", ln)
+            if m:
+                R.add(m.group(1), rel, i, m.group(2), "plan")
+                continue
+            m = re.match(r"^\|\s*\*\*(H\d)\*\*\s*\|\s*(.+?)\s*\|", ln)
+            if m:
+                R.add(m.group(1), rel, i, re.sub(r"\*\*", "", m.group(2)), "plan")
+
+
+def git(root: Root, *args: str) -> str | None:
+    try:
+        r = subprocess.run(["git", "-C", str(root.path), *args], capture_output=True, text=True, timeout=30)
+    except Exception:
+        return None
+    return r.stdout if r.returncode == 0 else None
+
+
+# -------------------------------------------------------------------- tree --
+
+TREE_PREFIX = re.compile(r"^[\s│├└─]*")
+GLYPHS = "=~?!x"
+
+
+@dataclass
+class Node:
+    n: int            # line number in the tree
+    depth: int
+    addr: str | None
+    glyph: str | None
+    text: str         # the node's text without prefix/addr/glyph
+    raw: str          # the full original line
+
+
+def parse_tree(src: str) -> list[Node]:
+    nodes = []
+    for n, raw in enumerate(src.splitlines(), 1):
+        if not raw.strip():
+            continue
+        pre = TREE_PREFIX.match(raw).group(0)
+        depth = (pre.count("├") + pre.count("└") + pre.count("│") + (pre.count("─") == 0 and 0)) if pre.strip() else 0
+        if pre.strip() and "─" in pre:
+            depth = len(pre.rstrip()) // 3 + 1
+        body = raw[len(pre):]
+        addr = glyph = None
+        m = re.match(r"@([\w.\-]+)\s*", body)
+        if m:
+            addr, body = m.group(1), body[m.end():]
+        m = re.match(r"([=~?!x])(?=\s)", body)
+        if m:
+            glyph, body = m.group(1), body[m.end():].lstrip()
+        nodes.append(Node(n, depth, addr, glyph, body, raw))
+    return nodes
+
+
+def extract_tree(text: str) -> str:
+    """A .md may hold the tree in the first ```mmt (or bare ```) fence that contains tree characters."""
+    fences = re.findall(r"```(?:mmt|text|)\n(.*?)```", text, re.S)
+    for f in fences:
+        if re.search(r"[├└]", f) or f.lstrip().startswith("@"):
+            return f
+    return text
+
+
+# -------------------------------------------------------------------- lint --
+
+
+def lint(nodes: list[Node]) -> list[str]:
+    out = []
+    addrs = {n.addr for n in nodes if n.addr}
+    seen: set[str] = set()
+    for n in nodes:
+        if n.addr:
+            if n.addr in seen:
+                out.append(f"L{n.n}: @{n.addr} declared twice")
+            seen.add(n.addr)
+        for ref in re.findall(r"->@([\w.\-]+)", n.text):
+            if ref not in addrs and not re.search(rf"->@{re.escape(ref)}\s*\[todo\]", n.text):
+                out.append(f"L{n.n}: ->@{ref} has no node (legal; mark [todo] to silence)")
+        if n.glyph == "?" and not re.search(r"owner|->@you|->@\w+\s*\[owner\]|—\s*\S", n.text):
+            out.append(f"L{n.n}: ? names no owner")
+        if n.glyph == "?" and "→" not in n.text and "->" not in n.text:
+            out.append(f"L{n.n}: ? names no consequence (branch→what changes)")
+        if n.glyph == "!" and not re.search(r"^\s*[\w.\-/ ]+:\s+\S", n.text):
+            out.append(f"L{n.n}: ! lacks 'actor: artefact'")
+        if n.glyph == "x" and "->@" not in n.text:
+            out.append(f"L{n.n}: x names no ->@unblocker")
+        if re.match(r"[=~?!x]\s", n.text):
+            out.append(f"L{n.n}: stacked glyphs — nest instead")
+    return out
+
+
+# ------------------------------------------------------------------ linkify --
+
+TOKEN_RE = re.compile(
+    r"(?<![\w/#§@\-])((?:[a-z][\w\-]*:)?)("
+    r"#\d{4}"
+    r"|[A-Z]\d{1,2}b?(?!\d)"          # R7 U3 S1 Q1 W2 H3 U4
+    r"|c\d{1,2}(?!\d)|\[\d{1,2}\]"    # constraints
+    r"|[mg]\d(?!\d)"                  # gates
+    r"|§\d+(?:\.\d+)*[a-z]?(?:/http)?"
+    r"|[0-9a-f]{7,40}"                # commit
+    r")(?![\w])"
+)
+PATH_RE = re.compile(
+    r"(?<![\w/@\-])((?:[a-z][\w\-]*:)?)((?:[\w.\-]+/)+[\w.\-]+\.[a-z]{1,5}|(?:CLAUDE|GRAPH|README|SPEC|plan|seams)\.md)(?::(\d+))?\b"
+)
+REF_RE = re.compile(r"->@([\w.\-]+)")
+ADDR_RE = re.compile(r"^(\s*)@([\w.\-]+)")
+
+
+class Site:
+    def __init__(self, roots: list[Root], out: Path):
+        self.roots, self.out = roots, out
+        self.by_name = {r.name: r for r in roots}
+        self.todo: list[tuple[Root, str]] = []      # docs to render
+        self.unresolved: dict[str, int] = {}
+
+    def slug(self, root: Root, rel: str) -> str:
+        return root.name + "__" + re.sub(r"[^\w.]+", "__", rel) + ".html"
+
+    grow = True   # False while rendering doc pages: link only to already-wanted docs
+
+    def want(self, root: Root, rel: str) -> str | None:
+        if rel not in root.docs:
+            if not self.grow:
+                return None
+            root.docs[rel] = self.slug(root, rel)
+            self.todo.append((root, rel))
+        return root.docs[rel]
+
+    def cands(self, prefix: str) -> list[Root]:
+        if prefix:
+            r = self.by_name.get(prefix[:-1])
+            return [r] if r else []
+        return self.roots
+
+    def resolve_tok(self, prefix: str, tok: str) -> tuple[str, str, str] | None:
+        """-> (href, kind, title)"""
+        for r in self.cands(prefix):
+            s = r.sym.get(tok)
+            if s and r.has(s["path"]):
+                d = self.want(r, s["path"])
+                if d:
+                    return f"doc/{d}#L{s['line']}", s["kind"], f"{r.name}: {s['label']}"
+        if re.fullmatch(r"[0-9a-f]{7,40}", tok):
+            for r in self.cands(prefix):
+                full = r.commits.get(tok) or (git(r, "rev-parse", "--verify", "-q", tok + "^{commit}") or "").strip()
+                if full:
+                    r.commits[tok] = full
+                    d = self.want(r, f"commit/{full[:12]}")
+                    if d:
+                        return f"doc/{d}", "commit", f"{r.name}: {full[:12]}"
+        return None
+
+    def resolve_path(self, prefix: str, rel: str, line: str | None) -> str | None:
+        for r in self.cands(prefix):
+            if r.has(rel):
+                d = self.want(r, rel)
+                if d:
+                    return f"doc/{d}" + (f"#L{line}" if line else "")
+        return None
+
+    def linkify(self, esc: str, depth: str, *, tree: bool) -> str:
+        def path(m):
+            h = self.resolve_path(m.group(1), m.group(2), m.group(3))
+            if not h:
+                return m.group(0)
+            return f'<a class="p" href="{depth}{h}">{m.group(0)}</a>'
+
+        def tok(m):
+            r = self.resolve_tok(m.group(1), m.group(2))
+            if not r:
+                if tree and not re.fullmatch(r"[0-9a-f]{7,40}|[A-Z]\d{1,2}b?", m.group(2)):
+                    self.unresolved[m.group(0)] = self.unresolved.get(m.group(0), 0) + 1
+                return m.group(0)
+            h, kind, title = r
+            return f'<a class="t {kind}" href="{depth}{h}" title="{html.escape(title)}">{m.group(0)}</a>'
+
+        s = PATH_RE.sub(path, esc)
+        s = TOKEN_RE.sub(tok, s)
+        if tree:
+            s = REF_RE.sub(lambda m: f'-&gt;<a class="r" href="#{m.group(1)}">@{m.group(1)}</a>', s.replace("-&gt;@", "->@"))
+        return s
+
+    # ---- pages
+    def render_tree(self, name: str, src: str, nodes: list[Node], findings: list[str]) -> Path:
+        rows = []
+        for raw in src.splitlines():
+            esc = html.escape(raw)
+            m = ADDR_RE.match(re.sub(r"^[\s│├└─]*", lambda x: "", raw))
+            line = self.linkify(esc, "", tree=True)
+            am = re.search(r"@([\w.\-]+)", raw)
+            if am and re.match(r"^[\s│├└─]*@", raw):
+                line = line.replace(f"@{am.group(1)}", f'<a id="{am.group(1)}" class="a" href="#{am.group(1)}">@{am.group(1)}</a>', 1)
+            line = re.sub(r"^((?:[\s│├└─]|&[a-z]+;)*(?:<a[^>]*>@[^<]*</a>\s*)?)([=~?!x])(?=\s)", r'\1<b class="g g\2">\2</b>', line)
+            rows.append(f'<span class="ln">{line}</span>')
+        counts = {}
+        for n in nodes:
+            if n.glyph:
+                counts[n.glyph] = counts.get(n.glyph, 0) + 1
+        legend = " · ".join(f'<b class="g g{g}">{g}</b> {c}' for g, c in sorted(counts.items()))
+        lint_html = "".join(f"<li>{html.escape(f)}</li>" for f in findings) or "<li>clean</li>"
+        unres = ", ".join(html.escape(t) for t in sorted(self.unresolved)) or "none"
+        body = (
+            f'<p class="legend">{legend} · {len(nodes)} nodes · {sum(1 for n in nodes if n.addr)} addresses</p>'
+            f'<pre class="tree">{"".join(r + chr(10) for r in rows)}</pre>'
+            f"<h2>level-1 lint</h2><ul>{lint_html}</ul>"
+            f"<h2>unresolved tokens</h2><p>{unres}</p>"
+            f"<h2>roots</h2><ul>" + "".join(f"<li>{html.escape(r.name)} → {html.escape(str(r.path))} · {len(r.sym)} symbols</li>" for r in self.roots) + "</ul>"
+        )
+        p = self.out / f"{name}.html"
+        p.write_text(page(name, body, ""), encoding="utf-8")
+        return p
+
+    def render_docs(self) -> None:
+        (self.out / "doc").mkdir(parents=True, exist_ok=True)
+        self.grow = False                          # one hop: only documents the tree itself reaches are rendered
+        for root, rel in list(self.todo):
+            if rel.startswith("commit/"):
+                full = next((f for f in root.commits.values() if f.startswith(rel[7:])), rel[7:])
+                text = git(root, "show", "--stat", "--patch", "--no-color", full) or "(commit not readable)"
+                ls = text.splitlines()[:600]
+                cls = ""
+            else:
+                ls = root.lines(rel)
+                cls = "md" if rel.endswith(".md") else ""
+            rows = []
+            for n, ln in enumerate(ls, 1):
+                esc = html.escape(ln)
+                h = " h" if (cls == "md" and ln.startswith("#")) else ""
+                rows.append(f'<div class="l" id="L{n}"><span class="n"><a href="#L{n}">{n}</a></span>'
+                            f'<span class="c{h}">{self.linkify(esc, "../", tree=False)}</span></div>')
+            (self.out / "doc" / root.docs[rel]).write_text(
+                page(f"{root.name}: {rel}", f'<div class="src">{"".join(rows)}</div>', "../"), encoding="utf-8")
+
+
+CSS = """
+:root{--bg:#fbfbfd;--fg:#16181f;--mu:#5a5f6e;--ln:#b8bcc9;--rule:#e2e4ec;--sf:#f1f2f7;
+--rule-c:#2b4a8b;--constraint-c:#6a3d9a;--seam-c:#0b6e5c;--issue-c:#8a5a0c;--gate-c:#8a5a0c;--hold-c:#9e2b2b;
+--plan-c:#2b4a8b;--contract-c:#0b6e5c;--commit-c:#5a5f6e;--p-c:#2b4a8b;--a-c:#0b6e5c}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1117;--fg:#e6e8ef;--mu:#969cac;--ln:#4a5060;--rule:#252935;--sf:#171a22;
+--rule-c:#89a7e4;--constraint-c:#c29ae8;--seam-c:#6fbf93;--issue-c:#dca94b;--gate-c:#dca94b;--hold-c:#e5837a;
+--plan-c:#89a7e4;--contract-c:#6fbf93;--commit-c:#969cac;--p-c:#89a7e4;--a-c:#6fbf93}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+header{padding:1rem 1.4rem;border-bottom:1px solid var(--rule);display:flex;gap:1.4rem;align-items:baseline;flex-wrap:wrap}
+header b{font-size:1.05rem}header a{color:var(--mu);text-decoration:none}
+main{padding:1rem 1.4rem 4rem;max-width:1200px}
+pre.tree{background:var(--sf);border:1px solid var(--rule);padding:.8rem 1rem;overflow-x:auto;line-height:1.55}
+a.t,a.p,a.r,a.a{text-decoration:none;border-bottom:1px dotted currentColor;color:var(--commit-c)}
+a.rule{color:var(--rule-c)}a.constraint{color:var(--constraint-c)}a.seam{color:var(--seam-c)}a.issue{color:var(--issue-c)}
+a.gate{color:var(--gate-c)}a.hold{color:var(--hold-c)}a.plan{color:var(--plan-c)}a.contract{color:var(--contract-c)}
+a.commit{color:var(--commit-c)}a.p{color:var(--p-c)}a.r,a.a{color:var(--a-c)}a.a{font-weight:600}
+a:hover{border-bottom-style:solid}.ln:target,.l:target{background:rgba(220,169,75,.22)}
+b.g{display:inline-block;min-width:1em;text-align:center;border-radius:3px;padding:0 .2em}
+b.g\\={color:#0b6e5c}b.g\\~{color:#5a5f6e}b.g\\?{color:#9e2b2b}b.g\\!{color:#8a5a0c}b.gx{color:#9e2b2b;background:rgba(158,43,43,.12)}
+.src{border:1px solid var(--rule);background:var(--sf)}.src .l{display:flex;min-height:1.5em}
+.src .n{flex:0 0 4.2em;text-align:right;padding-right:.9em;color:var(--ln);user-select:none;border-right:1px solid var(--rule)}
+.src .n a{color:inherit;text-decoration:none}.src .c{padding-left:.9em;white-space:pre-wrap;word-break:break-word;flex:1}.src .h{font-weight:600}
+h2{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mu);margin:2rem 0 .6rem}
+.legend{color:var(--mu)}
+"""
+
+
+def page(title: str, body: str, depth: str) -> str:
+    return (f"<!doctype html><meta charset=utf-8><title>{html.escape(title)}</title><style>{CSS}</style>"
+            f"<header><b>{html.escape(title)}</b><a href=\"{depth}index.html\">index</a></header><main>{body}</main>")
+
+
+def write_index(out: Path) -> None:
+    pages = sorted(p.name for p in out.glob("*.html") if p.name != "index.html")
+    body = "<ul>" + "".join(f'<li><a class="p" href="{html.escape(n)}">{html.escape(n[:-5])}</a></li>' for n in pages) + "</ul>"
+    (out / "index.html").write_text(page("MindMapTrees", body, ""), encoding="utf-8")
+
+
+# -------------------------------------------------------------------- main --
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("tree", help="a .mmt file, a .md with a ```mmt fence, or - for stdin")
+    ap.add_argument("--root", action="append", default=[], metavar="NAME=PATH", help="a repository to resolve tokens in (repeatable, ordered)")
+    ap.add_argument("--out", default=None, help="site directory (default: <first root>/.site/mmt)")
+    ap.add_argument("--name", default=None, help="page name (default: tree file stem, or 'tree')")
+    ap.add_argument("--strict", action="store_true", help="exit 1 on any level-1 lint finding")
+    ap.add_argument("--open", action="store_true", help="open the page with xdg-open")
+    a = ap.parse_args(argv)
+
+    roots: list[Root] = []
+    for spec in a.root or [f"{Path.cwd().name}={Path.cwd()}"]:
+        name, _, path = spec.partition("=")
+        if not path:
+            name, path = Path(name).resolve().name, name
+        roots.append(Root(name, Path(path).resolve()))
+    for r in roots:
+        if not r.path.is_dir():
+            print(f"root {r.name}: {r.path} is not a directory", file=sys.stderr); return 2
+        collect(r)
+
+    if a.tree == "-":
+        text, name = sys.stdin.read(), a.name or "tree"
+    else:
+        tp = Path(a.tree)
+        text, name = tp.read_text(encoding="utf-8"), a.name or tp.stem
+        if tp.suffix == ".md":
+            text = extract_tree(text)
+    src = text.strip("\n")
+    nodes = parse_tree(src)
+    findings = lint(nodes)
+
+    out = Path(a.out) if a.out else roots[0].path / ".site" / "mmt"
+    out.mkdir(parents=True, exist_ok=True)
+    site = Site(roots, out)
+    pg = site.render_tree(name, src, nodes, findings)
+    site.render_docs()
+    write_index(out)
+
+    print(pg)
+    print(f"  {len(nodes)} nodes · {sum(len(r.docs) for r in roots)} documents rendered · "
+          f"{len(site.unresolved)} unresolved tokens · {len(findings)} lint findings")
+    for f in findings:
+        print("  lint:", f)
+    for t in sorted(site.unresolved):
+        print("  unresolved:", t)
+    if a.open:
+        subprocess.Popen(["xdg-open", str(pg)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return 1 if (a.strict and findings) else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

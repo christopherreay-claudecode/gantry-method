@@ -213,4 +213,22 @@ python3 "$G" stream new --repo "$WTC" --issue c1-0001 --slug nested >/dev/null 2
 [ -d "$S/.gantry.alpha.streams.c1a1" ] || { ls -d "$S"/.gantry.* ; fail "nested stream prefix c1a1"; }
 expect "$S/.gantry.alpha.streams.c1a1/GRAPH.md" "issues #c1a1-0001"
 
+step "mmt — a MindMapTree renders to a linked page; every link resolves; lint catches a bare ?"
+python3 "$HERE/../scripts/mmt.py" "$HERE/../examples/mmt/status-2026-09-05.mmt" --root gantry="$HERE/.." --root core="$S/alpha" --out "$S/mmt" >/dev/null || fail "mmt: render"
+[ -f "$S/mmt/status-2026-09-05.html" ] || fail "mmt: page missing"
+expect "$S/mmt/status-2026-09-05.html" 'id="spec-live"'
+expect "$S/mmt/status-2026-09-05.html" 'href="#spec-live"'
+grep -q 'class="t [a-z]*" href="doc/gantry__' "$S/mmt/status-2026-09-05.html" || fail "mmt: no token linked into a rendered gantry doc"
+python3 - "$S/mmt" <<'PY' || fail "mmt: broken link"
+import re,sys,pathlib
+out=pathlib.Path(sys.argv[1]); bad=0
+for p in out.rglob('*.html'):
+    for h,a in re.findall(r'href="([^"#]+)(?:#(L?\w[\w.\-]*))?"',p.read_text()):
+        t=(p.parent/h).resolve()
+        if not t.exists() or (a and f'id="{a}"' not in t.read_text()): bad+=1; print('broken',p.name,h,a)
+sys.exit(1 if bad else 0)
+PY
+printf '@t  = x\n├─ ? a question with no owner\n└─ ! no actor here\n' > "$S/bad.mmt"
+if python3 "$HERE/../scripts/mmt.py" "$S/bad.mmt" --root gantry="$HERE/.." --out "$S/mmt" --strict >/dev/null; then fail "mmt: --strict let an L1 violation through"; fi
+
 echo; echo "ALL PASSED  (scratch: $S)"

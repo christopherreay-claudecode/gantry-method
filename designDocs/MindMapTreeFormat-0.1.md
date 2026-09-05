@@ -78,6 +78,33 @@ markers plus `DIM:`. A tree that needs more glyphs needs more nodes instead.
 - A reference is directional. If both directions matter, write both edges; do not rely on
   the reader inferring the inverse.
 
+### 5b. External references (tokens)
+
+A tree addresses truth that lives elsewhere. Any of these tokens, appearing bare in a node's
+text, IS a reference to the document that defines it, and a renderer links it:
+
+| token | resolves to |
+|---|---|
+| `#NNNN`, `#a1-0003` | `issues/NNNN-*.md` (the tracker) |
+| `R7`, `U3` | a rule line in `CLAUDE.md` (any capital letter + number, two-space gap) |
+| `c17`, `[17]` | constraint 17 in `plan.md` |
+| `S1` | a seam row in `seams.md` |
+| `m2`, `g1`, `Q1` | a gate / hold, via `.gantry/out/state.json` and `adapter.json` |
+| `U4`, `W2`, `H3` | a section of a plan under `docs/plans/` |
+| `§6.1`, `§6a`, `§17/http` | a heading in `docs/contract/database-surface.md` (or `http-routes.md` with `/http`) |
+| `path/to/file.ext`, `path:42` | the file, at the line |
+| `c0b273f` (7–40 hex) | a commit, rendered from `git show` |
+
+Trees often span repositories. A **root prefix** pins a token to one: `core:#1013`,
+`ui:#0011`, `gantry:scripts/mmt.py`, `ui:S1`. Unprefixed tokens resolve in the first
+root that defines them, in the order the roots were given to the renderer — so name the
+subject repository first. A token that resolves nowhere stays plain text and the renderer
+lists it under "unresolved".
+
+There is no bracketed link syntax on purpose: the tokens are already the names the
+repositories use for these things, and a tree that reads well in a terminal must not carry
+URLs.
+
 ## 6. Semantics of the glyphs
 
 - `=` **measured.** The author (or their tooling) exercised the system and observed this.
@@ -101,6 +128,8 @@ markers plus `DIM:`. A tree that needs more glyphs needs more nodes instead.
 - No em-dash as a glyph. `—` is plain punctuation inside text.
 - No prose paragraphs. A tree may be preceded by a one-line tag (`[immediate]`,
   `[guidance]`, `[question]`, `[MetaLand]`) and nothing else.
+- On disk a tree is a `.mmt` file (the tree and nothing else), or the first ```` ```mmt ````
+  fenced block in a `.md`. A DIM: line, if present, is the second line.
 - Code identifiers appear bare (`server/socket.mjs`, `cube:move`); no backticks inside the
   tree, since the tree itself sits in a fenced block.
 
@@ -129,9 +158,10 @@ into node names ("old-x", "new-x").
   From here a tree exports to a typed edge list (node, glyph, text; edge, type) and can
   join gantry's own graph.
 
-No tool ships with 0.1. The intended checker is a ~100-line script under `gantry/tools/`
-that lints Level 1 and emits the Level 2 edge list; that is a follow-up issue, not this
-document.
+**Tooling (gantry `scripts/mmt.py`, symlinked `tools/mmt.py`):** renders a tree to a local
+linked page (`@` anchors, `->@` links, every §5b token linked into a line-numbered copy of
+its document, across named roots), and lints Level 1 (`--strict` exits 1). It does not yet
+emit the Level 2 edge list; that is the follow-up. See `tools/README.md`.
 
 ## 10. Worked example
 
@@ -157,3 +187,5 @@ cubeOnSKOS for the enforcement-graph plan this format feeds.
 ## 12. Changelog
 
 - 0.1 (2026-09-05): first written specification of the notation in use since 2026-08-30.
+- 0.1 + tooling (2026-09-05): §5b external references and root prefixes; `.mmt` files and
+  ```` ```mmt ```` fences; `scripts/mmt.py` renders and lints (gantry #0016).

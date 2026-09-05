@@ -143,3 +143,16 @@ python3 tools/gen_index.py --check
 `--check` builds the fresh map in memory and compares it to the committed
 `GRAPH.md` (the header commit stamp is normalized, so hook-refreshed digests
 pass); exit 1 on drift.
+
+## `tools/mmt.py` — render a MindMapTree as a linked page
+
+A status or plan written in MindMapTreeFormat 0.1 (`designDocs/MindMapTreeFormat-0.1.md`
+in gantry) renders to a local `file://` page: `@addr` anchors, `->@addr` links, and every
+`#NNNN` / `R7` / `c17` / `[3]` / `S1` / `m2` / `Q1` / `§6.1` / `path:line` / commit hash
+linked into a line-numbered rendering of the document that defines it.
+
+    python3 tools/mmt.py tree.mmt --root ui=. --root core=../core --open
+    python3 tools/mmt.py - --strict < answer.txt        # level-1 lint as a gate
+
+Roots are ordered: an unprefixed token resolves in the first root that defines it; `ui:#0011`
+pins one. Output goes to `<first root>/.site/mmt/` (gitignore `.site/`). Never published.

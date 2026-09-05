@@ -17,3 +17,4 @@
 | #0013 | M11: token-efficient driver — tools/g (map/open/next/show/refresh), gantry install onto PATH, client README how-to | milestone | closed | [0013-m11-token-efficient-driver.md](0013-m11-token-efficient-driver.md) |
 | #0014 | M12: compressed trackers — archived issues resolve for the lint/show and never have their numbers re-used | milestone | closed | [0014-m12-compressed-tracker.md](0014-m12-compressed-tracker.md) |
 | #0015 | stream merge reports success while landing nothing: git merge runs with check=False | bug | open | [0015-stream-merge-reports-success-while-landing-nothi.md](0015-stream-merge-reports-success-while-landing-nothi.md) |
+| #0016 | MindMapTreeFormat 0.1: designDocs spec + tools/mmt.py — render a tree as a linked local page across roots, lint level 1 | feature | open | [0016-mindmaptreeformat-0-1-designdocs-spec-tools-mmt-.md](0016-mindmaptreeformat-0-1-designdocs-spec-tools-mmt-.md) |

@@ -1,0 +1,14 @@
+@status                                   = 2026-09-05 · both trees clean · stack up (:64321 :3000 :6464 :5175)
+DIM: evidence(=/~) · ownership(->[owner]) · dependency(->[depends])
+├─ @core  core:CLAUDE.md  main c0b273f
+│  ├─ = closed   core:#1006 room (snapshot /room + cube:update) · core:#1013 live moves (cube:move · 4 ms) ->@spec-live [proves]
+│  ├─ @spec-live  specs/s8-live-moves.md · R3 R6 R7 R8 R9 · c17 c19 c23
+│  ├─ = green    456 tests · contract §6a/http §17/http current
+│  └─ ? Subtraction Gate H1–H5 in docs/plans/gantry-graph-subtraction.md — owner ->@you [owner] · yes→U1 starts · no→plan shelved
+├─ @ui  ui:CLAUDE.md  main 3985f73
+│  ├─ = latched  m0–m4 · ui:#0001 ui:#0005 · contract vendored ->@core [depends]
+│  ├─ ? ui:#0009 amendment C-JOURNEY — owner ->@you [owner] · close→c32–c35 stand · reopen→journeys revert
+│  └─ ! ui-stream a7: ui:#0011 client half of the room + live moves ->@spec-live [depends]
+├─ x a7 cannot start — needs ->@s1-freeze
+├─ @s1-freeze  ? ui:S1 freeze-request — owner ->@you [owner] · yes→island interface frozen · no→a7 waits
+└─ @you  the human
