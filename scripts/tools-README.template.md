@@ -174,5 +174,10 @@ use. SPEC §6 "The adapter" has the shape; cubeOnSKOS's adapter is a worked exam
 
 **The ritual (token discipline):** a substantive answer — a status, an audit, a plan — is
 written ONCE, as the heredoc of `tree new`. The tool renders it in the same call and hands back
-the URL + lint; the chat reply is that URL and the verdict, not the tree again. `--no-render`
-writes only. Backticks never appear inside a tree (spec §7), so a quoted heredoc is safe.
+the URL + lint. After that the chat reply is the URL and the lint verdict — and NOTHING that
+restates the tree: no summary of it, no "key points", no copy of any branch, no prose version.
+The tree is the answer; a second telling halves the signal and doubles the tokens. What MAY
+follow the URL: a `[MetaLand]` remark, or a specific question that does not belong in the tree
+(the tree's `?` nodes are for questions that do). If you find yourself adding more than that,
+the missing content belongs in the tree — add the node and re-render. `--no-render` writes only.
+Backticks never appear inside a tree (spec §7), so a quoted heredoc is safe.

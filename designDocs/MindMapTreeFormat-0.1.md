@@ -143,6 +143,10 @@ URLs.
 - No em-dash as a glyph. `—` is plain punctuation inside text.
 - No prose paragraphs. A tree may be preceded by a one-line tag (`[immediate]`,
   `[guidance]`, `[question]`, `[MetaLand]`) and nothing else.
+- A tree is never followed by a restatement of itself — no summary, no extracted "key points",
+  no copied branch, no prose rendering. After the tree (or, through `tree new`, after its URL)
+  only a `[MetaLand]` remark or a question that does not belong in the tree may appear; content
+  that wants to follow the tree is a node the tree is missing.
 - On disk a tree is a `.mmt` file (the tree and nothing else), or the first ```` ```mmt ````
   fenced block in a `.md`. A DIM: line, if present, is the second line.
 - In a gantry repository trees live in `trees/YYYY-MM-DD-<slug>.mmt` (committed, like issues)
