@@ -36,6 +36,7 @@ import argparse
 import html
 import json
 import re
+import shutil
 import subprocess
 import sys
 from dataclasses import dataclass, field
@@ -373,8 +374,8 @@ class Site:
             f"<h2>unresolved tokens</h2><p>{unres}</p>"
             f"<h2>roots</h2><ul>" + "".join(f"<li>{html.escape(r.name)} → {html.escape(str(r.path))} · {len(r.sym)} symbols</li>" for r in self.roots) + "</ul>"
         )
-        p = self.out / f"{name}.html"
-        p.write_text(page(name, body, ""), encoding="utf-8")
+        p = self.out / "index.html"                 # self.out is this tree's own directory
+        p.write_text(page(name, body, "../"), encoding="utf-8")
         return p
 
     def render_docs(self) -> None:
@@ -396,7 +397,7 @@ class Site:
                 rows.append(f'<div class="l" id="L{n}"><span class="n"><a href="#L{n}">{n}</a></span>'
                             f'<span class="c{h}">{self.linkify(esc, "../", tree=False)}</span></div>')
             (self.out / "doc" / root.docs[rel]).write_text(
-                page(f"{root.name}: {rel}", f'<div class="src">{"".join(rows)}</div>', "../"), encoding="utf-8")
+                page(f"{root.name}: {rel}", f'<div class="src">{"".join(rows)}</div>', "../../"), encoding="utf-8")
 
 
 CSS = """
@@ -459,15 +460,16 @@ def page(title: str, body: str, depth: str) -> str:
 STAMP_NAME = re.compile(r"^(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})-(.+)$")
 
 
-def write_index(out: Path) -> None:
-    """Newest first, labelled by file stem (yyyymmdd-HHMMSS-<slug> from tools/g tree new);
-    pages without a stamp sort after those, by name."""
+def write_index(site_root: Path) -> None:
+    """Newest first, labelled by directory name (yyyymmdd-HHMMSS-<slug> from tools/g tree new);
+    trees without a stamp sort after those, by name. Each tree is its own directory —
+    <site>/<stem>/index.html + <site>/<stem>/doc/ — a snapshot of what it pointed at."""
     def key(n):
-        m = STAMP_NAME.match(n[:-5])
+        m = STAMP_NAME.match(n)
         return (0, "".join(m.groups()[:6])) if m else (1, n)
-    pages = sorted((p.name for p in out.glob("*.html") if p.name != "index.html"), key=key, reverse=True)
-    rows = [f'<li><a class="p" href="{html.escape(n)}">{html.escape(n[:-5])}</a></li>' for n in pages]
-    (out / "index.html").write_text(page("MindMapTrees", "<ul>" + "".join(rows) + "</ul>", ""), encoding="utf-8")
+    trees = sorted((d.name for d in site_root.iterdir() if d.is_dir() and (d / "index.html").exists()), key=key, reverse=True)
+    rows = [f'<li><a class="p" href="{html.escape(n)}/index.html">{html.escape(n)}</a></li>' for n in trees]
+    (site_root / "index.html").write_text(page("MindMapTrees", "<ul>" + "".join(rows) + "</ul>", ""), encoding="utf-8")
 
 
 # -------------------------------------------------------------------- main --
@@ -477,7 +479,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("tree", help="a .mmt file, a .md with a ```mmt fence, or - for stdin")
     ap.add_argument("--root", action="append", default=[], metavar="NAME=PATH", help="a repository to resolve tokens in (repeatable, ordered)")
-    ap.add_argument("--out", default=None, help="site directory (default: <first root>/.site/mmt)")
+    ap.add_argument("--out", default=None, help="site root (default: <first root>/.site/mmt); this tree renders into <site>/<name>/")
     ap.add_argument("--name", default=None, help="page name (default: tree file stem, or 'tree')")
     ap.add_argument("--strict", action="store_true", help="exit 1 on any level-1 lint finding")
     ap.add_argument("--open", action="store_true", help="open the page with xdg-open")
@@ -506,12 +508,15 @@ def main(argv: list[str] | None = None) -> int:
     nodes = parse_tree(src)
     findings, notes = lint(nodes, roots[0].adapter.get("mmt_edges") or None)
 
-    out = Path(a.out) if a.out else roots[0].path / ".site" / "mmt"
+    site_root = Path(a.out) if a.out else roots[0].path / ".site" / "mmt"
+    out = site_root / name                       # one directory per tree: its page + its doc/ snapshot
+    if out.exists():
+        shutil.rmtree(out)
     out.mkdir(parents=True, exist_ok=True)
     site = Site(roots, out)
     pg = site.render_tree(name, src, nodes, findings)
     site.render_docs()
-    write_index(out)
+    write_index(site_root)
     if a.edges:
         Path(a.edges).write_text(json.dumps(export_edges(site, nodes, name), indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
 

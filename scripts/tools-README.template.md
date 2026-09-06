@@ -152,7 +152,7 @@ in gantry) renders to a local `file://` page: `@addr` anchors, `->@addr` links, 
 linked into a line-numbered rendering of the document that defines it.
 
     python3 tools/g tree new <slug> <<'MMT'             # → trees/<yyyymmdd-HHMMSS>-<slug>.mmt (committed) AND
-    @root  = …                                          #   .site/mmt/<name>.html; prints the file:// URL,
+    @root  = …                                          #   .site/mmt/<name>/ (page + doc/ snapshot); prints URL,
     └─ …                                                #   the level-1 lint and the unresolved tokens
     MMT
     python3 tools/g tree render --all --open            # re-render everything (fresh clone) + index

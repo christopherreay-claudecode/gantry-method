@@ -215,10 +215,10 @@ expect "$S/.gantry.alpha.streams.c1a1/GRAPH.md" "issues #c1a1-0001"
 
 step "mmt — a MindMapTree renders to a linked page; every link resolves; lint catches a bare ?"
 python3 "$HERE/../scripts/mmt.py" "$HERE/../examples/mmt/status-2026-09-05.mmt" --root gantry="$HERE/.." --root core="$S/alpha" --out "$S/mmt" >/dev/null || fail "mmt: render"
-[ -f "$S/mmt/status-2026-09-05.html" ] || fail "mmt: page missing"
-expect "$S/mmt/status-2026-09-05.html" 'id="spec-live"'
-expect "$S/mmt/status-2026-09-05.html" 'href="#spec-live"'
-grep -q 'class="t [a-z]*" href="doc/gantry__' "$S/mmt/status-2026-09-05.html" || fail "mmt: no token linked into a rendered gantry doc"
+[ -f "$S/mmt/status-2026-09-05/index.html" ] || fail "mmt: page missing"
+expect "$S/mmt/status-2026-09-05/index.html" 'id="spec-live"'
+expect "$S/mmt/status-2026-09-05/index.html" 'href="#spec-live"'
+grep -q 'class="t [a-z]*" href="doc/gantry__' "$S/mmt/status-2026-09-05/index.html" || fail "mmt: no token linked into a rendered gantry doc"
 python3 - "$S/mmt" <<'PY' || fail "mmt: broken link"
 import re,sys,pathlib
 out=pathlib.Path(sys.argv[1]); bad=0
@@ -237,14 +237,14 @@ step "tree — trees/ facet: adopt copied tools/mmt.py + trees/README.md; tree n
 grep -q '^\.site/' "$S/alpha/.gitignore" || fail "tree: .site/ not gitignored"
 printf '@root  = a status\n├─ #0001 the birth issue · R1\n└─ ! me: nothing ->@root\n' | python3 "$G" tree new smoke --repo "$S/alpha" > "$S/treenew.out" || fail "tree new"
 ls "$S/alpha/trees/"*-smoke.mmt >/dev/null || fail "tree new: file not written"
-grep -q '^file://.*/\.site/mmt/.*-smoke\.html$' "$S/treenew.out" || fail "tree new: did not print the page URL (#0019)"
+grep -q '^file://.*/\.site/mmt/.*-smoke/index\.html$' "$S/treenew.out" || fail "tree new: did not print the page URL (#0019)"
 grep -q 'lint findings' "$S/treenew.out" || fail "tree new: did not print the lint summary (#0019)"
-ls "$S/alpha/.site/mmt/"*-smoke.html >/dev/null || fail "tree new: page not rendered on write (#0019)"
+ls "$S/alpha/.site/mmt/"*-smoke/index.html >/dev/null || fail "tree new: page not rendered on write (#0019)"
 printf '@q  = quiet\n' | python3 "$G" tree new quiet --no-render --repo "$S/alpha" >/dev/null || fail "tree new --no-render"
-[ ! -e "$S/alpha/.site/mmt/"*-quiet.html ] || fail "tree new --no-render rendered anyway"
+[ ! -e "$S/alpha/.site/mmt/"*-quiet/index.html ] || fail "tree new --no-render rendered anyway"
 python3 "$G" tree render --all --strict --repo "$S/alpha" >/dev/null || fail "tree render --all"
-ls "$S/alpha/.site/mmt/"*-quiet.html >/dev/null || fail "tree render --all: page missing"
-grep -q 'class="t issue" href="doc/alpha__issues__0001' "$S/alpha/.site/mmt/"*-smoke.html || fail "tree render: #0001 not linked"
+ls "$S/alpha/.site/mmt/"*-quiet/index.html >/dev/null || fail "tree render --all: page missing"
+grep -q 'class="t issue" href="doc/alpha__issues__0001' "$S/alpha/.site/mmt/"*-smoke/index.html || fail "tree render: #0001 not linked"
 
 step "mmt-adapter — a client's own token kind (mmt_tokens) resolves; its shape reports unknowns; the generic six need no entry; mmt_edges notes a stray [type]"
 mkdir -p "$S/alpha/specs"; printf '# 8 the eighth spec\nbody\n' > "$S/alpha/specs/eight.md"
@@ -256,16 +256,16 @@ d["mmt_edges"] = ["depends", "proves"]
 json.dump(d, open(p, "w"), indent=2)
 PYT
 printf '@root  = adapter vocabulary\n├─ §8 declared · §9 not · #0001 generic · S1 generic\n└─ ~ edge ->@root [flies]\n' | python3 "$G" tree new vocab --repo "$S/alpha" > "$S/vocab.out" || fail "mmt-adapter: tree new"
-grep -q 'class="t spec" href="doc/alpha__specs__eight.md.html#L1"' "$S/alpha/.site/mmt/"*-vocab.html || fail "mmt-adapter: declared §8 not linked into specs/eight.md"
+grep -q 'class="t spec" href="doc/alpha__specs__eight.md.html#L1"' "$S/alpha/.site/mmt/"*-vocab/index.html || fail "mmt-adapter: declared §8 not linked into specs/eight.md"
 grep -q 'unresolved: §9' "$S/vocab.out" || fail "mmt-adapter: undeclared §9 not reported unresolved (match shape)"
-grep -q 'class="t issue" href="doc/alpha__issues__0001' "$S/alpha/.site/mmt/"*-vocab.html || fail "mmt-adapter: generic #0001 stopped resolving"
+grep -q 'class="t issue" href="doc/alpha__issues__0001' "$S/alpha/.site/mmt/"*-vocab/index.html || fail "mmt-adapter: generic #0001 stopped resolving"
 grep -q 'note: L3: ->@root \[flies\] is not in mmt_edges' "$S/vocab.out" || fail "mmt-adapter: stray [type] not noted"
 python3 - "$S/alpha/.gantry/adapter.json" <<'PYT'
 import json, sys
 p = sys.argv[1]; d = json.load(open(p)); d["mmt_tokens"] = []; json.dump(d, open(p, "w"), indent=2)
 PYT
 printf '@root  = no table\n└─ §8 now plain · #0001 still links\n' | python3 "$G" tree new notable --repo "$S/alpha" > "$S/notable.out" || fail "mmt-adapter: tree new (no table)"
-grep -q 'class="t spec"' "$S/alpha/.site/mmt/"*-notable.html && fail "mmt-adapter: §8 linked with no mmt_tokens entry"
+grep -q 'class="t spec"' "$S/alpha/.site/mmt/"*-notable/index.html && fail "mmt-adapter: §8 linked with no mmt_tokens entry"
 grep -q '0 unresolved' "$S/notable.out" || fail "mmt-adapter: with no shape declared §8 must pass as prose, not unresolved"
 
 step "mmt-l2 — --edges exports nodes/containment/typed edges/token edges; tree diff checks issue→issue edges against the tracker"

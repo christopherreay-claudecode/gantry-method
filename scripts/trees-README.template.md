@@ -7,7 +7,7 @@ sections, files, commits — by the tokens those things already have.
 
     python3 tools/g tree new <slug> <<'MMT' … MMT    # writes trees/<now>-<slug>.mmt, renders it,
                                                      #   prints file:// URL · lint · unresolved (--no-render: write only)
-    python3 tools/g tree render [file | --all]       # re-render → .site/mmt/<name>.html (+ index)
+    python3 tools/g tree render [file | --all]       # re-render → .site/mmt/<name>/index.html + doc/ (+ site index)
     python3 tools/g tree render --all --open         # …and opens the index
 
 A tree is written once — into `tree new` — and the chat carries the URL and the lint verdict,
@@ -16,4 +16,6 @@ that does not fit the tree may follow; anything else belongs in the tree as a no
 
 Roots (which repositories tokens resolve in, in order) come from `.gantry/adapter.json`
 `"mmt_roots": {"core": ".", "ui": "../cubeOnSKOS-ui"}`; the repo itself is the default.
-Rendered pages live in `.site/mmt/` — on disk, gitignored, regenerable; never published.
+Rendered pages live in `.site/mmt/<name>/` — one directory per tree, holding the page and a `doc/`
+snapshot of every document and commit the tree pointed at, as they were when it was rendered.
+On disk, gitignored, regenerable; never published.
