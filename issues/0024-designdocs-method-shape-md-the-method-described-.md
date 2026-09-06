@@ -1,6 +1,6 @@
 # #0024 — designDocs/METHOD-shape.md — the method described as a shape for reuse: a fixed attractor, mirrors at every scale, closures as the unit of progress, latches, human gates; pipeline vs convergence settled
-type: workorder        status: open
-refs: [1] [10]   opened: seed   closed-by: <sha>
+type: workorder        status: closed
+refs: [1] [10]   opened: seed   closed-by: 37ef5bf
 
 **Constraints this issue makes true (Tier 2 — each traces to a plan constraint in `refs:`):**
 <what must be true when this closes — one testable sentence per constraint; each traces to a plan constraint above>
