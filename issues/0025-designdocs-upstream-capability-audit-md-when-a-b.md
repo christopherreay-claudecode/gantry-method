@@ -1,6 +1,6 @@
 # #0025 — designDocs/UPSTREAM-CAPABILITY-AUDIT.md — when a base gains a capability after the fork: the absence-fingerprint audit and how to file what it finds
-type: workorder        status: open
-refs: [1] [10]   opened: seed   closed-by: <sha>
+type: workorder        status: closed
+refs: [1] [10]   opened: seed   closed-by: 3ae2bcd
 
 **Constraints this issue makes true (Tier 2 — each traces to a plan constraint in `refs:`):**
 <what must be true when this closes — one testable sentence per constraint; each traces to a plan constraint above>
