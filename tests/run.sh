@@ -85,6 +85,11 @@ python3 "$G" adopt "$S/gamma" --core-prefix src/ >/dev/null 2>&1
 [ "$(git -C "$S/gamma" rev-list --count HEAD)" = 2 ] || fail "gamma: expected 2 commits"
 expect "$S/gamma/CLAUDE.md" "keep it simple"
 expect "$S/gamma/CLAUDE.md" "## gantry"
+expect "$S/gamma/CLAUDE.md" "gantry:begin"
+python3 "$G" adopt "$S/gamma" --core-prefix src/ >/dev/null 2>&1 || true
+[ "$(grep -c 'gantry:begin' "$S/gamma/CLAUDE.md")" = 1 ] || fail "gamma: re-adopt duplicated the gantry block in CLAUDE.md"
+grep -q 'tools/README.md' "$S/gamma/CLAUDE.md" || fail "gamma: gantry block does not point at tools/README.md"
+grep -q 'tree new' "$S/gamma/tools/README.md" || fail "gamma: the ritual (trees) is not in tools/README.md"
 expect "$S/gamma/.gitignore" "\*.pyc"
 expect "$S/gamma/.gitignore" ".gantry/out/"
 python3 "$G" check "$S/gamma" >/dev/null || fail "gamma: check"

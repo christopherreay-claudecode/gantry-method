@@ -258,20 +258,30 @@ def ensure_gitignore(repo):
     return "appended" if cur else "created"
 
 
+GANTRY_BLOCK = re.compile(r"<!-- gantry:begin.*?<!-- gantry:end -->\n?", re.S)
+
+
 def ensure_claude_md(repo, name, level, lo=0, hi=0, band=None):
+    """CLAUDE.md carries ONE marker-delimited gantry block — a pointer to tools/README.md, where
+    the ritual actually lives. The block is gantry's and is refreshed in place on every adopt;
+    everything outside the markers is the project's own and is never touched (#0023)."""
     p = Path(repo) / "CLAUDE.md"
     section = render("CLAUDE.md", name=name, level=level,
                      band=band or f"#{lo:04d}–#{hi:04d}")
+    block = GANTRY_BLOCK.search(section).group(0)
     if not p.exists():
         p.write_text(section, encoding="utf-8")
         return "created"
     cur = p.read_text(encoding="utf-8")
-    if "gantry" in cur and "GRAPH.md" in cur:
-        return "kept (already briefs gantry)"
-    body = section.split("\n", 1)[1]  # drop the H1: the repo already has its own
+    if GANTRY_BLOCK.search(cur):
+        fresh = GANTRY_BLOCK.sub(lambda _m: block, cur, count=1)
+        if fresh == cur:
+            return "kept (gantry block current)"
+        p.write_text(fresh, encoding="utf-8")
+        return "refreshed gantry block"
     with p.open("a", encoding="utf-8") as fh:
-        fh.write("\n\n## gantry — the development method this repo runs on\n" + body)
-    return "appended gantry section"
+        fh.write(("" if cur.endswith("\n") else "\n") + "\n" + block)
+    return "appended gantry block"
 
 
 def ensure_file(repo, rel, template, **kw):

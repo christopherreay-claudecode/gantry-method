@@ -40,21 +40,34 @@ Config lives at `.gantry/adapter.json` (paths + slug maps); generated state land
 `GRAPH.md`'s `## proposed` annex — on the table, not in the graph; accept one by
 copying it into `plan.md` / `seams.md` / `issues/` (SPEC §6).
 
-## The ritual (the developer LLM's session start)
+## The ritual (the developer LLM's session start — gantry's, kept current here, never restated in CLAUDE.md)
 
-1. **Read `GRAPH.md` first** — it is the one-gulp map of this project: gates,
-   seams, open items, dependency edges. Do not open every issue file; open one
-   only when the map says you need its detail.
-2. **Keep it fresh**: the pre-commit hook regenerates `GRAPH.md` (staged in the
-   same commit) whenever a commit touches the tracker inputs, and never blocks a
-   commit. If you changed issues and the map looks stale, regenerate by hand:
-   `python3 tools/gantry_extract.py --client .gantry/adapter.json --root . \
-   --out .gantry/out/state.json --digest GRAPH.md`
-3. **Declare dependencies on the issue's `deps:` line** the moment you learn them
-   (`blocks` / `awaits-stamp` / `defers-to` / `informs`). Reviewed proposals from a
-   model land in `.gantry/deps.json`, never minted by the extractor.
-4. **Never hand-edit `GRAPH.md`, `issues/INDEX.md`, `.gantry/out/*`** — they are
-   derived data; edit the truth (issues, plan, seams) and regenerate.
+1. **Read `GRAPH.md` first** — it is the one-gulp map of this project: gates, seams, open
+   items, dependency edges, lineage. Do not open every issue file; open one only when the map
+   says you need its detail. `python3 tools/g map` prints it without the navigation index.
+2. **Truth lives upstream**: `plan.md` (constraints), `seams.md`, `issues/`. Never restate,
+   extend or amend a constraint in code or prose — changes go through an `amendment-proposal`
+   issue. **Never hand-edit `GRAPH.md`, `issues/INDEX.md`, `.gantry/out/*`** — derived data;
+   edit the truth and regenerate (`python3 tools/g refresh`; the pre-commit hook does it too).
+3. **Work against an issue.** Every commit message references one (`#NNNN`); `closes #N` never
+   targets a human-gated type (`ambiguity` / `freeze-request` / `amendment-proposal`). The
+   commit-msg hook enforces this. Write issues with `python3 tools/g issue new` — the header
+   grammar is exact and the id is right by construction (see *Where this repo sits*, below).
+4. **Substantive answers are MindMapTrees** — a status, an audit, a plan — written ONCE as the
+   heredoc of `python3 tools/g tree new <slug>`. `tree new` is a cybernetic extension of your
+   voice: communication AS chat, not a deliverable alongside it. The chat reply is the URL and
+   the lint verdict, and NOTHING that restates the tree — no summary, no copied branch, no
+   prose version. Only a `[MetaLand]` remark or a question that does not belong in the tree may
+   follow; anything more is a node the tree is missing. Rules: § `tools/mmt.py` below,
+   `trees/README.md`, gantry `designDocs/MindMapTreeFormat-0.1.md`. Issue numbers in a tree
+   always carry their root (`core:#1013`), never bare.
+5. **Declare dependencies on the issue's `deps:` line** the moment you learn them
+   (`blocks` / `awaits-stamp` / `defers-to` / `informs`). Reviewed proposals from a model land
+   in `.gantry/deps.json`, never minted by the extractor.
+6. **Constraints first.** The plan's constraints descend from the lived experience of the
+   users/roles; each issue is a workorder that states the constraints *it* makes true, what it
+   depends on, and the technical approach — and seams let you build and test the lowest levels
+   first, then reach up.
 
 ## Where this repo sits (lineage — SPEC §8)
 

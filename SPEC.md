@@ -563,6 +563,8 @@ the law those commands implement.
 | a new issue, correctly formed | `gantry issue new --title T --refs …` · `issue close <id> --by …` | writes the exact header + the workorder body (constraints · depends on · approaches · exit); closes by the type's authority |
 | CI / honesty gate | `gantry check [<repo>]` | `extract --check` + `gen_index --check` + lineage sanity; exit 1 on drift |
 
+**Where the instructions live.** A client's `CLAUDE.md` is the project's own contract; gantry writes into it exactly one marker-delimited block (`<!-- gantry:begin -->` … `<!-- gantry:end -->`), a pointer that says *read `tools/README.md` first*. The session ritual itself — `GRAPH.md` first, truth upstream, the commit law, MindMapTrees as the voice, `deps:`, constraints first — lives in `tools/README.md`, which is gantry's file (re-rendered from `tools-README.template.md` on adopt and upgrade). Re-adopt refreshes the block in place and never duplicates it; nothing outside the markers is touched. Gantry never writes rules into a project's own text.
+
 **The adoption commit obeys the commit law.** `adopt` seeds one milestone issue —
 `#<floor> — M0: <name> — plan, seams, first gate`, `refs: [m0]` (its own gate, so it is not
 floating) — and the adoption commit references it. No lint exemption. The seed's exit test is
