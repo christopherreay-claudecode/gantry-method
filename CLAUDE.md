@@ -1,6 +1,6 @@
 # gantry — agent briefing
 
-Sessions start with `GRAPH.md`; the ritual is `tools/README.md`. (This repo's own sentence — gantry writes nothing here.)
+This is a Gantry repo. Gantry is a set of tools for project management. Gantry also includes cybernetic enhancements for your voice. Enter gantry at `tools/README.md`.
 
 ## This repo is the toolbox itself (self-hosting, constraint 10)
 
