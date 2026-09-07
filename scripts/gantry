@@ -376,6 +376,11 @@ def adopt_repo(repo, name, level, lo, hi, lineage, core_prefixes, link_tools=Fal
     sh(cmd)
     say("== issues/INDEX.md")
     run_gen_index(repo, quiet=True)
+    hit = entry_points_at_ritual(repo)
+    say(f"== the one sentence of redirection: {'present in ' + hit if hit else 'MISSING'}")
+    if not hit:
+        say(f"   add to your agent's entry file (CLAUDE.md, AGENTS.md, … — gantry never writes it):")
+        say(f"     {ENTRY_SENTENCE}")
     if not commit:
         say("== --no-commit: tree left for you; commit with a message that refs "
             f"#{seed_no:04d}" if seed_no else "== --no-commit: tree left for you")
@@ -1628,11 +1633,32 @@ def cmd_install(a):
 
 # ------------------------------------------------------------------ check ----
 
+ENTRY_SENTENCE = "Session start: read tools/README.md (the gantry ritual), then GRAPH.md."
+
+
+def entry_points_at_ritual(repo):
+    """Vendor-neutral: does ANY root-level *.md (CLAUDE.md, AGENTS.md, GEMINI.md, README.md, …)
+    mention tools/README.md? Gantry never writes that file; it only notices when the one
+    sentence of redirection is missing."""
+    for p in Path(repo).glob("*.md"):
+        if p.name in ("GRAPH.md",):
+            continue
+        try:
+            if "tools/README.md" in p.read_text(encoding="utf-8", errors="replace"):
+                return p.name
+        except OSError:
+            pass
+    return None
+
+
 def cmd_check(a):
     repo = repo_root(a.repo)
     ad = load_adapter(repo)
     ok = True
     say(f"== gantry check: {repo}")
+    if not entry_points_at_ritual(repo):
+        say(f"   note: no root-level document points at the ritual — add one sentence to your agent's "
+            f"entry file (CLAUDE.md / AGENTS.md / …): \"{ENTRY_SENTENCE}\"")
     r = run_extract(repo, check=True)
     ok &= r.returncode == 0
     r = run_gen_index(repo, check=True)
