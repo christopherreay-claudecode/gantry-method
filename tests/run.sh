@@ -223,6 +223,7 @@ python3 - "$S/mmt" <<'PY' || fail "mmt: broken link"
 import re,sys,pathlib
 out=pathlib.Path(sys.argv[1]); bad=0
 for p in out.rglob('*.html'):
+    if p.parent.name == 'store': continue   # blobs are reached through doc/ symlinks; their relative links are checked there
     for h,a in re.findall(r'href="([^"#]+)(?:#(L?\w[\w.\-]*))?"',p.read_text()):
         t=(p.parent/h).resolve()
         if not t.exists() or (a and f'id="{a}"' not in t.read_text()): bad+=1; print('broken',p.name,h,a)
@@ -294,5 +295,18 @@ python3 "$G" refresh --repo "$S/alpha" >/dev/null 2>&1 || python3 "$S/alpha/tool
 python3 "$G" tree diff "$S/alpha/trees/diff.mmt" --repo "$S/alpha" > "$S/diff.out" 2>&1 && fail "mmt-l2: tree diff passed a tree with a dependency the tracker lacks"
 grep -q 'ok .*#0002 —depends→ #0001' "$S/diff.out" || fail "mmt-l2: tree diff did not confirm the edge the tracker has (#0001 blocks #0002)"
 grep -q 'MISSING .*#0001 —depends→ #0002' "$S/diff.out" || fail "mmt-l2: tree diff did not report the wrong edge"
+
+step "mmt-store — doc/ pages are symlinks into a content-addressed store; two trees sharing a document share one blob; render --all prunes"
+printf '@one  = store\n└─ #0001 the birth issue\n' | python3 "$G" tree new store-one --repo "$S/alpha" >/dev/null || fail "mmt-store: tree new one"
+printf '@two  = store\n└─ #0001 the birth issue again\n' | python3 "$G" tree new store-two --repo "$S/alpha" >/dev/null || fail "mmt-store: tree new two"
+ONE=$(ls -d "$S/alpha/.site/mmt/"*-store-one); TWO=$(ls -d "$S/alpha/.site/mmt/"*-store-two)
+[ -L "$ONE/doc/alpha__issues__0001"*.html ] || fail "mmt-store: doc page is not a symlink"
+[ "$(readlink -f "$ONE"/doc/alpha__issues__0001*.html)" = "$(readlink -f "$TWO"/doc/alpha__issues__0001*.html)" ] || fail "mmt-store: identical document not shared across trees"
+[ -f "$(readlink -f "$ONE"/doc/alpha__issues__0001*.html)" ] || fail "mmt-store: symlink target missing"
+case "$(readlink -f "$ONE"/doc/alpha__issues__0001*.html)" in "$S/alpha/.site/mmt/store/"*.html) ;; *) fail "mmt-store: blob not in store/";; esac
+touch "$S/alpha/.site/mmt/store/deadbeef.html"
+python3 "$G" tree render --all --repo "$S/alpha" >/dev/null || fail "mmt-store: render --all"
+[ ! -e "$S/alpha/.site/mmt/store/deadbeef.html" ] || fail "mmt-store: render --all did not prune an unreferenced blob"
+[ -f "$(readlink -f "$ONE"/doc/alpha__issues__0001*.html)" ] || fail "mmt-store: gc removed a live blob"
 
 echo; echo "ALL PASSED  (scratch: $S)"

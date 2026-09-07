@@ -16,6 +16,9 @@ that does not fit the tree may follow; anything else belongs in the tree as a no
 
 Roots (which repositories tokens resolve in, in order) come from `.gantry/adapter.json`
 `"mmt_roots": {"core": ".", "ui": "../cubeOnSKOS-ui"}`; the repo itself is the default.
+Document pages are content-addressed: `.site/mmt/store/<sha256>.html` holds each distinct rendered
+page once, and a tree's `doc/` entries are symlinks into it — two trees that saw the same version of
+a document share one file; a changed document is a new hash. `tree render --all` prunes the store.
 Rendered pages live in `.site/mmt/<name>/` — one directory per tree, holding the page and a `doc/`
 snapshot of every document and commit the tree pointed at, as they were when it was rendered.
 On disk, gitignored, regenerable; never published.

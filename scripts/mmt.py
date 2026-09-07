@@ -33,8 +33,10 @@ repo's own vocabulary, declared in its .gantry/adapter.json and read per root (#
 from __future__ import annotations
 
 import argparse
+import hashlib
 import html
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -396,8 +398,40 @@ class Site:
                 h = " h" if (cls == "md" and ln.startswith("#")) else ""
                 rows.append(f'<div class="l" id="L{n}"><span class="n"><a href="#L{n}">{n}</a></span>'
                             f'<span class="c{h}">{self.linkify(esc, "../", tree=False)}</span></div>')
-            (self.out / "doc" / root.docs[rel]).write_text(
-                page(f"{root.name}: {rel}", f'<div class="src">{"".join(rows)}</div>', "../../"), encoding="utf-8")
+            self.store_page(self.out / "doc" / root.docs[rel],
+                            page(f"{root.name}: {rel}", f'<div class="src">{"".join(rows)}</div>', "../../"))
+
+    def store_page(self, link: Path, content: str) -> None:
+        """Content-addressed, the Nix way: the page lives ONCE in <site>/store/<sha256>.html and
+        the tree's doc/ entry is a symlink to it. Two trees that saw the same version of a document
+        share one file; a document that changed is visibly a different hash. Browsers resolve a
+        page's relative links against the symlink path, so ../../index.html and doc/ siblings hold."""
+        data = content.encode("utf-8")
+        digest = hashlib.sha256(data).hexdigest()
+        store = self.out.parent / "store"
+        store.mkdir(parents=True, exist_ok=True)
+        blob = store / f"{digest}.html"
+        if not blob.exists():
+            blob.write_bytes(data)
+        if link.exists() or link.is_symlink():
+            link.unlink()
+        link.symlink_to(os.path.relpath(blob, link.parent))
+
+
+def gc_store(site_root: Path) -> int:
+    """Remove store blobs no tree's doc/ symlink points at. -> number removed."""
+    store = site_root / "store"
+    if not store.is_dir():
+        return 0
+    live = set()
+    for lnk in site_root.glob("*/doc/*.html"):
+        if lnk.is_symlink():
+            live.add(lnk.resolve())
+    n = 0
+    for blob in store.glob("*.html"):
+        if blob.resolve() not in live:
+            blob.unlink(); n += 1
+    return n
 
 
 CSS = """
@@ -484,6 +518,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--strict", action="store_true", help="exit 1 on any level-1 lint finding")
     ap.add_argument("--open", action="store_true", help="open the page with xdg-open")
     ap.add_argument("--edges", metavar="FILE", help="also write the level-2 export (nodes · containment · typed ->@ edges · token edges) as JSON")
+    ap.add_argument("--gc", action="store_true", help="after rendering, remove <site>/store/ pages no tree points at")
     a = ap.parse_args(argv)
 
     roots: list[Root] = []
@@ -517,6 +552,10 @@ def main(argv: list[str] | None = None) -> int:
     pg = site.render_tree(name, src, nodes, findings)
     site.render_docs()
     write_index(site_root)
+    if a.gc:
+        n = gc_store(site_root)
+        if n:
+            print(f"  store: {n} unreferenced page(s) removed")
     if a.edges:
         Path(a.edges).write_text(json.dumps(export_edges(site, nodes, name), indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
 
