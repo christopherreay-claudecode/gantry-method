@@ -3,7 +3,8 @@
 One `.mmt` per tree, named `yyyymmdd-HHMMSS-<slug>.mmt` (a tree is a moment; the index lists newest first), in MindMapTreeFormat 0.1
 (gantry `designDocs/MindMapTreeFormat-0.1.md`). A tree is a status, a plan, an audit or an
 answer that addresses the repository's truth — issues, rules, constraints, seams, contract
-sections, files, commits — by the tokens those things already have.
+sections, files, commits — by the tokens those things already have. Issue numbers ALWAYS carry
+their root (`core:#1013`, `ui:#0011`, `<thisRepo>:#0007`): a bare `#0007` is rejected by the lint.
 
     python3 tools/g tree new <slug> <<'MMT' … MMT    # writes trees/<now>-<slug>.mmt, renders it,
                                                      #   prints file:// URL · lint · unresolved (--no-render: write only)

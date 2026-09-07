@@ -204,11 +204,21 @@ def extract_tree(text: str) -> str:
 # -------------------------------------------------------------------- lint --
 
 
-def lint(nodes: list[Node], edges: list[str] | None = None) -> tuple[list[str], list[str]]:
+BARE_ISSUE = re.compile(r"#(?:[a-z][a-z0-9]{0,11}-)?\d{4}")   # #0011 · #a1-0003 — the tracker's own forms
+
+
+def lint(nodes: list[Node], edges: list[str] | None = None, roots: list[str] | None = None) -> tuple[list[str], list[str]]:
     """-> (level-1 findings, notes). Notes: a ->@x [type] outside the subject root's `mmt_edges`
-    vocabulary (spec §5, §8) — level-2 territory, reported but never fatal."""
+    vocabulary (spec §5, §8) — level-2 territory, reported but never fatal.
+    Level 1 includes: every issue token carries a root prefix (core:#1013) — there is no default
+    root for an issue number, because every repository has a #0001."""
     out, notes = [], []
     addrs = {n.addr for n in nodes if n.addr}
+    hint = " · ".join(f"{r}:#NNNN" for r in (roots or [])) or "<root>:#NNNN"
+    for n in nodes:
+        bare = [m.group(0) for m in re.finditer(r"(?<![\w:/#§@\-])" + BARE_ISSUE.pattern + r"(?![\w])", n.text)]
+        if bare:
+            out.append(f"L{n.n}: {' '.join(bare)} — issue number with no root prefix; write {hint}")
     seen: set[str] = set()
     for n in nodes:
         if n.addr:
@@ -336,6 +346,12 @@ class Site:
             return f'<a class="p" href="{depth}{h}">{m.group(0)}</a>'
 
         def tok(m):
+            if BARE_ISSUE.fullmatch(m.group(2)) and not m.group(1):
+                # an issue number without a root is ambiguous by construction (every repo has a
+                # #0001): no default root, never linked — the lint names it (spec §5b)
+                if tree:
+                    self.unresolved[m.group(0) + " (no root prefix)"] = 1
+                return m.group(0)
             r = self.resolve_tok(m.group(1), m.group(2))
             if not r:
                 if tree and not re.fullmatch(r"[0-9a-f]{7,40}", m.group(2)):
@@ -541,7 +557,7 @@ def main(argv: list[str] | None = None) -> int:
             text = extract_tree(text)
     src = text.strip("\n")
     nodes = parse_tree(src)
-    findings, notes = lint(nodes, roots[0].adapter.get("mmt_edges") or None)
+    findings, notes = lint(nodes, roots[0].adapter.get("mmt_edges") or None, [r.name for r in roots])
 
     site_root = Path(a.out) if a.out else roots[0].path / ".site" / "mmt"
     out = site_root / name                       # one directory per tree: its page + its doc/ snapshot

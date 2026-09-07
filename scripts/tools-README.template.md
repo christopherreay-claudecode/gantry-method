@@ -161,8 +161,9 @@ linked into a line-numbered rendering of the document that defines it.
     python3 tools/mmt.py tree.mmt --edges edges.json    # level-2 export: nodes · containment · typed ->@ edges · token edges
     python3 tools/g tree diff trees/<tree>.mmt          # issue→issue [depends]/[blocks]/… edges vs GRAPH.md's deps (exit 1 on a missing one)
 
-Roots are ordered: an unprefixed token resolves in the first root that defines it; `ui:#0011`
-pins one. `tools/g tree` takes them from `.gantry/adapter.json` `"mmt_roots"` (name → path);
+Roots are ordered: an unprefixed token resolves in the first root that defines it — EXCEPT issue
+numbers, which always carry their root (`ui:#0011`, `core:#1013`); a bare `#0011` is a lint finding
+and is not linked, because every repo has a #0001 and there is no default root. `tools/g tree` takes them from `.gantry/adapter.json` `"mmt_roots"` (name → path);
 the repo itself is the default. Trees are client content under `trees/`; pages are `.site/mmt/`.
 Never published.
 

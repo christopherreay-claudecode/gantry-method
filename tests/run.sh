@@ -229,14 +229,15 @@ for p in out.rglob('*.html'):
         if not t.exists() or (a and f'id="{a}"' not in t.read_text()): bad+=1; print('broken',p.name,h,a)
 sys.exit(1 if bad else 0)
 PY
-printf '@t  = x\n├─ ? a question with no owner\n└─ ! no actor here\n' > "$S/bad.mmt"
+printf '@t  = x\n├─ ? a question with no owner\n├─ #0001 with no root\n└─ ! no actor here\n' > "$S/bad.mmt"
+python3 "$HERE/../scripts/mmt.py" "$S/bad.mmt" --root gantry="$HERE/.." --out "$S/mmt" | grep -q 'lint: L3: #0001 — issue number with no root prefix; write gantry:#NNNN' || fail "mmt: bare #0001 not rejected by the lint (no default root)"
 if python3 "$HERE/../scripts/mmt.py" "$S/bad.mmt" --root gantry="$HERE/.." --out "$S/mmt" --strict >/dev/null; then fail "mmt: --strict let an L1 violation through"; fi
 
 step "tree — trees/ facet: adopt copied tools/mmt.py + trees/README.md; tree new + render --all"
 [ -f "$S/alpha/tools/mmt.py" ] || fail "tree: adopt did not copy tools/mmt.py"
 [ -f "$S/alpha/trees/README.md" ] || fail "tree: adopt did not seed trees/README.md"
 grep -q '^\.site/' "$S/alpha/.gitignore" || fail "tree: .site/ not gitignored"
-printf '@root  = a status\n├─ #0001 the birth issue · R1\n└─ ! me: nothing ->@root\n' | python3 "$G" tree new smoke --repo "$S/alpha" > "$S/treenew.out" || fail "tree new"
+printf '@root  = a status\n├─ alpha:#0001 the birth issue · R1\n└─ ! me: nothing ->@root\n' | python3 "$G" tree new smoke --repo "$S/alpha" > "$S/treenew.out" || fail "tree new"
 ls "$S/alpha/trees/"*-smoke.mmt >/dev/null || fail "tree new: file not written"
 grep -q '^file://.*/\.site/mmt/.*-smoke/index\.html$' "$S/treenew.out" || fail "tree new: did not print the page URL (#0019)"
 grep -q 'lint findings' "$S/treenew.out" || fail "tree new: did not print the lint summary (#0019)"
@@ -256,7 +257,7 @@ d["mmt_tokens"] = [{"kind": "spec", "glob": "specs/*.md", "line": r"^# (\d+) (.+
 d["mmt_edges"] = ["depends", "proves"]
 json.dump(d, open(p, "w"), indent=2)
 PYT
-printf '@root  = adapter vocabulary\n├─ §8 declared · §9 not · #0001 generic · S1 generic\n└─ ~ edge ->@root [flies]\n' | python3 "$G" tree new vocab --repo "$S/alpha" > "$S/vocab.out" || fail "mmt-adapter: tree new"
+printf '@root  = adapter vocabulary\n├─ §8 declared · §9 not · alpha:#0001 generic · S1 generic\n└─ ~ edge ->@root [flies]\n' | python3 "$G" tree new vocab --repo "$S/alpha" > "$S/vocab.out" || fail "mmt-adapter: tree new"
 grep -q 'class="t spec" href="doc/alpha__specs__eight.md.html#L1"' "$S/alpha/.site/mmt/"*-vocab/index.html || fail "mmt-adapter: declared §8 not linked into specs/eight.md"
 grep -q 'unresolved: §9' "$S/vocab.out" || fail "mmt-adapter: undeclared §9 not reported unresolved (match shape)"
 grep -q 'class="t issue" href="doc/alpha__issues__0001' "$S/alpha/.site/mmt/"*-vocab/index.html || fail "mmt-adapter: generic #0001 stopped resolving"
@@ -265,7 +266,7 @@ python3 - "$S/alpha/.gantry/adapter.json" <<'PYT'
 import json, sys
 p = sys.argv[1]; d = json.load(open(p)); d["mmt_tokens"] = []; json.dump(d, open(p, "w"), indent=2)
 PYT
-printf '@root  = no table\n└─ §8 now plain · #0001 still links\n' | python3 "$G" tree new notable --repo "$S/alpha" > "$S/notable.out" || fail "mmt-adapter: tree new (no table)"
+printf '@root  = no table\n└─ §8 now plain · alpha:#0001 still links\n' | python3 "$G" tree new notable --repo "$S/alpha" > "$S/notable.out" || fail "mmt-adapter: tree new (no table)"
 grep -q 'class="t spec"' "$S/alpha/.site/mmt/"*-notable/index.html && fail "mmt-adapter: §8 linked with no mmt_tokens entry"
 grep -q '0 unresolved' "$S/notable.out" || fail "mmt-adapter: with no shape declared §8 must pass as prose, not unresolved"
 
@@ -279,7 +280,7 @@ assert any(n["parent"] for n in d["nodes"]), "no containment parent recorded"
 assert any(e["type"] not in (None, "mentions") for e in d["edges"]), "no typed ->@ edge"
 assert any(e["type"] == "mentions" and str(e["to"]).startswith("gantry:") for e in d["edges"]), "no token edge into gantry"
 PYT
-printf '@t  = diff\n├─ @a  #0002 entry point ->@b [depends]\n├─ @b  #0001 bootstrap\n└─ @c  #0001 again ->@a [depends] · wrong on purpose\n' > "$S/alpha/trees/diff.mmt"
+printf '@t  = diff\n├─ @a  alpha:#0002 entry point ->@b [depends]\n├─ @b  alpha:#0001 bootstrap\n└─ @c  alpha:#0001 again ->@a [depends] · wrong on purpose\n' > "$S/alpha/trees/diff.mmt"
 python3 "$G" issue new -t "second" -T workorder -r 1 --repo "$S/alpha" >/dev/null 2>&1 || true
 printf '\ndeps: blocks #0002\n' >/dev/null
 python3 - "$S/alpha" <<'PYT'
@@ -297,8 +298,8 @@ grep -q 'ok .*#0002 —depends→ #0001' "$S/diff.out" || fail "mmt-l2: tree dif
 grep -q 'MISSING .*#0001 —depends→ #0002' "$S/diff.out" || fail "mmt-l2: tree diff did not report the wrong edge"
 
 step "mmt-store — doc/ pages are symlinks into a content-addressed store; two trees sharing a document share one blob; render --all prunes"
-printf '@one  = store\n└─ #0001 the birth issue\n' | python3 "$G" tree new store-one --repo "$S/alpha" >/dev/null || fail "mmt-store: tree new one"
-printf '@two  = store\n└─ #0001 the birth issue again\n' | python3 "$G" tree new store-two --repo "$S/alpha" >/dev/null || fail "mmt-store: tree new two"
+printf '@one  = store\n└─ alpha:#0001 the birth issue\n' | python3 "$G" tree new store-one --repo "$S/alpha" >/dev/null || fail "mmt-store: tree new one"
+printf '@two  = store\n└─ alpha:#0001 the birth issue again\n' | python3 "$G" tree new store-two --repo "$S/alpha" >/dev/null || fail "mmt-store: tree new two"
 ONE=$(ls -d "$S/alpha/.site/mmt/"*-store-one); TWO=$(ls -d "$S/alpha/.site/mmt/"*-store-two)
 [ -L "$ONE/doc/alpha__issues__0001"*.html ] || fail "mmt-store: doc page is not a symlink"
 [ "$(readlink -f "$ONE"/doc/alpha__issues__0001*.html)" = "$(readlink -f "$TWO"/doc/alpha__issues__0001*.html)" ] || fail "mmt-store: identical document not shared across trees"

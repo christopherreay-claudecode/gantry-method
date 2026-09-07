@@ -111,10 +111,12 @@ Glyphs are NOT extensible (§3): a formality the model did not already produce i
 Vocabulary is data; the notation is not.
 
 Trees often span repositories. A **root prefix** pins a token to one: `core:#1013`,
-`ui:#0011`, `gantry:scripts/mmt.py`, `ui:S1`. Unprefixed tokens resolve in the first
-root that defines them, in the order the roots were given to the renderer — so name the
-subject repository first. A token that resolves nowhere stays plain text and the renderer
-lists it under "unresolved".
+`ui:#0011`, `gantry:scripts/mmt.py`, `ui:S1`. **An issue number always carries its root** —
+`#0011` alone is a Level-1 finding and is never linked, because every repository has a `#0001`
+and "the first root that defines it" is a guess dressed as a link. Other tokens (`R7`, `c17`,
+`S1`, `§6a`, paths) MAY go unprefixed and resolve in the first root that defines them, in the
+order the roots were given — so name the subject repository first. A token that resolves
+nowhere stays plain text and the renderer lists it under "unresolved".
 
 There is no bracketed link syntax on purpose: the tokens are already the names the
 repositories use for these things, and a tree that reads well in a terminal must not carry
@@ -174,7 +176,8 @@ into node names ("old-x", "new-x").
   human can read it. This document's examples are Level 0.
 - **Level 1 — addressable.** Every node that is referenced has an `@address`; every `?`
   names an owner; every `!` names an actor and artefact; every `x` references its
-  unblocker. A grep-based checker can verify this.
+  unblocker; every issue number carries its root (`core:#1013`, never `#1013`). A grep-based
+  checker can verify this.
 - **Level 2 — graphable.** `DIM:` present; every `->@` carries a `[type]` from the declared
   vocabulary; no dangling references except those explicitly marked `->@name [todo]`.
   From here a tree exports to a typed edge list (node, glyph, text; edge, type) and can
@@ -220,3 +223,6 @@ cubeOnSKOS for the enforcement-graph plan this format feeds.
   kinds (`mmt_tokens`); §5 edge vocabulary is `mmt_edges`; a tree is written once through
   `tools/g tree new`, which renders it (gantry #0019 #0020).
 - 0.1 + level 2 (2026-09-05): `--edges` export and `tools/g tree diff` (gantry #0021).
+- 0.1 + no default root (2026-09-07): an issue token without a root prefix is a Level-1 finding
+  and is not linked — models were writing `#0011` meaning a sibling's issue and getting this
+  repository's.
