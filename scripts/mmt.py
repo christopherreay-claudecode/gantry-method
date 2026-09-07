@@ -411,7 +411,7 @@ CSS = """
 header{padding:1rem 1.4rem;border-bottom:1px solid var(--rule);display:flex;gap:1.4rem;align-items:baseline;flex-wrap:wrap}
 header b{font-size:1.05rem}header a{color:var(--mu);text-decoration:none}
 main{padding:1rem 1.4rem 4rem;max-width:1200px}
-pre.tree{background:var(--sf);border:1px solid var(--rule);padding:.8rem 1rem;overflow-x:auto;line-height:1.55}
+pre.tree{background:var(--sf);border:1px solid var(--rule);padding:.8rem 1rem;overflow-x:auto;line-height:1.55;white-space:pre-wrap;text-wrap:auto;overflow-wrap:anywhere}
 a.t,a.p,a.r,a.a{text-decoration:none;border-bottom:1px dotted currentColor;color:var(--commit-c)}
 a.rule{color:var(--rule-c)}a.constraint{color:var(--constraint-c)}a.seam{color:var(--seam-c)}a.issue{color:var(--issue-c)}
 a.gate{color:var(--gate-c)}a.hold{color:var(--hold-c)}a.plan{color:var(--plan-c)}a.contract{color:var(--contract-c)}
