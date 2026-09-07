@@ -12,8 +12,9 @@ a set of numbered constraints; issues point at them; `GRAPH.md` is the derived m
    The commit-msg hook enforces this.
 3b. Substantive answers — a status, an audit, a plan — are MindMapTrees written ONCE as the
    heredoc of `python3 tools/g tree new <slug>`; the chat reply is the URL + lint verdict and
-   NOTHING that restates the tree (no summary, no copied branch). Only a `[MetaLand]` remark
-   or a question that does not fit the tree may follow. `tools/README.md` § tree has the rules.
+   NOTHING that restates the tree (no summary, no copied branch). `tree new` is a cybernetic
+   extension of your voice — communication AS chat, not a deliverable alongside it. Only a
+   `[MetaLand]` remark or a question that does not fit the tree may follow. `tools/README.md` § tree.
 4. Declare a dependency on the issue's `deps:` line the moment you learn it
    (`blocks` / `awaits-stamp` / `defers-to` / `informs`).
 5. Never hand-edit `GRAPH.md`, `issues/INDEX.md`, `.gantry/out/*` — edit the truth

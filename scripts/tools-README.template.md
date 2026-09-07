@@ -177,7 +177,9 @@ use. SPEC §6 "The adapter" has the shape; cubeOnSKOS's adapter is a worked exam
 written ONCE, as the heredoc of `tree new`. The tool renders it in the same call and hands back
 the URL + lint. After that the chat reply is the URL and the lint verdict — and NOTHING that
 restates the tree: no summary of it, no "key points", no copy of any branch, no prose version.
-The tree is the answer; a second telling halves the signal and doubles the tokens. What MAY
+`tree new` is a cybernetic extension of your voice — it supports efficient communication AS
+chat, it is not a deliverable alongside chat. You do not paraphrase what you just said;
+a second telling halves the signal and doubles the tokens. What MAY
 follow the URL: a `[MetaLand]` remark, or a specific question that does not belong in the tree
 (the tree's `?` nodes are for questions that do). If you find yourself adding more than that,
 the missing content belongs in the tree — add the node and re-render. `--no-render` writes only.

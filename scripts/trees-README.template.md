@@ -11,7 +11,8 @@ their root (`core:#1013`, `ui:#0011`, `<thisRepo>:#0007`): a bare `#0007` is rej
     python3 tools/g tree render [file | --all]       # re-render → .site/mmt/<name>/index.html + doc/ (+ site index)
     python3 tools/g tree render --all --open         # …and opens the index
 
-A tree is written once — into `tree new` — and the chat carries the URL and the lint verdict,
+`tree new` is a cybernetic extension of the model's voice — communication AS chat, not a deliverable
+alongside it. A tree is written once — into `tree new` — and the chat carries the URL and the lint verdict,
 nothing that restates the tree (no summary, no copied branch). A `[MetaLand]` remark or a question
 that does not fit the tree may follow; anything else belongs in the tree as a node.
 
