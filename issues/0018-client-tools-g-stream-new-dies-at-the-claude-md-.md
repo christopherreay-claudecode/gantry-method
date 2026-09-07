@@ -1,6 +1,6 @@
 # #0018 — client tools/g stream new dies at the CLAUDE.md template step AFTER creating the worktree — half-registered stream, emptied streams.json and deleted CLAUDE.md in the worktree
-type: bug        status: open
-refs: [10]   opened: seed   closed-by: <sha>
+type: bug        status: closed
+refs: [10]   opened: seed   closed-by: 523ae08
 
 **Constraints this issue makes true (Tier 2 — each traces to a plan constraint in `refs:`):**
 [10] A client's copied `tools/g` either completes `stream new` or leaves nothing behind.

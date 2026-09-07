@@ -1,6 +1,6 @@
 # #0026 — stream new overwrites the worktree's CLAUDE.md with the generic briefing and it rides the merge into the parent (lost cubeOnSKOS R1–R10 and cubeOnSKOS-ui U1–U8 twice); with --brief the seeded .gantry/brief.md can be a previous stream's
-type: bug        status: open
-refs: [2] [5]   opened: seed   closed-by: <sha>
+type: bug        status: closed
+refs: [2] [5]   opened: seed   closed-by: 523ae08
 
 **Constraints this issue makes true (Tier 2 — each traces to a plan constraint in `refs:`):**
 [2] Never overwrite: a client's CLAUDE.md is client content; a stream must not replace it, and a merge must not carry a briefing into the parent.

@@ -1,6 +1,6 @@
 # #0015 — stream merge reports success while landing nothing: git merge runs with check=False
-type: bug        status: open
-refs: [1] [2] [8]   opened: metalknee-dojo-a11-merge   closed-by: <sha>
+type: bug        status: closed
+refs: [1] [2] [8]   opened: metalknee-dojo-a11-merge   closed-by: 523ae08
 
 **Found in `metalKnee-dojo`, 2026-08-20.** A stream's entire code output was silently discarded by a
 merge that printed `merged + committed` and marked the stream `merged`. It was noticed only because
