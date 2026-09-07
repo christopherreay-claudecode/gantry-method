@@ -57,6 +57,11 @@ for tool in gantry_extract.py gen_index.py lint_commit.py mmt.py; do
     echo "   copied: tools/$tool"
   fi
 done
+mkdir -p "$REPO/tools/templates"
+for tpl in "$HERE"/templates/*; do
+  [ -e "$REPO/tools/templates/$(basename "$tpl")" ] || cp "$tpl" "$REPO/tools/templates/"
+done
+echo "   tools/templates/ present (tools/g needs them for stream new / issue new)"
 mkdir -p "$REPO/trees"
 [ -e "$REPO/trees/README.md" ] || cp "$HERE/trees-README.template.md" "$REPO/trees/README.md"
 grep -qs '^\.site/' "$REPO/.gitignore" || { printf '.site/\n' >> "$REPO/.gitignore"; echo "   .site/ gitignored (rendered trees live there)"; }

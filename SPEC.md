@@ -695,6 +695,8 @@ machinery* into a completely separate repo — no links, no submodules, no share
 9. `gantry stream drop <prefix>` removes worktree and branch and marks it `dropped`; the prefix
    stays reserved.
 
+**Merge is checked, pre-flighted and verified (#0015).** Before merging, the tool names any file the branch adds that exists untracked in the parent (git would refuse) and stops. A `git merge` that fails without conflicts is aborted and the stream stays `open`. After the merge commit, the tool asserts the commit has two parents and that the parent's adapter carries no `issue_prefix`; a one-parent 'merge' is reported, never silently recorded. A stream's briefing lives in `.gantry/packet.md`; `stream new` never writes the project's `CLAUDE.md`, and a failure after the worktree exists removes the worktree and branch and leaves `streams.json` unchanged (#0018, #0026). Client copies of `tools/g` ship with `tools/templates/`.
+
 The stream's closing note belongs in the parent issue's body; the parent issue closes by its own
 type's authority (the merge sha, or a sentence).
 

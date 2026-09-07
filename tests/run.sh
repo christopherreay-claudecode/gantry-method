@@ -170,6 +170,21 @@ grep -q '"issue_prefix": "a1"' "$WT/.gantry/adapter.json" || fail "stream: adapt
 git -C "$S/alpha" add .gantry/streams.json; git -C "$S/alpha" commit -q -m "stream try-a opened (#0001)"
 expect "$S/alpha/GRAPH.md" "streams open (prefix"
 expect "$S/alpha/GRAPH.md" "a1 · 0001-try-a · #0001 · stream/0001-try-a"
+# #0026: the --brief text round-trips byte for byte into the seed issue
+grep -qF 'Make x.txt say hello.' "$WT/issues/a1-0001-try-a.md" || fail "brief: preamble not carried verbatim (#0026)"
+# #0018: a failure after the worktree exists leaves NOTHING behind (worktree, branch, streams.json)
+cp "$S/alpha/.gantry/streams.json" "$S/streams.before"
+if GANTRY_TEST_FAIL_AFTER_WORKTREE=1 python3 "$G" stream new --repo "$S/alpha" --issue 1 --slug doomed >/dev/null 2>&1; then fail "stream new: test hook did not fail"; fi
+[ ! -d "$S/.gantry.alpha.streams.b1" ] || fail "stream new: worktree left behind after failure (#0018)"
+git -C "$S/alpha" branch --list 'stream/0001-doomed' | grep -q . && fail "stream new: branch left behind after failure (#0018)"
+cmp -s "$S/streams.before" "$S/alpha/.gantry/streams.json" || fail "stream new: streams.json changed by a failed run (#0018)"
+# #0018: a CLIENT copy of tools/g (no toolbox beside it) completes stream new — templates ship with it, and the packet never dies
+[ -e "$S/alpha/tools/templates/method-brief.md" ] || fail "adopt: tools/templates/ not shipped with the client copy (#0018)"
+rm -rf "$S/alpha/tools/templates"
+python3 "$S/alpha/tools/g" stream new --repo "$S/alpha" --issue 1 --slug client-copy >/dev/null 2>"$S/cc.err" || { cat "$S/cc.err"; fail "stream new from a client tools/g without templates died (#0018)"; }
+expect "$S/.gantry.alpha.streams.b1/.gantry/packet.md" "Constraints are the first-order language"
+python3 "$G" stream drop b1 --repo "$S/alpha" >/dev/null 2>&1; git -C "$S/alpha" checkout -q -- .gantry/streams.json 2>/dev/null; git -C "$S/alpha" add -A; git -C "$S/alpha" commit -q -m "client-copy stream tried (#0001)" 2>/dev/null || true
+python3 "$G" adopt "$S/alpha" --fresh-tools >/dev/null 2>&1; git -C "$S/alpha" add -A; git -C "$S/alpha" commit -q -m "templates back (#0001)" 2>/dev/null || true
 # a second stream from the same issue gets the next letter
 python3 "$G" stream new --repo "$S/alpha" --issue 1 --slug try-b >/dev/null 2>&1
 [ -d "$S/.gantry.alpha.streams.b1" ] || fail "stream: second prefix b1"
@@ -177,7 +192,7 @@ git -C "$S/alpha" add -A; git -C "$S/alpha" commit -q -m "stream try-b opened (#
 # work inside stream a: an issue via 'gantry issue new' + a code file; close it
 python3 "$G" issue new --repo "$WT" --title "M2: stream work" --type milestone --refs m0 --slug m2-stream-work >/dev/null 2>&1
 [ -e "$WT/issues/a1-0004-m2-stream-work.md" ] || fail "issue new: prefixed id"
-echo hello > "$WT/x.txt"; git -C "$WT" add -A; git -C "$WT" commit -q -m "stream work (#a1-0004)"
+echo hello > "$WT/x.txt"; echo hello > "$WT/y.txt"; git -C "$WT" add -A; git -C "$WT" commit -q -m "stream work (#a1-0004)"
 expect "$WT/GRAPH.md" "#a1-0004 workorder a1-m2-stream-work"
 python3 "$G" issue close a1-0004 --by "$(git -C "$WT" rev-parse --short HEAD)" --repo "$WT" >/dev/null 2>&1
 git -C "$WT" add -A; git -C "$WT" commit -q -m "close #a1-0004"
@@ -198,8 +213,19 @@ git -C "$WT" add -A; git -C "$WT" commit -q -m "hold decided (#a1-0005)"
 # report + list
 python3 "$G" stream report a1 --repo "$S/alpha" | grep -q "closed/resolved: #a1-0004 #a1-0005" || fail "stream report"
 python3 "$G" stream list --repo "$S/alpha" | grep -q "^a1 .*open .*#0001" || fail "stream list"
-python3 "$G" stream merge a1 --repo "$S/alpha" >/dev/null 2>&1
+# #0015: an UNTRACKED parent file the branch also adds must FAIL LOUDLY and leave the stream open
+echo stale > "$S/alpha/y.txt"
+N0=$(git -C "$S/alpha" rev-list --count HEAD)
+if python3 "$G" stream merge a1 --repo "$S/alpha" >/dev/null 2>"$S/merge.err"; then fail "merge: succeeded over an untracked collision (#0015)"; fi
+grep -q 'y.txt' "$S/merge.err" || { cat "$S/merge.err"; fail "merge: collision not named (#0015)"; }
+[ ! -e "$S/alpha/.git/MERGE_HEAD" ] || fail "merge: left a merge in progress (#0015)"
+grep -q '"status": "open"' "$S/alpha/.gantry/streams.json" || fail "merge: stream not left open after a failed merge (#0015)"
+[ "$(git -C "$S/alpha" rev-list --count HEAD)" = "$N0" ] || fail "merge: a commit was made by a failed merge (#0015)"
+rm "$S/alpha/y.txt"
+python3 "$G" stream merge a1 --repo "$S/alpha" > "$S/merge.out" 2>&1 || { cat "$S/merge.out"; fail "merge: clean merge failed"; }
+grep -q 'two parents' "$S/merge.out" || fail "merge: landing not verified by parent count (#0015)"
 [ -e "$S/alpha/x.txt" ] && grep -q hello "$S/alpha/x.txt" || fail "merge: stream file missing in parent"
+[ -e "$S/alpha/y.txt" ] && grep -q hello "$S/alpha/y.txt" || fail "merge: stream's added file missing in parent (#0015)"
 [ -e "$S/alpha/issues/a1-0004-m2-stream-work.md" ] || fail "merge: stream issue missing in parent"
 grep -q '"issue_min": 1,' "$S/alpha/.gantry/adapter.json" && ! grep -q issue_prefix "$S/alpha/.gantry/adapter.json" || fail "merge: parent adapter clobbered"
 expect "$S/alpha/GRAPH.md" "closed/resolved: #a1-0004 #a1-0005"

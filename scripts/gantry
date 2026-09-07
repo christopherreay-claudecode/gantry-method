@@ -86,6 +86,18 @@ HERE = Path(__file__).resolve().parent
 # scaffolding subcommands need the templates; the client copy resolves them if a
 # toolbox is reachable and otherwise falls back to the inlined workorder body.
 TEMPLATES = HERE / "templates"
+
+# A client copy of this program (tools/g) may predate the templates/ directory being shipped
+# beside it (#0018). Nothing a stream needs may die for want of a template: this is the brief
+# the packet carries when templates/method-brief.md is absent.
+METHOD_BRIEF_FALLBACK = """## The method in one screen (gantry)
+
+Constraints are the first-order language; work is how they are solved. `plan.md` holds the
+numbered constraints; `seams.md` the substitution points; `issues/` the workorders, each stating
+the constraints it makes true, what it depends on (`deps:`), and the approach. `GRAPH.md` is the
+derived map — read it first, never hand-edit it. Every commit references an issue; `closes #N`
+never targets a human-gated type. Substantive answers are MindMapTrees through `tools/g tree new`.
+"""
 def default_repo():
     """As <client>/tools/g the driver's home repo is its own parent — so
     `python3 tools/g open` needs no arguments from anywhere. As the toolbox entry
@@ -321,6 +333,12 @@ def adopt_repo(repo, name, level, lo, hi, lineage, core_prefixes, link_tools=Fal
         # upgrade an older client: overwrite its tools/ copies with this toolbox's
         # current, byte-identical programs (never symlinks — client content)
         (repo / "tools").mkdir(exist_ok=True)
+        tdir = repo / "tools" / "templates"
+        tdir.mkdir(exist_ok=True)
+        for tpl in sorted(TEMPLATES.glob("*")):
+            if tpl.is_file():
+                (tdir / tpl.name).write_bytes(tpl.read_bytes())
+        say("   refreshed: tools/templates/ (what tools/g needs for stream new / issue new)")
         for t, src in (("gantry_extract.py", "gantry_extract.py"), ("gen_index.py", "gen_index.py"),
                        ("lint_commit.py", "lint_commit.py"), ("mmt.py", "mmt.py"), ("g", "gantry")):
             dst = repo / "tools" / t
@@ -728,6 +746,22 @@ def cmd_stream_new(a):
     say(f"== gantry stream new: {full}  (prefix {prefix}, level {level}, branch {branch})")
     git(repo, "worktree", "add", "-q", "-b", branch, str(wt), "HEAD")
     say(f"   worktree: {wt}")
+    try:
+        _stream_new_populate(a, repo, ad, wt, branch, prefix, level, issue, ititle, irefs, slug, full,
+                             from_sha, from_branch, issue_high, brief, extra, data)
+    except BaseException as e:                      # die() is SystemExit; anything else too (#0018)
+        say(f"   FAILED after the worktree was created — removing it and the branch, leaving nothing behind")
+        git(repo, "worktree", "remove", "--force", str(wt), check=False)
+        git(repo, "branch", "-D", branch, check=False)
+        if isinstance(e, SystemExit):
+            raise
+        die(f"stream new: {type(e).__name__}: {e}")
+
+
+def _stream_new_populate(a, repo, ad, wt, branch, prefix, level, issue, ititle, irefs, slug, full,
+                         from_sha, from_branch, issue_high, brief, extra, data):
+    if os.environ.get("GANTRY_TEST_FAIL_AFTER_WORKTREE"):
+        die("test hook: failing after the worktree exists")
 
     # the stream's own adapter (on ITS branch): prefix + lineage. On merge the
     # parent keeps its own adapter (gantry stream merge restores it).
@@ -886,7 +920,8 @@ def write_packet(wt):
                f"namespace is **`#{prefix}-NNNN`**. Read this packet, then `GRAPH.md`, then your "
                f"open issues below — before you touch anything.")
     out.append("")
-    out.append((TEMPLATES / "method-brief.md").read_text(encoding="utf-8").rstrip())
+    mb = TEMPLATES / "method-brief.md"
+    out.append(mb.read_text(encoding="utf-8").rstrip() if mb.exists() else METHOD_BRIEF_FALLBACK.rstrip())
     out.append("")
     out.append("## Your boundaries (a stream's law)")
     out.append(f"- File issues only as `#{prefix}-NNNN` (`python3 {HERE / 'gantry'} issue new --repo . …`); "
@@ -1096,8 +1131,21 @@ def cmd_stream_merge(a):
             die("parent has uncommitted changes — commit or stash before merging a stream")
         say(f"== gantry stream merge: {s['slug']} ({s['branch']}) -> "
             f"{git(repo, 'rev-parse', '--abbrev-ref', 'HEAD').stdout.strip()}")
-        git(repo, "merge", "--no-ff", "--no-commit", s["branch"], check=False)
+        # pre-flight git's real precondition (#0015): an untracked file in the parent that the
+        # branch also adds makes `git merge` refuse — name it and stop, before anything moves
+        added = git(repo, "diff", "--name-only", "--diff-filter=A", f"HEAD...{s['branch']}", check=False).stdout.split()
+        untracked = set(git(repo, "ls-files", "--others", "--exclude-standard", check=False).stdout.split())
+        clash = sorted(p for p in added if p in untracked)
+        if clash:
+            die("the branch adds files that exist UNTRACKED in the parent — git would refuse the merge.\n"
+                "   move or commit them first:\n     " + "\n     ".join(clash))
+        r = git(repo, "merge", "--no-ff", "--no-commit", s["branch"], check=False)
         conflicts = git(repo, "diff", "--name-only", "--diff-filter=U", check=False).stdout.split()
+        if r.returncode != 0 and not conflicts:
+            # the merge did not start (or was refused): abort whatever git left, keep the stream open
+            git(repo, "merge", "--abort", check=False)
+            die(f"git merge {s['branch']} failed — nothing merged, stream {s['slug']} stays open:\n"
+                f"{(r.stderr or r.stdout).strip()}")
         # derived / per-branch files: the parent's version wins, then regenerates
         tdir = load_adapter(repo).get("tracker_dir", "issues")
         derived = {".gantry/adapter.json", ".gantry/streams.json", "GRAPH.md", f"{tdir}/INDEX.md", "CLAUDE.md"}
@@ -1132,7 +1180,13 @@ def cmd_stream_merge(a):
                   f"kept; GRAPH.md + INDEX.md regenerated.", check=False)
     if r.returncode != 0:
         die(f"merge commit failed:\n{(r.stderr or r.stdout).strip()}")
-    say(f"   merged + committed: merge stream {s['slug']} (#{s['issue']})")
+    parents = git(repo, "rev-list", "--parents", "-n", "1", "HEAD").stdout.split()
+    if len(parents) < 3:                            # sha + two parents, or it was not a merge (#0015)
+        die(f"the commit just made has {len(parents) - 1} parent(s) — the stream did NOT land. "
+            f"Inspect HEAD; the stream is recorded merged in streams.json and must be corrected by hand.")
+    if load_adapter(repo).get("issue_prefix"):      # #0026: the stream's identity never reaches the parent
+        die("the parent's adapter carries an issue_prefix after the merge — the stream's adapter rode in; restore it")
+    say(f"   merged + committed: merge stream {s['slug']} (#{s['issue']})  (two parents: {parents[1][:7]} {parents[2][:7]})")
     if not a.keep_worktree:
         wt = Path(s["worktree"])
         if wt.exists():
