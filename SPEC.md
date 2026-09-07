@@ -563,7 +563,7 @@ the law those commands implement.
 | a new issue, correctly formed | `gantry issue new --title T --refs …` · `issue close <id> --by …` | writes the exact header + the workorder body (constraints · depends on · approaches · exit); closes by the type's authority |
 | CI / honesty gate | `gantry check [<repo>]` | `extract --check` + `gen_index --check` + lineage sanity; exit 1 on drift |
 
-**Where the instructions live.** A client's `CLAUDE.md` is the project's own contract; gantry writes into it exactly one marker-delimited block (`<!-- gantry:begin -->` … `<!-- gantry:end -->`), a pointer that says *read `tools/README.md` first*. The session ritual itself — `GRAPH.md` first, truth upstream, the commit law, MindMapTrees as the voice, `deps:`, constraints first — lives in `tools/README.md`, which is gantry's file (re-rendered from `tools-README.template.md` on adopt and upgrade). Re-adopt refreshes the block in place and never duplicates it; nothing outside the markers is touched. Gantry never writes rules into a project's own text.
+**Where the instructions live.** Gantry never writes into a project's `CLAUDE.md` — not a block, not a line; that file is the project's own. Gantry's channel is its own artefacts: `GRAPH.md` (generated; its header names the ritual), `tools/README.md` (the ritual itself, re-rendered from `tools-README.template.md` on adopt and upgrade), `.gantry/packet.md` (a stream's briefing), and the trees. A project that wants sessions to begin with `GRAPH.md` says so in its own words, in its own file.
 
 **The adoption commit obeys the commit law.** `adopt` seeds one milestone issue —
 `#<floor> — M0: <name> — plan, seams, first gate`, `refs: [m0]` (its own gate, so it is not
@@ -666,7 +666,7 @@ machinery* into a completely separate repo — no links, no submodules, no share
    of the repo;
 3. it gets its **prefix** (`<parent prefix><letter><N's seq>`), written into *its own* adapter on
    *its* branch (`issue_prefix`, `lineage: {kind: stream, parent: {issue, branch, commit,
-   issue_high}}`) with a `CLAUDE.md` that names the stream, its namespace, its workorder, and the
+   issue_high}}`) with a `.gantry/packet.md` that names the stream, its namespace, its workorder, and the
    rule *everything you do must show in `GRAPH.md`*;
 4. it is **seeded with `#<prefix>-0001`** — a `workorder` whose `refs:` are the spawning issue's
    anchors and whose body is the orchestrator's **brief**: the constraints to make true, or the

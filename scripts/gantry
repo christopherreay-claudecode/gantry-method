@@ -36,7 +36,7 @@ Which one, in one line each (docs/00-llm-playbook.md has the long form):
           git init, then exactly what `adopt` does.
   adopt   an EXISTING git repo — empty or full of content — that should carry
           the method: scaffolds only what is missing (plan.md, seams.md,
-          issues/, .gantry/adapter.json, CLAUDE.md section, .gitignore lines),
+          issues/, .gantry/adapter.json, .gitignore lines),
           copies the tools + wires both hooks (scripts/adopt.sh), seeds one
           milestone issue (M0: bootstrap) so the adoption commit itself obeys
           the commit law, and commits. Idempotent; never overwrites yours.
@@ -258,32 +258,6 @@ def ensure_gitignore(repo):
     return "appended" if cur else "created"
 
 
-GANTRY_BLOCK = re.compile(r"<!-- gantry:begin.*?<!-- gantry:end -->\n?", re.S)
-
-
-def ensure_claude_md(repo, name, level, lo=0, hi=0, band=None):
-    """CLAUDE.md carries ONE marker-delimited gantry block — a pointer to tools/README.md, where
-    the ritual actually lives. The block is gantry's and is refreshed in place on every adopt;
-    everything outside the markers is the project's own and is never touched (#0023)."""
-    p = Path(repo) / "CLAUDE.md"
-    section = render("CLAUDE.md", name=name, level=level,
-                     band=band or f"#{lo:04d}–#{hi:04d}")
-    block = GANTRY_BLOCK.search(section).group(0)
-    if not p.exists():
-        p.write_text(section, encoding="utf-8")
-        return "created"
-    cur = p.read_text(encoding="utf-8")
-    if GANTRY_BLOCK.search(cur):
-        fresh = GANTRY_BLOCK.sub(lambda _m: block, cur, count=1)
-        if fresh == cur:
-            return "kept (gantry block current)"
-        p.write_text(fresh, encoding="utf-8")
-        return "refreshed gantry block"
-    with p.open("a", encoding="utf-8") as fh:
-        fh.write(("" if cur.endswith("\n") else "\n") + "\n" + block)
-    return "appended gantry block"
-
-
 def ensure_file(repo, rel, template, **kw):
     p = Path(repo) / rel
     if p.exists():
@@ -322,7 +296,6 @@ def scaffold(repo, name, level, lo, hi, lineage, seed=True, seed_title=None, lin
     (repo / tracker_rel).mkdir(exist_ok=True)
     say(f"   {'kept' if issue_numbers(repo / tracker_rel) else 'created'}: {tracker_rel}/")
     say(f"   {ensure_gitignore(repo)}: .gitignore (.gantry/out/, .gantry/streams/)")
-    say(f"   {ensure_claude_md(repo, name, level, lo, hi)}: CLAUDE.md")
 
     seed_no = None
     if seed:
@@ -424,7 +397,7 @@ def adopt_repo(repo, name, level, lo, hi, lineage, core_prefixes, link_tools=Fal
         ref = f" (#{seed_no:04d})" if seed_no else ""
         msg = commit_msg or f"gantry adopted{ref}"
         body = ("The method's operational layer: tools/ (GRAPH.md builder, ledger, commit law), "
-                ".gantry/adapter.json, plan.md, seams.md, issues/, CLAUDE.md briefing. "
+                ".gantry/adapter.json, plan.md, seams.md, issues/. "
                 "GRAPH.md is minted by the pre-commit shim into this same commit.")
         say(f"== commit: {msg}")
         r = git(repo, "commit", "-q", "-m", msg, "-m", body, check=False, capture=False)
@@ -593,11 +566,6 @@ def cmd_fork(a):
             f"`tools/README.md`.\n\n")
     readme.write_text(head + (readme.read_text(encoding="utf-8") if readme.exists() else ""), encoding="utf-8")
     say("   set: README.md fork header")
-    cl = new / "CLAUDE.md"
-    if cl.exists():
-        cl.unlink()
-    ensure_claude_md(new, name, level, lo, hi)
-    say("   set: CLAUDE.md briefing (band + lineage)")
 
     # 3. reference set
     if a.keep_open:
@@ -773,27 +741,7 @@ def cmd_stream_new(a):
     save_json(adapter_path(wt), ordered)
     # a fresh ledger for the stream's own sub-streams (the parent's is the parent's)
     save_streams(wt, {"streams": []})
-    cl = wt / "CLAUDE.md"
-    if cl.exists():
-        cl.unlink()
-    ensure_claude_md(wt, f"{ad.get('client', repo.name)} · stream {full}", level,
-                     band=f"#{prefix}-0001…  (your namespace: every issue you file is #{prefix}-NNNN)")
-    with cl.open("a", encoding="utf-8") as fh:
-        fh.write(f"\nThis is **stream `{full}`** (prefix `{prefix}`) — a worktree on branch `{branch}`, "
-                 f"spawned by parent issue **#{issue}** ({ititle}). Start from `#{prefix}-0001`: it "
-                 f"states the constraints this stream must make true. Work them; file every further "
-                 f"issue as `#{prefix}-NNNN` (`python3 <gantry>/scripts/gantry issue new --repo . …`), "
-                 f"each refs a constraint of the shared plan; commit against them. **Everything you do "
-                 f"must show in `GRAPH.md`** — that is what the orchestrator reads "
-                 f"(`gantry stream report {prefix}`). Do not file bare `#NNNN` numbers (they collide "
-                 f"on merge). When done, close your issues by their type's authority and say so in "
-                 f"the last commit; the orchestrator merges or drops the stream.\n\n"
-                 f"**Boundaries:** `plan.md` and `seams.md` are amendment-only truth — you `refs:` them, "
-                 f"you never edit them (open an `amendment-proposal` if one seems wrong). Do not edit "
-                 f"inherited issues beyond a closing note; do not touch `.gantry/adapter.json`, "
-                 f"`.gantry/streams.json`, `GRAPH.md`, `issues/INDEX.md` (derived / the parent's). Do not "
-                 f"merge, rebase or push — the orchestrator does. **Read first:** `.gantry/packet.md` "
-                 f"(the method in brief + your workorders + the constraints they resolve to), then `GRAPH.md`.\n")
+    # the stream's briefing lives in .gantry/packet.md (stream packet); CLAUDE.md is the project's own and is never written
     # seed: the stream's brief — its own first workorder, pointing at the
     # parent's constraints (refs copied), carrying the orchestrator's brief.
     seed = tracker_issue(wt / ad.get("tracker_dir", "issues"), f"{prefix}-0001")
@@ -844,7 +792,7 @@ def cmd_stream_new(a):
             check=False)
     if r.returncode != 0:
         die(f"stream commit failed:\n{(r.stderr or r.stdout).strip()}")
-    say(f"   committed on {branch}: adapter (prefix + lineage), CLAUDE.md briefing, seed #{prefix}-0001")
+    say(f"   committed on {branch}: adapter (prefix + lineage), seed #{prefix}-0001")
 
     data["streams"].append({"slug": full, "prefix": prefix, "issue": issue, "branch": branch,
                             "worktree": str(wt), "from": from_sha, "status": "open"})

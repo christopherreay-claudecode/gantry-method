@@ -11,7 +11,7 @@ gantry (this repo)
 ├─ scripts/gantry            ← the ONE entry point   (python3, stdlib, shells out to git)
 │    new · adopt · fork · stream new|list|report|merge|drop · issue new|close · check
 ├─ scripts/adopt.sh          ← what `adopt` calls for tools + hooks (also usable alone)
-├─ scripts/templates/        ← what a new repo receives (plan, seams, adapter, seed issue, CLAUDE.md)
+├─ scripts/templates/        ← what a new repo receives (plan, seams, adapter, seed issue, method brief)
 ├─ SPEC.md                   ← the method; §8 = adoption + lineage law
 └─ tests/run.sh              ← every command exercised in scratch repos (run it if you changed anything here)
 ```
