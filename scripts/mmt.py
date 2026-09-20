@@ -546,10 +546,10 @@ def gc_store(site_root: Path) -> int:
 
 CSS = """
 :root{--bg:#fbfbfd;--fg:#16181f;--mu:#5a5f6e;--ln:#b8bcc9;--rule:#e2e4ec;--sf:#f1f2f7;
---rule-c:#2b4a8b;--constraint-c:#6a3d9a;--seam-c:#0b6e5c;--issue-c:#8a5a0c;--gate-c:#8a5a0c;--hold-c:#9e2b2b;
+--rule-c:#2b4a8b;--constraint-c:#6a3d9a;--seam-c:#0b6e5c;--issue-c:#8a5a0c;--gate-c:#8a5a0c;--hold-c:#9e2b2b;--x-c:#a2605c;
 --plan-c:#2b4a8b;--contract-c:#0b6e5c;--commit-c:#5a5f6e;--p-c:#2b4a8b;--a-c:#0b6e5c}
 @media(prefers-color-scheme:dark){:root{--bg:#0f1117;--fg:#e6e8ef;--mu:#969cac;--ln:#4a5060;--rule:#252935;--sf:#171a22;
---rule-c:#89a7e4;--constraint-c:#c29ae8;--seam-c:#6fbf93;--issue-c:#dca94b;--gate-c:#dca94b;--hold-c:#e5837a;
+--rule-c:#89a7e4;--constraint-c:#c29ae8;--seam-c:#6fbf93;--issue-c:#dca94b;--gate-c:#dca94b;--hold-c:#e5837a;--x-c:#c98f8a;
 --plan-c:#89a7e4;--contract-c:#6fbf93;--commit-c:#969cac;--p-c:#89a7e4;--a-c:#6fbf93}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 header{padding:1rem 1.4rem;border-bottom:1px solid var(--rule);display:flex;gap:1.4rem;align-items:baseline;flex-wrap:wrap}
@@ -559,7 +559,7 @@ pre.tree{background:var(--sf);border:1px solid var(--rule);padding:.8rem 1rem;ov
 a.t,a.p,a.r,a.a{text-decoration:none;border-bottom:1px dotted currentColor;color:var(--commit-c)}
 a.rule{color:var(--rule-c)}a.constraint{color:var(--constraint-c)}a.seam{color:var(--seam-c)}a.issue{color:var(--issue-c)}
 a.gate{color:var(--gate-c)}a.hold{color:var(--hold-c)}a.plan{color:var(--plan-c)}a.contract{color:var(--contract-c)}
-a.commit{color:var(--commit-c)}a.p{color:var(--p-c)}a.r,a.a{color:var(--a-c)}a.a{font-weight:600}a.x{color:var(--hold-c);border-bottom-style:dashed}
+a.commit{color:var(--commit-c)}a.p{color:var(--p-c)}a.r,a.a{color:var(--a-c)}a.a{font-weight:600}a.x{color:var(--x-c);border-bottom:none}
 a:hover{border-bottom-style:solid}.ln:target,.l:target{background:rgba(220,169,75,.22)}
 b.g{display:inline-block;min-width:1em;text-align:center;border-radius:3px;padding:0 .2em}
 b.g\\={color:#0b6e5c}b.g\\~{color:#5a5f6e}b.g\\?{color:#9e2b2b}b.g\\!{color:#8a5a0c}b.gx{color:#9e2b2b;background:rgba(158,43,43,.12)}
