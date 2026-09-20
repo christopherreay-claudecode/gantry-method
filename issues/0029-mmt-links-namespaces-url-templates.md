@@ -1,6 +1,6 @@
 # #0029 — trees address other spaces: a namespace may resolve to a URL template — LINKS: foot in the tree (markdown reference definitions) and mmt_links in the adapter; one lookup chain tree → repo → family → generic
-type: feature        status: open
-refs: [10] [11]   opened: seed   closed-by: <sha>
+type: feature        status: closed
+refs: [10] [11]   opened: seed   closed-by: 4dbd84a
 
 **Constraints this issue makes true (Tier 2 — each traces to a plan constraint in `refs:`):**
 - [10] A tree addresses spaces beyond the repositories in `mmt_roots` with NO new token grammar:
