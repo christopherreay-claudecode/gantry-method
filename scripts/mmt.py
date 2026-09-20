@@ -28,7 +28,17 @@ repo's own vocabulary, declared in its .gantry/adapter.json and read per root (#
     "mmt_tokens": [ {"kind": "rule", "glob": "CLAUDE.md",
                      "line": "^([A-Z]\\d{1,2})\\s{2,}(.+)$", "token": "{1}", "label": "{2}",
                      "match": "[A-Z]\\d{1,2}"} ],      # match: the shape, so unknown ones are reported unresolved
-    "mmt_edges":  ["depends", "serves", "proves", "blocks", "contradicts", "same-as", "owner", "evidence"]
+    "mmt_edges":  ["depends", "serves", "proves", "blocks", "contradicts", "same-as", "owner", "evidence"],
+    "mmt_links":  {"patent": "https://patents.google.com/patent/{id}"}   # namespaces → URL templates (#0029)
+
+A tree may also declare its own, in a LINKS: foot of markdown reference definitions:
+
+    LINKS:
+      [rfc]: https://www.rfc-editor.org/rfc/rfc{id}      # a namespace: rfc:9110 in the body
+      [spec-live]: https://example.org/spec/s8           # an anchor: spec-live in the body
+
+Lookup is most specific first: the tree's LINKS: → the adapter's mmt_links → mmt_roots → generic.
+External targets are linked, never fetched or stored.
 """
 from __future__ import annotations
 
@@ -171,9 +181,33 @@ class Node:
     raw: str          # the full original line
 
 
+LINKS_HEAD = re.compile(r"^\s*LINKS:\s*$")
+LINK_DEF = re.compile(r"^\s*\[([\w.\-]+)\]:\s*(\S+)\s*$")     # markdown reference definition, verbatim
+
+
+def parse_links(src: str) -> tuple[dict[str, str], int]:
+    """The tree's LINKS: foot (#0029): markdown reference definitions, one per line, after a line
+    that is exactly `LINKS:`. -> ({name: url-or-template}, line number of LINKS: or 0).
+    A url containing `{id}` declares a namespace (`patent:US1` in the body); one without is a
+    one-off anchor referenced by bare name."""
+    links, start = {}, 0
+    for n, raw in enumerate(src.splitlines(), 1):
+        if not start:
+            if LINKS_HEAD.match(raw):
+                start = n
+            continue
+        m = LINK_DEF.match(raw)
+        if m:
+            links[m.group(1)] = m.group(2)
+    return links, start
+
+
 def parse_tree(src: str) -> list[Node]:
     nodes = []
+    _, foot = parse_links(src)
     for n, raw in enumerate(src.splitlines(), 1):
+        if foot and n >= foot:
+            break
         if not raw.strip():
             continue
         pre = TREE_PREFIX.match(raw).group(0)
@@ -238,6 +272,8 @@ def lint(nodes: list[Node], edges: list[str] | None = None, roots: list[str] | N
             out.append(f"L{n.n}: x names no ->@unblocker")
         if re.match(r"[=~?!x]\s", n.text):
             out.append(f"L{n.n}: stacked glyphs — nest instead")
+        if URL_RE.search(n.text) or MD_LINK_RE.search(n.text):
+            notes.append(f"L{n.n}: a URL in the reading line — prefer a named link: define it under LINKS: (#0029)")
         if edges:
             for ref, typ in re.findall(r"->@([\w.\-]+)\s*\[([\w\-]+)\]", n.text):
                 if typ not in edges and typ != "todo":
@@ -273,13 +309,39 @@ REF_RE = re.compile(r"->@([\w.\-]+)")
 ADDR_RE = re.compile(r"^(\s*)@([\w.\-]+)")
 
 
+URL_RE = re.compile(r"(?<![\w\"'=(\[])(https?://[^\s<>\"'()\[\]]+[^\s<>\"'()\[\].,;:!?])")
+MD_LINK_RE = re.compile(r"\[([^\]\n]+)\]\((https?://[^\s)]+)\)")
+
+
 class Site:
-    def __init__(self, roots: list[Root], out: Path):
+    def __init__(self, roots: list[Root], out: Path, links: dict[str, str] | None = None):
         self.roots, self.out = roots, out
         self.by_name = {r.name: r for r in roots}
         self.todo: list[tuple[Root, str]] = []      # docs to render
         self.unresolved: dict[str, int] = {}
         self.token_re = token_re(roots)
+        # link table, most specific first (#0029): the tree's LINKS: foot over the subject
+        # root's adapter mmt_links. {id} → a namespace; no {id} → a one-off anchor.
+        self.links: dict[str, str] = dict((roots[0].adapter.get("mmt_links") or {}) if roots else {})
+        self.links.update(links or {})
+        self.namespaces = {k for k, v in self.links.items() if "{id}" in v}
+        self.anchors = {k for k, v in self.links.items() if "{id}" not in v}
+        alts = []
+        if self.namespaces:
+            alts.append("(?:" + "|".join(re.escape(k) for k in sorted(self.namespaces, key=len, reverse=True)) + r"):([^\s<>\"'()\[\],;·]+)")
+        if self.anchors:
+            alts.append("(" + "|".join(re.escape(k) for k in sorted(self.anchors, key=len, reverse=True)) + r")(?![\w\-])")
+        self.link_re = re.compile(r"(?<![\w/#§@\-:\[])(" + "|".join(alts) + ")") if alts else None
+
+    def external(self, m: re.Match) -> tuple[str, str] | None:
+        """-> (href, label) for a namespace token or an anchor name matched by link_re."""
+        whole = m.group(1)
+        ns, _, ident = whole.partition(":")
+        if ns in self.namespaces and ident:
+            return self.links[ns].replace("{id}", ident), f"{ns}: {ident}"
+        if whole in self.anchors:
+            return self.links[whole], whole
+        return None
 
     def slug(self, root: Root, rel: str) -> str:
         return root.name + "__" + re.sub(r"[^\w.]+", "__", rel) + ".html"
@@ -320,6 +382,8 @@ class Site:
 
     def lookup(self, prefix: str, tok: str) -> tuple[str, str] | None:
         """-> (root name, kind) for a token, touching no pages (L2 export, #0021)."""
+        if prefix and prefix[:-1] in self.namespaces:
+            return prefix[:-1], "link"
         for r in self.cands(prefix):
             s = r.sym.get(tok)
             if s:
@@ -360,17 +424,46 @@ class Site:
             h, kind, title = r
             return f'<a class="t {kind}" href="{depth}{h}" title="{html.escape(title)}">{m.group(0)}</a>'
 
-        s = PATH_RE.sub(path, esc)
+        held: list[str] = []
+
+        def hold(a: str) -> str:
+            held.append(a)
+            return f"\x00{len(held) - 1}\x00"
+
+        def md(m):
+            return hold(f'<a class="x" href="{html.escape(m.group(2))}" rel="noopener">{m.group(1)}</a>')
+
+        def url(m):
+            return hold(f'<a class="x" href="{html.escape(m.group(1))}" rel="noopener">{m.group(1)}</a>')
+
+        def ext(m):
+            r = self.external(m)
+            if not r:
+                return m.group(0)
+            href, label = r
+            return hold(f'<a class="x" href="{html.escape(href)}" rel="noopener" title="{html.escape(label)}">{m.group(0)}</a>')
+
+        s = MD_LINK_RE.sub(md, esc)
+        s = URL_RE.sub(url, s)
+        if self.link_re:
+            s = self.link_re.sub(ext, s)
+        s = PATH_RE.sub(path, s)
         s = self.token_re.sub(tok, s)
         if tree:
             s = REF_RE.sub(lambda m: f'-&gt;<a class="r" href="#{m.group(1)}">@{m.group(1)}</a>', s.replace("-&gt;@", "->@"))
+        s = re.sub(r"\x00(\d+)\x00", lambda m: held[int(m.group(1))], s)
         return s
 
     # ---- pages
     def render_tree(self, name: str, src: str, nodes: list[Node], findings: list[str]) -> Path:
         rows = []
-        for raw in src.splitlines():
+        _, foot = parse_links(src)
+        for n, raw in enumerate(src.splitlines(), 1):
             esc = html.escape(raw)
+            if foot and n >= foot:                  # the LINKS: foot: definitions, URL linked, nothing else matched
+                line = URL_RE.sub(lambda m: f'<a class="x" href="{html.escape(m.group(1))}" rel="noopener">{m.group(1)}</a>', esc)
+                rows.append(f'<span class="ln foot">{line}</span>')
+                continue
             m = ADDR_RE.match(re.sub(r"^[\s│├└─]*", lambda x: "", raw))
             line = self.linkify(esc, "", tree=True)
             am = re.search(r"@([\w.\-]+)", raw)
@@ -390,7 +483,8 @@ class Site:
             f'<pre class="tree">{"".join(r + chr(10) for r in rows)}</pre>'
             f"<h2>level-1 lint</h2><ul>{lint_html}</ul>"
             f"<h2>unresolved tokens</h2><p>{unres}</p>"
-            f"<h2>roots</h2><ul>" + "".join(f"<li>{html.escape(r.name)} → {html.escape(str(r.path))} · {len(r.sym)} symbols</li>" for r in self.roots) + "</ul>"
+            f"<h2>roots</h2><ul>" + "".join(f"<li>{html.escape(r.name)} → {html.escape(str(r.path))} · {len(r.sym)} symbols</li>" for r in self.roots)
+            + "".join(f"<li>{html.escape(k)}: → {html.escape(v)} · external, not snapshotted</li>" for k, v in sorted(self.links.items())) + "</ul>"
         )
         p = self.out / "index.html"                 # self.out is this tree's own directory
         p.write_text(page(name, body, "../"), encoding="utf-8")
@@ -465,7 +559,7 @@ pre.tree{background:var(--sf);border:1px solid var(--rule);padding:.8rem 1rem;ov
 a.t,a.p,a.r,a.a{text-decoration:none;border-bottom:1px dotted currentColor;color:var(--commit-c)}
 a.rule{color:var(--rule-c)}a.constraint{color:var(--constraint-c)}a.seam{color:var(--seam-c)}a.issue{color:var(--issue-c)}
 a.gate{color:var(--gate-c)}a.hold{color:var(--hold-c)}a.plan{color:var(--plan-c)}a.contract{color:var(--contract-c)}
-a.commit{color:var(--commit-c)}a.p{color:var(--p-c)}a.r,a.a{color:var(--a-c)}a.a{font-weight:600}
+a.commit{color:var(--commit-c)}a.p{color:var(--p-c)}a.r,a.a{color:var(--a-c)}a.a{font-weight:600}a.x{color:var(--hold-c);border-bottom-style:dashed}
 a:hover{border-bottom-style:solid}.ln:target,.l:target{background:rgba(220,169,75,.22)}
 b.g{display:inline-block;min-width:1em;text-align:center;border-radius:3px;padding:0 .2em}
 b.g\\={color:#0b6e5c}b.g\\~{color:#5a5f6e}b.g\\?{color:#9e2b2b}b.g\\!{color:#8a5a0c}b.gx{color:#9e2b2b;background:rgba(158,43,43,.12)}
@@ -489,6 +583,12 @@ def export_edges(site: Site, nodes: list[Node], name: str) -> dict:
         parent = stack[-1][1] if stack else None
         stack.append((n.depth, n.n))
         toks = []
+        if site.link_re:
+            for m in site.link_re.finditer(n.text):
+                r = site.external(m)
+                if r:
+                    toks.append({"token": m.group(0), "root": m.group(1).partition(":")[0] if ":" in m.group(1) else "links", "kind": "link"})
+                    edges.append({"from": n.n, "to": m.group(0), "type": "mentions", "line": n.n, "href": r[0]})
         for m in site.token_re.finditer(n.text):
             hit = site.lookup(m.group(1), m.group(2))
             if hit:
@@ -564,7 +664,8 @@ def main(argv: list[str] | None = None) -> int:
     if out.exists():
         shutil.rmtree(out)
     out.mkdir(parents=True, exist_ok=True)
-    site = Site(roots, out)
+    tree_links, _ = parse_links(src)
+    site = Site(roots, out, tree_links)
     pg = site.render_tree(name, src, nodes, findings)
     site.render_docs()
     write_index(site_root)

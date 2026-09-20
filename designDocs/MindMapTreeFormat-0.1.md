@@ -110,6 +110,31 @@ repository it points into. Kinds declared by the repositories this format grew u
 Glyphs are NOT extensible (§3): a formality the model did not already produce is a token tax.
 Vocabulary is data; the notation is not.
 
+### 5c. Other spaces: namespaces that resolve to URL templates
+
+A namespace may resolve to a URL template instead of a repository. The token shape is unchanged —
+`patent:US10123456`, `rfc:9110` — and the tool builds the href, so the reading line still carries
+no URL. Namespaces are declared at two scopes, the more specific winning:
+
+- **the tree's `LINKS:` foot** — a trailing block, after a line that is exactly `LINKS:`, of
+  markdown reference definitions and nothing else:
+
+  ```
+  LINKS:
+    [patent]: https://patents.google.com/patent/{id}
+    [spec-live]: https://example.org/spec/s8
+  ```
+
+  A definition with `{id}` is a namespace; one without is a one-off anchor, referenced in the
+  body by its bare name (`spec-live`). The foot is part of the tree file — one emission — and sits
+  below the reading line. `.mmt` files and ```` ```mmt ```` fences both carry it.
+- **the repository's adapter** — `.gantry/adapter.json` `mmt_links`, the same table at repo scope.
+
+Lookup order: the tree's `LINKS:` → the adapter's `mmt_links` → `mmt_roots` → the generic six.
+External targets are linked, never fetched or stored; the page's roots block lists them as
+"external, not snapshotted". A bare URL or an inline `[text](url)` in the reading line still
+renders as a link, and the lint notes it — prefer a name.
+
 Trees often span repositories. A **root prefix** pins a token to one: `core:#1013`,
 `ui:#0011`, `gantry:scripts/mmt.py`, `ui:S1`. **An issue number always carries its root** —
 `#0011` alone is a Level-1 finding and is never linked, because every repository has a `#0001`
@@ -225,6 +250,8 @@ cubeOnSKOS for the enforcement-graph plan this format feeds.
   kinds (`mmt_tokens`); §5 edge vocabulary is `mmt_edges`; a tree is written once through
   `tools/g tree new`, which renders it (gantry #0019 #0020).
 - 0.1 + level 2 (2026-09-05): `--edges` export and `tools/g tree diff` (gantry #0021).
+- 0.1 + other spaces (2026-09-20): §5c — `LINKS:` foot and `mmt_links`; namespaces resolve to URL
+  templates; bare URLs noted (gantry #0029).
 - 0.1 + no default root (2026-09-07): an issue token without a root prefix is a Level-1 finding
   and is not linked — models were writing `#0011` meaning a sibling's issue and getting this
   repository's.

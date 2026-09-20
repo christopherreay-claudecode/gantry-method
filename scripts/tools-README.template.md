@@ -185,7 +185,9 @@ Never published.
 in every gantry repo. Anything else this repo wants linkable — its rule lines, contract headings,
 plan sections — is declared once in `.gantry/adapter.json` `"mmt_tokens"` (kind · glob · line regex ·
 `{1}`/`{2}` token+label templates · `match` shape); `"mmt_edges"` lists the `->@x [type]`s a tree may
-use. SPEC §6 "The adapter" has the shape; cubeOnSKOS's adapter is a worked example.
+use. `"mmt_links"` names namespaces that resolve to URL templates (`patent:US10123456`); a tree may
+also declare its own in a trailing `LINKS:` block of markdown reference definitions (`[rfc]: https://…/rfc{id}`;
+without `{id}`, a one-off anchor by bare name). SPEC §6 "The adapter" has the shape; cubeOnSKOS's adapter is a worked example.
 
 **The ritual (token discipline):** a substantive answer — a status, an audit, a plan — is
 written ONCE, as the heredoc of `tree new`. The tool renders it in the same call and hands back

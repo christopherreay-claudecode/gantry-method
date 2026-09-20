@@ -13,5 +13,6 @@
   "parts": [],
   "mmt_roots": {},
   "mmt_tokens": [],
+  "mmt_links": {},
   "mmt_edges": ["depends", "serves", "proves", "blocks", "contradicts", "same-as", "owner", "evidence"]
 }

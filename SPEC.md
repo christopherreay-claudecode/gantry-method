@@ -404,7 +404,8 @@ One JSON file per client tells extract where truth lives and how to slug it:
   "mmt_roots":  { "core": ".", "ui": "../sister-ui" },
   "mmt_tokens": [ { "kind": "rule", "glob": "CLAUDE.md", "line": "^([A-Z]\\d{1,2})\\s{2,}(.+)$",
                     "token": "{1}", "label": "{2}", "match": "R\\d{1,2}(?!\\d)" } ],
-  "mmt_edges":  [ "depends", "serves", "proves", "blocks", "contradicts", "same-as", "owner", "evidence" ]
+  "mmt_edges":  [ "depends", "serves", "proves", "blocks", "contradicts", "same-as", "owner", "evidence" ],
+  "mmt_links":  { "patent": "https://patents.google.com/patent/{id}", "rfc": "https://www.rfc-editor.org/rfc/rfc{id}" }
 }
 ```
 
@@ -418,7 +419,7 @@ the kind, so a token of that shape that no line defines is reported as unresolve
 as prose). Six kinds are generic to every gantry repo and need no entry: `#NNNN`, `c17`/`[17]`, `S1`,
 `m2`/`g1`/`Q1`, `path[:line]`, a commit sha. `mmt_edges` is the `->@x [type]` vocabulary a tree
 may use; the renderer notes a type outside it. All three are copied by `adopt`/`fork` under S1 like
-the other binding tables, and **none enters `state.json` or the REV**.
+the other binding tables, and **none enters `state.json` or the REV**. `mmt_links` (optional, #0029) names **namespaces that resolve to URL templates** — `patent:US10123456` in a tree becomes the template with `{id}` filled — so a tree addresses spaces beyond the repositories with no new syntax; a tree may declare its own in a `LINKS:` foot (markdown reference definitions), which takes precedence. External targets are linked, never fetched or stored.
 
 `issue_min` / `issue_max` (optional, default 0 = unchecked) are this repo's **issue band**
 (§8 lineage law). Extract warns on any issue below the floor ("copied-in history is fine; new

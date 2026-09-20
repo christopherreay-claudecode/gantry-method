@@ -5,6 +5,9 @@ One `.mmt` per tree, named `yyyymmdd-HHMMSS-<slug>.mmt` (a tree is a moment; the
 answer that addresses the repository's truth — issues, rules, constraints, seams, contract
 sections, files, commits — by the tokens those things already have. Issue numbers ALWAYS carry
 their root (`core:#1013`, `ui:#0011`, `<thisRepo>:#0007`): a bare `#0007` is rejected by the lint.
+Other spaces — a patent, an RFC, a web page — are namespaces too: `patent:US10123456` resolves through
+`mmt_links` in the adapter, or through the tree's own trailing `LINKS:` block of markdown reference
+definitions (`[patent]: https://patents.google.com/patent/{id}`; without `{id}`, an anchor by bare name).
 
     python3 tools/g tree new <slug> <<'MMT' … MMT    # writes trees/<now>-<slug>.mmt, renders it,
                                                      #   prints file:// URL · lint · unresolved (--no-render: write only)

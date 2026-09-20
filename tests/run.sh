@@ -340,6 +340,30 @@ printf '@s  = spec audit\n└─ alpha:#0001 anchor\n' | python3 "$G" tree new i
 grep -q '^file://.*/\.site/mmt/audit/index\.html$' "$S/to2.out" || fail "tree new --to file: page not named after the file"
 ls "$S/alpha/trees/" | grep -q 'plan-a\|audit' && fail "tree new --to: file also landed in trees/"
 
+step "mmt-links — LINKS: foot + adapter mmt_links: namespaces resolve to URL templates, anchors by bare name, foot overrides adapter, undefined stays unresolved, bare URL noted"
+python3 - "$S/alpha/.gantry/adapter.json" <<'PYT'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p)); d["mmt_links"] = {"rfc": "https://www.rfc-editor.org/rfc/rfc{id}", "patent": "https://ADAPTER/{id}"}; json.dump(d, open(p, "w"), indent=2)
+PYT
+printf '@l  = links\n├─ patent:US1 via foot · rfc:9110 via adapter · spec-live anchor · alpha:#0001 still local\n├─ nope:123 undefined\n└─ ~ bare https://example.org/x here\n\nLINKS:\n  [patent]: https://FOOT/{id}\n  [spec-live]: https://example.org/spec/s8\n' | python3 "$G" tree new links --repo "$S/alpha" > "$S/links.out" || fail "mmt-links: tree new"
+PAGE=$(ls -d "$S/alpha/.site/mmt/"*-links)/index.html
+grep -q 'href="https://FOOT/US1"' "$PAGE" || fail "mmt-links: foot namespace not resolved (or adapter not overridden)"
+grep -q 'href="https://www.rfc-editor.org/rfc/rfc9110"' "$PAGE" || fail "mmt-links: adapter namespace not resolved"
+grep -q 'href="https://example.org/spec/s8"[^>]*>spec-live<' "$PAGE" || fail "mmt-links: anchor by bare name not resolved"
+grep -q 'class="t issue" href="doc/alpha__issues__0001' "$PAGE" || fail "mmt-links: local token stopped resolving"
+grep -q 'href="https://example.org/x"' "$PAGE" || fail "mmt-links: bare URL not rendered as a link"
+grep -q 'note: L4: a URL in the reading line' "$S/links.out" || fail "mmt-links: bare URL not noted"
+grep -q 'nope:123' "$PAGE" && ! grep -q 'href="[^"]*nope' "$PAGE" || fail "mmt-links: undefined namespace was linked"
+grep -q '0 lint findings' "$S/links.out" || fail "mmt-links: notes must not be lint findings"
+grep -q 'external, not snapshotted' "$PAGE" || fail "mmt-links: roots block does not list external namespaces"
+[ "$(grep -c 'class="ln foot"' "$PAGE")" = 3 ] || fail "mmt-links: LINKS: foot not rendered as foot lines"
+python3 "$S/alpha/tools/mmt.py" "$(ls "$S/alpha/trees/"*-links.mmt)" --root alpha="$S/alpha" --out "$S/mmt-l" --edges "$S/le.json" >/dev/null
+python3 - "$S/le.json" <<'PYT' || fail "mmt-links: external edges missing from the level-2 export"
+import json, sys; d = json.load(open(sys.argv[1]))
+assert any(e.get("href") == "https://FOOT/US1" for e in d["edges"]), d["edges"]
+assert any(e.get("to") == "spec-live" for e in d["edges"])
+PYT
+
 step "mmt-store — doc/ pages are symlinks into a content-addressed store; two trees sharing a document share one blob; render --all prunes"
 printf '@one  = store\n└─ alpha:#0001 the birth issue\n' | python3 "$G" tree new store-one --repo "$S/alpha" >/dev/null || fail "mmt-store: tree new one"
 printf '@two  = store\n└─ alpha:#0001 the birth issue again\n' | python3 "$G" tree new store-two --repo "$S/alpha" >/dev/null || fail "mmt-store: tree new two"
