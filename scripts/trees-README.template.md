@@ -8,7 +8,10 @@ their root (`core:#1013`, `ui:#0011`, `<thisRepo>:#0007`): a bare `#0007` is rej
 
     python3 tools/g tree new <slug> <<'MMT' … MMT    # writes trees/<now>-<slug>.mmt, renders it,
                                                      #   prints file:// URL · lint · unresolved (--no-render: write only)
+    python3 tools/g tree new <slug> --to docs/plans/ # …beside what it describes: a dir keeps the stamped
+                                                     #   name; --to path/to/file.mmt is used verbatim
     python3 tools/g tree render [file | --all]       # re-render → .site/mmt/<name>/index.html + doc/ (+ site index)
+                                                     #   (--all = trees/*.mmt; a tree elsewhere renders by path)
     python3 tools/g tree render --all --open         # …and opens the index
 
 `tree new` is a cybernetic extension of the model's voice — communication AS chat, not a deliverable

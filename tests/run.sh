@@ -330,6 +330,16 @@ python3 "$G" tree diff "$S/alpha/trees/diff.mmt" --repo "$S/alpha" > "$S/diff.ou
 grep -q 'ok .*#0002 —depends→ #0001' "$S/diff.out" || fail "mmt-l2: tree diff did not confirm the edge the tracker has (#0001 blocks #0002)"
 grep -q 'MISSING .*#0001 —depends→ #0002' "$S/diff.out" || fail "mmt-l2: tree diff did not report the wrong edge"
 
+step "tree new --to — a tree beside what it describes: a directory keeps the stamped name, a .mmt path is used verbatim; both render"
+printf '@p  = plan tree\n└─ alpha:#0001 anchor\n' | python3 "$G" tree new plan-a --to docs/plans --repo "$S/alpha" > "$S/to1.out" || fail "tree new --to dir"
+ls "$S/alpha/docs/plans/"*-plan-a.mmt >/dev/null 2>&1 || fail "tree new --to dir: stamped file not in docs/plans/"
+grep -q '^docs/plans/.*-plan-a.mmt written' "$S/to1.out" || fail "tree new --to dir: path not reported relative to the repo"
+grep -q '^file://.*/\.site/mmt/.*-plan-a/index\.html$' "$S/to1.out" || fail "tree new --to dir: not rendered"
+printf '@s  = spec audit\n└─ alpha:#0001 anchor\n' | python3 "$G" tree new ignored-slug --to specs/audit.mmt --repo "$S/alpha" > "$S/to2.out" || fail "tree new --to file"
+[ -f "$S/alpha/specs/audit.mmt" ] || fail "tree new --to file: verbatim path not written"
+grep -q '^file://.*/\.site/mmt/audit/index\.html$' "$S/to2.out" || fail "tree new --to file: page not named after the file"
+ls "$S/alpha/trees/" | grep -q 'plan-a\|audit' && fail "tree new --to: file also landed in trees/"
+
 step "mmt-store — doc/ pages are symlinks into a content-addressed store; two trees sharing a document share one blob; render --all prunes"
 printf '@one  = store\n└─ alpha:#0001 the birth issue\n' | python3 "$G" tree new store-one --repo "$S/alpha" >/dev/null || fail "mmt-store: tree new one"
 printf '@two  = store\n└─ alpha:#0001 the birth issue again\n' | python3 "$G" tree new store-two --repo "$S/alpha" >/dev/null || fail "mmt-store: tree new two"

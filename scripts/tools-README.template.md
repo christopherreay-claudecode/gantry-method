@@ -168,7 +168,8 @@ linked into a line-numbered rendering of the document that defines it.
     @root  = …                                          #   .site/mmt/<name>/ (page + doc/ snapshot); prints URL,
     └─ …                                                #   the level-1 lint and the unresolved tokens
     MMT
-    python3 tools/g tree render --all --open            # re-render everything (fresh clone) + index
+    python3 tools/g tree new <slug> --to docs/plans/    # a tree beside what it describes (dir: stamped name; FILE.mmt: verbatim)
+    python3 tools/g tree render --all --open            # re-render everything in trees/ (fresh clone) + index
     python3 tools/mmt.py tree.mmt --root ui=. --root core=../core --open   # the raw renderer
     python3 tools/mmt.py - --strict < answer.txt        # level-1 lint as a gate
     python3 tools/mmt.py tree.mmt --edges edges.json    # level-2 export: nodes · containment · typed ->@ edges · token edges

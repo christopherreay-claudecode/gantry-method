@@ -1472,17 +1472,29 @@ def cmd_tree_new(a):
     src = Path(a.from_file).read_text() if a.from_file else sys.stdin.read()
     if not src.strip():
         die("tree new: empty input (pipe the tree on stdin, or --from FILE)")
-    (repo / "trees").mkdir(exist_ok=True)
     # yyyymmdd-HHMMSS-<slug>: a tree is a moment; the index sorts these newest first
     name = f"{datetime.now().strftime('%Y%m%d-%H%M%S')}-{re.sub(r'[^a-z0-9]+', '-', a.slug.lower()).strip('-')}.mmt"
-    out = repo / "trees" / name
+    # --to: a tree may live beside what it describes (docs/plans/, a spec dir) instead of in
+    # trees/. A directory keeps the stamped name; a path ending in .mmt is used verbatim.
+    if a.to:
+        target = Path(a.to)
+        if not target.is_absolute():
+            target = repo / target
+        out = target if target.suffix == ".mmt" else target / name
+    else:
+        out = repo / "trees" / name
+    out.parent.mkdir(parents=True, exist_ok=True)
     if out.exists() and not a.force:
         die(f"tree new: {out} exists (use --force)")
     out.write_text(src.strip("\n") + "\n")
+    try:
+        shown = out.relative_to(repo)
+    except ValueError:
+        shown = out
     if a.no_render:
-        say(f"trees/{name} written · render: python3 tools/g tree render trees/{name}")
+        say(f"{shown} written · render: python3 tools/g tree render {shown}")
         return
-    say(f"trees/{name} written")
+    say(f"{shown} written")
     sys.exit(_render_trees(repo, [out], strict=a.strict, open_=a.open))
 
 
@@ -1790,6 +1802,7 @@ def main():
     ss = p.add_subparsers(dest="tcmd", required=True)
     q = ss.add_parser("new", help="write trees/<yyyymmdd-HHMMSS>-<slug>.mmt from stdin or --from FILE, render it, print the page URL + lint")
     q.add_argument("slug"); q.add_argument("--from", dest="from_file"); q.add_argument("--force", action="store_true")
+    q.add_argument("--to", metavar="DIR|FILE.mmt", help="where the tree lives (default trees/): a directory keeps the stamped name; a .mmt path is used verbatim")
     q.add_argument("--no-render", action="store_true", help="write the file only (default: render it and print the file:// URL + lint)")
     q.add_argument("--strict", action="store_true"); q.add_argument("--open", action="store_true")
     q.add_argument("--repo", default=DEFAULT_REPO); q.set_defaults(fn=cmd_tree_new)
