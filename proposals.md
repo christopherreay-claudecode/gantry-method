@@ -16,3 +16,4 @@
 - [sqlite-view](proposals/sqlite-view.md) — held design — per-request in-memory SQLite over the whole network (2026-09-05, not filed)
 - [cross-repo-references](proposals/cross-repo-references.md) — proposed — cross-repo references: a root prefix is a namespace, mmt_roots is the table of namespaces (2026-09-05)
 - [gantryd-and-hooks](proposals/gantryd-and-hooks.md) — proposed — gantry as a resident service (gantryd) + the hook catalogue (2026-09-23, discussion)
+- [browser-facet](proposals/browser-facet.md) — a gantry project owns its browsers as widgets: permanent + transient profiles, Playwright wrapper, recorded evidence, record repo outside, agent research visible beside human research (2026-09-23)
